@@ -6,8 +6,11 @@
   <title>@yield('title','Admin Panel')</title>
   <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-  @vite(['resources/css/app.css','resources/js/app.js'])
+<link
+    href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css"
+    rel="stylesheet"
+  />
+ @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
 <body>
 
@@ -16,7 +19,7 @@
 
   <div class="d-flex">
     {{-- Sidebar --}}
- @include('admin.layouts.sidebar')
+ @include('layouts.sidebar')
 
 
     {{-- Page content --}}
@@ -26,6 +29,9 @@
   </div>
 
   {{-- Common footer --}}
-
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+    @stack('scripts')
 </body>
+
 </html>

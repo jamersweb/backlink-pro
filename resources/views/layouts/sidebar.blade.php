@@ -13,13 +13,26 @@
     <!-- Primary Nav -->
     <ul class="nav-list primary-nav">
       <!-- Admin Dashboard -->
+       @role('admin')
       <li class="nav-item">
         <a href="/admin/dashboard" class="nav-link">
           <i class="bi bi-speedometer2"></i>
           <span class="nav-label">Admin Dashboard</span>
         </a>
       </li>
-
+      @endrole
+<li class="nav-item">
+        <a href="/dashboard" class="nav-link">
+          <i class="bi bi-speedometer2"></i>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/campaign" class="nav-link">
+          <i class="bi bi-speedometer2"></i>
+          <span class="nav-label">Campaign</span>
+        </a>
+      </li>
       <!-- Login -->
       <li class="nav-item">
         <a href="/login" class="nav-link">

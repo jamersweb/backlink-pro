@@ -36,7 +36,7 @@ class LoginController extends Controller
     }
 
     return back()->withErrors([
-        'email' => 'Email ya Password galat hai.',
+        'email' => 'invalid credetails',
     ])->onlyInput('email');
 }
 
