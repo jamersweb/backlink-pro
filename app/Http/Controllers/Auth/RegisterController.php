@@ -37,6 +37,6 @@ class RegisterController extends Controller
         // Auto login
         Auth::login($user);
 
-        return redirect()->route('/');
+        return redirect()->route('/dashboard');
     }
 }

@@ -21,6 +21,7 @@
         </a>
       </li>
       @endrole
+       @role('user')
 <li class="nav-item">
         <a href="/dashboard" class="nav-link">
           <i class="bi bi-speedometer2"></i>
@@ -33,7 +34,9 @@
           <span class="nav-label">Campaign</span>
         </a>
       </li>
+      @endrole
       <!-- Login -->
+     @guest
       <li class="nav-item">
         <a href="/login" class="nav-link">
       <i class="bi bi-box-arrow-in-right"></i>
@@ -48,7 +51,9 @@
           <span class="nav-label">Register</span>
         </a>
       </li>
-
+@endguest
+{{-- Authenticated only: Logout --}}
+@auth
       <!-- Logout -->
       <li class="nav-item">
         <a href="#" class="nav-link">
@@ -62,6 +67,7 @@
           </form>
         </a>
       </li>
+      @endauth
     </ul>
   </nav>
 </aside>

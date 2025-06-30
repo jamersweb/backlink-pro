@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Admin\CountryController;
+use App\Http\Controllers\Admin\LocationController;
 
 Route::get('/', function () {
     return view('user.dashboard');
@@ -27,7 +27,10 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 });
 
-// Admin Dashboard (only admin role)
+
+
+// Admin Routes
+// admin dashboard route
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin']) 
      ->name('admin.')
@@ -35,7 +38,14 @@ Route::prefix('admin')
          Route::get('/dashboard', function () {
              return view('admin.dashboard');
          })->name('dashboard');
-          Route::get('countries', [CountryController::class, 'index'])->name('countries.index');
-          Route::post('countries/states',[CountryController::class,'states'])->name('countries.states');
-          Route::post('countries/cities',[CountryController::class,'cities'])->name('countries.cities');
+// admin dashboard route end
+// country city state routes
+    Route::get('locations/create', [LocationController::class, 'create'])
+         ->name('locations.create');
+    Route::get('locations/states/{country}', [LocationController::class, 'getStates'])
+         ->name('locations.states');
+    Route::get('locations/cities/{state}', [LocationController::class, 'getCities'])
+         ->name('locations.cities');
+ // country city state routes
      });
+// admin routes end
