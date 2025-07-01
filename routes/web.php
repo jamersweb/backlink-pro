@@ -18,17 +18,32 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Authentication Routes end
 //user routes
 //dashboard route
-Route::middleware('auth')->group(function () {
+
+Route::middleware('auth')->group(function(){
+
+    // dashboard stays at /dashboard
     Route::get('/dashboard', function () {
         return view('user.dashboard');
     })->name('dashboard');
-});
-// user campaign route
-Route::get('/campaign', [UserCampaignController::class, 'create'])
-     ->name('user-campaign.create');
 
-Route::post('/campaign', [UserCampaignController::class, 'store'])
-     ->name('user-campaign.store');
+    // all campaign routes live under /user/campaign
+    Route::prefix('user/campaign')
+         ->name('user-campaign.')
+         ->group(function(){
+             // GET  /user/campaign       → index()
+             Route::get('/', [UserCampaignController::class,'index'])
+                  ->name('index');
+
+             // GET  /user/campaign/create→ create()
+             Route::get('create', [UserCampaignController::class,'create'])
+                  ->name('create');
+
+             // POST /user/campaign       → store()
+             Route::post('/', [UserCampaignController::class,'store'])
+                  ->name('store');
+         });
+});
+
 
 //user routes end
 

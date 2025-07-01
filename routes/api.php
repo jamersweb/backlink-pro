@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\UserCampaignController;
+use App\Http\Controllers\Api\CampaignController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +16,6 @@ use App\Http\Controllers\Api\UserCampaignController;
 */
 
 Route::middleware('api')->group(function () {
-         Route::get('/user-campaign',     [UserCampaignController::class, 'index']);
-    Route::get('/user-campaign/{id}', [UserCampaignController::class, 'show']);
+          Route::get('campaigns',        [CampaignController::class,'index']);
+    Route::get('campaigns/{id}',   [CampaignController::class,'show']);
 });

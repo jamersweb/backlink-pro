@@ -1,254 +1,204 @@
 @extends('layouts.app')
 
 @section('content')
-  <div class="container">
-    <h3>Create User Campaign</h3>
+<div class="container">
+  <h1>Create Campaign</h1>
+  <form action="{{ route('user-campaign.store') }}"
+        method="POST"
+        enctype="multipart/form-data">
+    @csrf
 
-    <form 
-      action="{{ route('user-campaign.store') }}" 
-      method="POST" 
-      enctype="multipart/form-data"
-    >
-      @csrf
-
-      {{-- Web Information --}}
-      <h5>Web Information</h5>
-
-      <div class="mb-3">
-        <label for="web_name" class="form-label">Website Name</label>
-        <input
-          type="text"
-          class="form-control"
-          id="web_name"
-          name="web_name"
-          value="{{ old('web_name') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="web_url" class="form-label">Website URL</label>
-        <input
-          type="url"
-          class="form-control"
-          id="web_url"
-          name="web_url"
-          value="{{ old('web_url') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="web_keyword" class="form-label">Website Keywords</label>
-        <input
-          type="text"
-          class="form-control"
-          id="web_keyword"
-          name="web_keyword"
-          value="{{ old('web_keyword') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="web_about" class="form-label">Website About</label>
-        <textarea
-          class="form-control"
-          id="web_about"
-          name="web_about"
-          rows="3"
-          required
-        >{{ old('web_about') }}</textarea>
-      </div>
-
-      <div class="mb-3">
-        <label for="web_target" class="form-label">
-          Rank Worldwide or Specific Country?
-        </label>
-        <select
-          id="web_target"
-          name="web_target"
-          class="form-select"
-          required
-        >
-          <option value="">-- Select Target --</option>
-          <option value="worldwide" {{ old('web_target')=='worldwide' ? 'selected' : '' }}>
-            Worldwide
+    {{-- Web --}}
+    <div class="mb-3">
+      <label>Website Name</label>
+      <input type="text" name="web_name"
+             class="form-control @error('web_name') is-invalid @enderror"
+             value="{{ old('web_name') }}">
+      @error('web_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Website URL</label>
+      <input type="url" name="web_url"
+             class="form-control @error('web_url') is-invalid @enderror"
+             value="{{ old('web_url') }}">
+      @error('web_url') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Keywords</label>
+      <input type="text" name="web_keyword"
+             class="form-control @error('web_keyword') is-invalid @enderror"
+             value="{{ old('web_keyword') }}">
+      @error('web_keyword') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>About</label>
+      <textarea name="web_about"
+                class="form-control @error('web_about') is-invalid @enderror"
+                rows="3">{{ old('web_about') }}</textarea>
+      @error('web_about') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Target</label>
+      <select name="web_target" id="web_target"
+              class="form-control @error('web_target') is-invalid @enderror">
+        <option value="">— Select —</option>
+        <option value="worldwide" {{ old('web_target')=='worldwide'?'selected':'' }}>
+          Worldwide
+        </option>
+        <option value="specific_country" {{ old('web_target')=='specific_country'?'selected':'' }}>
+          Specific Country
+        </option>
+      </select>
+      @error('web_target') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3" id="countryDiv" style="display:none">
+      <label>Country</label>
+      <select name="country_name"
+              class="form-control @error('country_name') is-invalid @enderror">
+        <option value="">— Select —</option>
+        @foreach($countries as $c)
+          <option value="{{ $c->name }}"
+            {{ old('country_name')==$c->name?'selected':'' }}>
+            {{ $c->name }}
           </option>
-          <option value="specific_country" {{ old('web_target')=='specific_country' ? 'selected' : '' }}>
-            Specific Country
+        @endforeach
+      </select>
+      @error('country_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+
+    <hr>
+
+    {{-- Company --}}
+    <div class="mb-3">
+      <label>Company Name</label>
+      <input type="text" name="company_name"
+             class="form-control @error('company_name') is-invalid @enderror"
+             value="{{ old('company_name') }}">
+      @error('company_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Logo</label>
+      <input type="file" name="company_logo"
+             class="form-control @error('company_logo') is-invalid @enderror">
+      @error('company_logo') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Email</label>
+      <input type="email" name="company_email_address"
+             class="form-control @error('company_email_address') is-invalid @enderror"
+             value="{{ old('company_email_address') }}">
+      @error('company_email_address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Address</label>
+      <textarea name="company_address"
+                class="form-control @error('company_address') is-invalid @enderror"
+                rows="2">{{ old('company_address') }}</textarea>
+      @error('company_address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Phone</label>
+      <input type="text" name="company_number"
+             class="form-control @error('company_number') is-invalid @enderror"
+             value="{{ old('company_number') }}">
+      @error('company_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Country</label>
+      <select id="company_country" name="company_country"
+              class="form-control @error('company_country') is-invalid @enderror">
+        <option value="">— Select —</option>
+        @foreach($countries as $c)
+          <option value="{{ $c->id }}" {{ old('company_country')==$c->id?'selected':'' }}>
+            {{ $c->name }}
           </option>
-        </select>
-      </div>
+        @endforeach
+      </select>
+      @error('company_country') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>State</label>
+      <select id="company_state" name="company_state"
+              class="form-control @error('company_state') is-invalid @enderror">
+        <option value="">— Select —</option>
+        @foreach($states as $s)
+          <option value="{{ $s->id }}" data-country="{{ $s->country_id }}"
+            {{ old('company_state')==$s->id?'selected':'' }}>
+            {{ $s->name }}
+          </option>
+        @endforeach
+      </select>
+      @error('company_state') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>City</label>
+      <select id="company_city" name="company_city"
+              class="form-control @error('company_city') is-invalid @enderror">
+        <option value="">— Select —</option>
+        @foreach($cities as $ct)
+          <option value="{{ $ct->id }}" data-state="{{ $ct->state_id }}"
+            {{ old('company_city')==$ct->id?'selected':'' }}>
+            {{ $ct->name }}
+          </option>
+        @endforeach
+      </select>
+      @error('company_city') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
 
-      <div id="countryDiv" class="mb-3" style="display: none;">
-        <label for="country_name" class="form-label">Select Country</label>
-        <select
-          id="country_name"
-          name="country_name"
-          class="form-select"
-        >
-          <option value="">-- Select Country --</option>
-          @foreach($countries as $c)
-            <option value="{{ $c->name }}"
-              {{ old('country_name') == $c->name ? 'selected' : '' }}
-            >
-              {{ $c->name }}
-            </option>
-          @endforeach
-        </select>
-      </div>
+    <hr>
 
-      <hr>
+    {{-- Gmail --}}
+    <div class="mb-3">
+      <label>Gmail</label>
+      <input type="email" name="gmail"
+             class="form-control @error('gmail') is-invalid @enderror"
+             value="{{ old('gmail') }}">
+      @error('gmail') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="mb-3">
+      <label>Password</label>
+      <input type="text" name="password"
+             class="form-control @error('password') is-invalid @enderror"
+             value="{{ old('password') }}">
+      @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
 
-      {{-- Company Information --}}
-      <h5>Company Information</h5>
-
-      <div class="mb-3">
-        <label for="company_name" class="form-label">Company Name</label>
-        <input
-          type="text"
-          class="form-control"
-          id="company_name"
-          name="company_name"
-          value="{{ old('company_name') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="company_logo" class="form-label">Company Logo</label>
-        <input
-          type="file"
-          class="form-control"
-          id="company_logo"
-          name="company_logo"
-          accept="image/*"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="company_email_address" class="form-label">Company Email</label>
-        <input
-          type="email"
-          class="form-control"
-          id="company_email_address"
-          name="company_email_address"
-          value="{{ old('company_email_address') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="company_address" class="form-label">Company Address</label>
-        <textarea
-          class="form-control"
-          id="company_address"
-          name="company_address"
-          rows="2"
-          required
-        >{{ old('company_address') }}</textarea>
-      </div>
-
-      <div class="mb-3">
-        <label for="company_number" class="form-label">Company Phone</label>
-        <input
-          type="text"
-          class="form-control"
-          id="company_number"
-          name="company_number"
-          value="{{ old('company_number') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="company_country" class="form-label">Company Country</label>
-        <input
-          type="text"
-          class="form-control"
-          id="company_country"
-          name="company_country"
-          value="{{ old('company_country') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="company_city" class="form-label">Company City</label>
-        <input
-          type="text"
-          class="form-control"
-          id="company_city"
-          name="company_city"
-          value="{{ old('company_city') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="company_state" class="form-label">Company State</label>
-        <input
-          type="text"
-          class="form-control"
-          id="company_state"
-          name="company_state"
-          value="{{ old('company_state') }}"
-          required
-        >
-      </div>
-
-      <hr>
-
-      {{-- User Gmail --}}
-      <h5>User Gmail</h5>
-
-      <div class="mb-3">
-        <label for="gmail" class="form-label">Gmail Address</label>
-        <input
-          type="email"
-          class="form-control"
-          id="gmail"
-          name="gmail"
-          value="{{ old('gmail') }}"
-          required
-        >
-      </div>
-
-      <div class="mb-3">
-        <label for="password" class="form-label">Password (plain text)</label>
-        <input
-          type="text"
-          class="form-control"
-          id="password"
-          name="password"
-          value="{{ old('password') }}"
-          required
-        >
-      </div>
-
-      <button type="submit" class="btn btn-success">Save Campaign</button>
-    </form>
-  </div>
+    <button class="btn btn-success">Save Campaign</button>
+  </form>
+</div>
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  $(function(){
-    // show country selector only if specific_country chosen
-    function toggleCountry(){
-      if ($('#web_target').val() === 'specific_country') {
-        $('#countryDiv').slideDown();
-      } else {
-        $('#countryDiv').slideUp()
-                        .find('select').val('');
-      }
-    }
-    $('#web_target').on('change', toggleCountry);
-    // on page load (for validation errors), check old value:
-    toggleCountry();
-  });
+  const states = @json($states);
+  const cities = @json($cities);
+
+  function filterStates(countryId) {
+    $('#company_state').html(
+      '<option value="">— Select —</option>' +
+      states.filter(s => s.country_id == countryId)
+            .map(s => `<option value="${s.id}">${s.name}</option>`)
+            .join('')
+    );
+    filterCities(null);
+  }
+  function filterCities(stateId) {
+    $('#company_city').html(
+      '<option value="">— Select —</option>' +
+      cities.filter(c => c.state_id == stateId)
+            .map(c => `<option value="${c.id}">${c.name}</option>`)
+            .join('')
+    );
+  }
+
+  $('#company_country').on('change', e => filterStates(e.target.value));
+  $('#company_state'  ).on('change', e => filterCities(e.target.value));
+
+  // Web target toggle
+  function toggleCountry() {
+    $('#countryDiv').toggle($('#web_target').val() === 'specific_country');
+  }
+  $('#web_target').on('change', toggleCountry);
+  toggleCountry();
 </script>
 @endpush

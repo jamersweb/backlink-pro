@@ -47,17 +47,5 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-      public function webInformation()
-    {
-        return $this->hasOne(WebInformation::class, 'user_id');
-    }
-   public function userGmails()
-    {
-        return $this->hasMany(UserGmail::class, 'user_id');
-    }
-    /** One user → one company info */
-    public function companyInformation()
-    {
-        return $this->hasOne(CompanyInformation::class, 'user_id');
-    }
+ 
 }
