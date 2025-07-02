@@ -10,7 +10,7 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>#</th><th>Web Name</th><th>Company</th><th>Gmail</th><th>Created</th>
+        <th>#</th><th>Web Name</th><th>Company</th><th>Gmail</th><th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -20,7 +20,11 @@
         <td>{{ $c->web_name }}</td>
         <td>{{ $c->company_name }}</td>
         <td>{{ $c->gmail }}</td>
-        <td>{{ $c->created_at->format('Y-m-d') }}</td>
+   <td>
+  <a href="{{ route('user-campaign.show', $c->id) }}" class="btn btn-sm btn-info">Show</a>
+  <a href="{{ route('user-campaign.edit', $c->id) }}" class="btn btn-sm btn-warning">Edit</a>
+</td>
+
       </tr>
       @empty
       <tr>

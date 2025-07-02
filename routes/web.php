@@ -26,22 +26,16 @@ Route::middleware('auth')->group(function(){
         return view('user.dashboard');
     })->name('dashboard');
 
-    // all campaign routes live under /user/campaign
-    Route::prefix('user/campaign')
-         ->name('user-campaign.')
-         ->group(function(){
-             // GET  /user/campaign       → index()
-             Route::get('/', [UserCampaignController::class,'index'])
-                  ->name('index');
-
-             // GET  /user/campaign/create→ create()
-             Route::get('create', [UserCampaignController::class,'create'])
-                  ->name('create');
-
-             // POST /user/campaign       → store()
-             Route::post('/', [UserCampaignController::class,'store'])
-                  ->name('store');
-         });
+  Route::prefix('campaign')
+     ->name('user-campaign.')
+     ->group(function(){
+        Route::get('/',     [UserCampaignController::class,'index'])->name('index');
+        Route::get('create',[UserCampaignController::class,'create'])->name('create');
+        Route::post('/',    [UserCampaignController::class,'store'])->name('store');
+        Route::get('{campaign}',       [UserCampaignController::class,'show'])->name('show');
+        Route::get('{campaign}/edit',  [UserCampaignController::class,'edit'])->name('edit');
+        Route::put('{campaign}',       [UserCampaignController::class,'update'])->name('update');
+     });
 });
 
 
