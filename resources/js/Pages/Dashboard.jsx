@@ -1,0 +1,277 @@
+import AppLayout from '../Components/Layout/AppLayout';
+import Card from '../Components/Shared/Card';
+import Button from '../Components/Shared/Button';
+import { Link } from '@inertiajs/react';
+
+export default function Dashboard({ user, subscription, stats, recentBacklinks, recentCampaigns, dailyBacklinks, backlinksByType }) {
+    const getStatusBadge = (status) => {
+        const colors = {
+            active: 'bg-green-100 text-green-800',
+            canceled: 'bg-red-100 text-red-800',
+            past_due: 'bg-yellow-100 text-yellow-800',
+            trialing: 'bg-blue-100 text-blue-800',
+        };
+        return (
+            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+                {status?.replace('_', ' ').toUpperCase()}
+            </span>
+        );
+    };
+
+    return (
+        <AppLayout header="Dashboard">
+            <div className="space-y-6">
+                {/* Subscription Status */}
+                {user.plan && (
+                    <Card>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900">Current Subscription</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {user.plan.name} - ${user.plan.price}/{user.plan.billing_interval}
+                                </p>
+                                {subscription && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Status: {getStatusBadge(subscription.status)}
+                                        {subscription.current_period_end && (
+                                            <span className="ml-2">
+                                                • Renews: {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                    </p>
+                                )}
+                            </div>
+                            <Link href="/subscription/manage">
+                                <Button variant="outline">Manage Subscription</Button>
+                            </Link>
+                        </div>
+                    </Card>
+                )}
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <Card>
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLineCap="round" strokeLineJoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">Total Backlinks</dt>
+                                    <dd className="text-lg font-medium text-gray-900">{stats?.total_backlinks || 0}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLineCap="round" strokeLineJoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">Links Today</dt>
+                                    <dd className="text-lg font-medium text-gray-900">
+                                        {stats?.links_today || 0} / {stats?.daily_limit || '∞'}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLineCap="round" strokeLineJoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">Active Campaigns</dt>
+                                    <dd className="text-lg font-medium text-gray-900">{stats?.active_campaigns || 0}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-yellow-500 text-white">
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLineCap="round" strokeLineJoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">Verified Links</dt>
+                                    <dd className="text-lg font-medium text-gray-900">{stats?.verified_links || 0}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card title="Quick Actions">
+                        <div className="grid grid-cols-2 gap-4">
+                            <Link href="/campaign/create">
+                                <Button variant="primary" className="w-full">Create Campaign</Button>
+                            </Link>
+                            <Link href="/campaign">
+                                <Button variant="secondary" className="w-full">View Campaigns</Button>
+                            </Link>
+                            <Link href="/reports">
+                                <Button variant="secondary" className="w-full">View Reports</Button>
+                            </Link>
+                            <Link href="/activity">
+                                <Button variant="secondary" className="w-full">Activity Feed</Button>
+                            </Link>
+                        </div>
+                    </Card>
+
+                    {/* Analytics Preview */}
+                    <Card title="Analytics Preview">
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Backlinks by Type</h4>
+                                <div className="space-y-2">
+                                    {backlinksByType && Object.keys(backlinksByType).length > 0 ? (
+                                        Object.entries(backlinksByType).map(([type, count]) => (
+                                            <div key={type} className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600 capitalize">{type}</span>
+                                                <span className="text-sm font-semibold text-gray-900">{count}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No data yet</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t">
+                                <Link href="/reports">
+                                    <Button variant="outline" className="w-full">View Full Analytics</Button>
+                                </Link>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+
+                {/* Recent Campaigns */}
+                {recentCampaigns && recentCampaigns.length > 0 && (
+                    <Card title="Recent Campaigns">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Backlinks</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {recentCampaigns.map((campaign) => (
+                                        <tr key={campaign.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {campaign.name}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    campaign.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                    campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {campaign.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {campaign.backlinks_count || 0}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {new Date(campaign.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                <Link href={`/campaign/${campaign.id}`} className="text-indigo-600 hover:text-indigo-900 mr-3">
+                                                    View
+                                                </Link>
+                                                <Link href={`/campaign/${campaign.id}/backlinks`} className="text-indigo-600 hover:text-indigo-900">
+                                                    Backlinks
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="mt-4">
+                            <Link href="/campaign">
+                                <Button variant="outline" className="w-full">View All Campaigns</Button>
+                            </Link>
+                        </div>
+                    </Card>
+                )}
+
+                {/* Recent Backlinks */}
+                <Card title="Recent Backlinks">
+                    {recentBacklinks && recentBacklinks.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {recentBacklinks.map((backlink) => (
+                                        <tr key={backlink.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {new Date(backlink.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {backlink.campaign?.name || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                                                {backlink.type}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    backlink.status === 'verified' ? 'bg-green-100 text-green-800' :
+                                                    backlink.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    backlink.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {backlink.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-center py-4">No backlinks yet. Create your first campaign to get started!</p>
+                    )}
+                </Card>
+            </div>
+        </AppLayout>
+    );
+}

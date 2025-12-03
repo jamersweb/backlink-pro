@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable,HasRoles;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -22,7 +22,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', 
+        'role',
+        'plan_id',
+        'stripe_customer_id',
+        'stripe_subscription_id',
+        'subscription_status',
+        'trial_ends_at',
     ];
 
     /**
@@ -45,7 +50,49 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'trial_ends_at' => 'datetime',
         ];
     }
- 
+
+    /**
+     * Relationships
+     */
+    public function campaigns()
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    public function domains()
+    {
+        return $this->hasMany(Domain::class);
+    }
+
+    public function connectedAccounts()
+    {
+        return $this->hasMany(ConnectedAccount::class);
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    /**
+     * Get total backlinks count
+     */
+    public function getTotalBacklinksCountAttribute(): int
+    {
+        return $this->campaigns()
+            ->withCount('backlinks')
+            ->get()
+            ->sum('backlinks_count');
+    }
+
+    /**
+     * Send the email verification notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmail);
+    }
 }

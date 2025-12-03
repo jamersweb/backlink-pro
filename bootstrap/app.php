@@ -18,13 +18,20 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware(['web', 'auth', 'role:admin'])
                  ->prefix('admin')
                  ->name('admin.')
-                 ->group(base_path('routes/admin.php'));
+                 ->group(function () {
+                     require base_path('routes/admin.php');
+                 });
         }
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            \App\Http\Middleware\HandleInertiaRequests::class,
+        ]);
+        
         $middleware->alias([
             'role'  => RoleMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

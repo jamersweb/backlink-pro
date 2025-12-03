@@ -25,11 +25,16 @@ class StoreUserCampaignRequest extends FormRequest
             'company_email_address' => 'required|email',
             'company_address'       => 'required|string',
             'company_number'        => 'required|string|max:50',
-            'company_country'       => 'required|string|max:255',
-            'company_state'         => 'required|string|max:255',
-            'company_city'          => 'nullable|string|max:255',
-            'gmail'    => 'required|email',
-            'password' => 'required|string',
+            'company_country'       => 'required|integer|exists:countries,id',
+            'company_state'         => 'required|integer|exists:states,id',
+            'company_city'          => 'nullable|integer|exists:cities,id',
+            'gmail_account_id'      => 'nullable|integer|exists:connected_accounts,id',
+            'gmail'                 => 'required_without:gmail_account_id|email',
+            'password'               => 'required_without:gmail_account_id|string',
+            // These are auto-set from plan, but we'll validate they exist
+            'backlink_types'        => 'nullable|array',
+            'daily_limit'           => 'nullable|integer|min:1',
+            'total_limit'           => 'nullable|integer|min:1',
         ];
     }
 
@@ -56,9 +61,9 @@ class StoreUserCampaignRequest extends FormRequest
     'company_country.required'  => 'Please select the country where the company is located.',
     'company_state.required'    => 'Please select the state where the company is located.',
     'company_city.required'     => 'Please select the city where the company is located.',
-    'gmail.required'            => 'Please provide your Gmail address.',
+    'gmail.required_without'    => 'Please provide your Gmail address or select a connected account.',
     'gmail.email'               => 'Please provide a valid Gmail address.',
-    'password.required'         => 'Please provide a password.',
+    'password.required_without' => 'Please provide a password or select a connected account.',
 ];
 
     }

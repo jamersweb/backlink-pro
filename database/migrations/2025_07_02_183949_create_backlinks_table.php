@@ -1,32 +1,40 @@
 <?php
 
-// database/migrations/xxxx_xx_xx_xxxxxx_create_backlinks_table.php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateBacklinksTable extends Migration
+return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('backlinks', function (Blueprint $table) {
-            $table->bigIncrements('id');                           // Primary key
-            $table->foreignId('campaign_id')                        // FK to campaigns
+            $table->id();
+            $table->foreignId('campaign_id')
                   ->constrained('campaigns')
                   ->onDelete('cascade');
-            $table->string('url');                                  // Target backlink URL
-            $table->enum('type', ['comment','profile','forum','guestposting']);
-                                                                    // Type of backlink
-            $table->string('keyword');                              // Anchor keyword
-            $table->enum('status', ['pending','success','error'])
-                  ->default('pending');                             // Processing status
-            $table->timestamps();                                   // created_at & updated_at
+            $table->unsignedBigInteger('site_account_id')->nullable();
+            $table->string('url'); // Target backlink URL
+            $table->enum('type', ['comment', 'profile', 'forum', 'guestposting']);
+            $table->string('keyword'); // Anchor keyword
+            $table->string('anchor_text')->nullable(); // Actual anchor text used
+            $table->enum('status', ['pending', 'submitted', 'verified', 'error'])
+                  ->default('pending');
+            $table->timestamp('verified_at')->nullable();
+            $table->text('error_message')->nullable();
+            $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('backlinks');
     }
-}
+};
 

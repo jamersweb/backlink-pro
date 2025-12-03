@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class LoginController extends Controller
 {
     // Login form view
     public function show()
     {
-        return view('auth.login');
+        return Inertia::render('Auth/Login');
     }
 
     // Form submit hone par login
@@ -28,8 +29,14 @@ class LoginController extends Controller
         $user = Auth::user();
 
         // Email ya role se admin detect karo
-        if ($user->email === 'admin@example.com' || $user->role === 'admin') {
+        if ($user->email === 'admin@example.com' || $user->hasRole('admin')) {
             return redirect()->intended('/admin/dashboard');
+        }
+
+        // Check if email is verified, if not redirect to verification page
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('status', 'Please verify your email address to continue.');
         }
 
         return redirect()->intended('/dashboard');

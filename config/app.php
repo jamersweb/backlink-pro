@@ -14,6 +14,8 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    
+    'api_token' => env('APP_API_TOKEN', 'your-secure-api-token-change-in-production'),
 
     /*
     |--------------------------------------------------------------------------

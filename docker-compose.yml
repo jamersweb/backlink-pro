@@ -1,43 +1,157 @@
-version: '3.8'
-
 services:
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: backlink-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - backlink-network
+
+  # Laravel Application (PHP-FPM)
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: laravel-app
+    container_name: backlink-app
     working_dir: /var/www/html
     volumes:
       - .:/var/www/html
-    ports:
-      - "8000:8000"
-    command: php artisan serve --host=0.0.0.0 --port=8000
     depends_on:
       - mysql
       - redis
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: laravel
-      DB_USERNAME: root
-      DB_PASSWORD: root
+      DB_DATABASE: ${DB_DATABASE:-backlink_pro}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+    networks:
+      - backlink-network
 
+  # Laravel Queue Worker
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backlink-queue
+    working_dir: /var/www/html
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+      - redis
+      - app
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-backlink_pro}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+    networks:
+      - backlink-network
+    restart: unless-stopped
+
+  # Python Automation Worker
+  python-worker:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    container_name: backlink-python-worker
+    working_dir: /app
+    volumes:
+      - ./python:/app
+    depends_on:
+      - app
+      - mysql
+      - redis
+    environment:
+      LARAVEL_API_URL: http://app:8000
+      LARAVEL_API_TOKEN: ${PYTHON_API_TOKEN:-your-api-token-here}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-backlink_pro}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - backlink-network
+    restart: unless-stopped
+
+  # MySQL Database
   mysql:
     image: mysql:8.0
-    container_name: laravel-mysql
+    container_name: backlink-mysql
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-backlink_pro}
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - backlink-network
+    restart: unless-stopped
 
+  # Redis Cache & Queue
   redis:
-    image: redis:alpine
-    container_name: laravel-redis
+    image: redis:7-alpine
+    container_name: backlink-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backlink-network
+    restart: unless-stopped
+
+  # Laravel Horizon (Queue Dashboard)
+  horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backlink-horizon
+    working_dir: /var/www/html
+    command: bash -c "chmod +x /var/www/html/docker/start-horizon.sh 2>/dev/null || true && /var/www/html/docker/start-horizon.sh"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+      - redis
+      - app
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-backlink_pro}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+    networks:
+      - backlink-network
+    restart: unless-stopped
+
+networks:
+  backlink-network:
+    driver: bridge
 
 volumes:
   mysql-data:
+  redis-data:

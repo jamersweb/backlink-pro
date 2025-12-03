@@ -19,16 +19,16 @@ class LocationController extends Controller
     }
 
     // 2) AJAX se states load karne ke liye
-    public function getStates($country_id)
+    public function getStates($country)
     {
-        $states = State::where('country_id', $country_id)->get();
+        $states = State::where('country_id', $country)->get();
         return response()->json($states);
     }
 
     // 3) AJAX se cities load karne ke liye
-    public function getCities($state_id)
+    public function getCities($state)
     {
-        $cities = City::where('state_id', $state_id)->get();
+        $cities = City::where('state_id', $state)->get();
         return response()->json($cities);
     }
 }
