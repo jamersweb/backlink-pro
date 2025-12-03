@@ -143,7 +143,39 @@ class GuestPostAutomation(BaseAutomation):
     
     def _generate_pitch(self, keywords: list, task: Dict) -> str:
         """Generate guest post pitch using LLM"""
-        # TODO: Implement LLM integration
+        try:
+            campaign = self.api_client.get_campaign(task['campaign_id'])
+            keyword = keywords[0] if keywords else "topic"
+            target_url = task.get('payload', {}).get('target_url', '')
+            tone = task.get('payload', {}).get('content_tone', 'professional')
+            
+            # Get blog name from page
+            blog_name = self.page.title() if self.page else ""
+            try:
+                # Try to get site name from meta or header
+                site_name = self.page.locator('meta[property="og:site_name"]').get_attribute('content')
+                if site_name:
+                    blog_name = site_name
+            except:
+                pass
+            
+            # Generate using LLM
+            pitch = self.api_client.generate_content(
+                'guest_post_pitch',
+                {
+                    'blog_name': blog_name,
+                    'target_url': target_url,
+                    'proposed_topic': keyword,
+                },
+                tone
+            )
+            
+            if pitch:
+                return pitch.strip()
+        except Exception as e:
+            logger.warning(f"LLM guest post pitch generation failed: {e}")
+        
+        # Fallback to simple pitch
         campaign = self.api_client.get_campaign(task['campaign_id'])
         keyword = keywords[0] if keywords else "topic"
         

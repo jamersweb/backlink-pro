@@ -77,6 +77,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Plan::class);
     }
 
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->hasMany(UserNotification::class)->unread();
+    }
+
     /**
      * Get total backlinks count
      */
@@ -94,5 +104,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendEmailVerificationNotification()
     {
         $this->notify(new \App\Notifications\VerifyEmail);
+    }
+
+    /**
+     * Send the password reset notification.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
 }

@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Log;
-use App\Models\Backlink;
-use App\Models\Campaign;
 use Inertia\Inertia;
 
 class NotificationController extends Controller
@@ -14,59 +12,76 @@ class NotificationController extends Controller
     /**
      * Show notifications page
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
-        $campaignIds = Campaign::where('user_id', $user->id)->pluck('id');
         
-        // Get recent notifications from logs
-        $notifications = Log::whereIn('campaign_id', $campaignIds)
-            ->with(['campaign' => function($query) {
-                $query->select('id', 'name');
-            }])
-            ->latest()
-            ->limit(50)
-            ->get()
-            ->map(function($log) {
-                return [
-                    'id' => $log->id,
-                    'type' => $this->getNotificationType($log->level),
-                    'title' => $this->getNotificationTitle($log),
-                    'message' => $log->message ?? 'Notification',
-                    'campaign' => $log->campaign->name ?? 'System',
-                    'created_at' => $log->created_at,
-                    'read' => false, // You can add read status to logs table later
-                ];
-            });
-        
+        $query = UserNotification::where('user_id', $user->id)
+            ->latest();
+
+        // Filter by read/unread
+        if ($request->has('filter') && $request->filter === 'unread') {
+            $query->unread();
+        } elseif ($request->has('filter') && $request->filter === 'read') {
+            $query->read();
+        }
+
+        // Filter by type
+        if ($request->has('type') && $request->type) {
+            $query->type($request->type);
+        }
+
+        $notifications = $query->paginate(50)->withQueryString();
+
+        // Get unread count
+        $unreadCount = UserNotification::where('user_id', $user->id)->unread()->count();
+
         return Inertia::render('Notifications/Index', [
             'notifications' => $notifications,
+            'unreadCount' => $unreadCount,
+            'filters' => $request->only(['filter', 'type']),
         ]);
     }
 
-    private function getNotificationType($level)
+    /**
+     * Mark notification as read
+     */
+    public function markAsRead($id)
     {
-        $types = [
-            'error' => 'error',
-            'warning' => 'warning',
-            'info' => 'info',
-            'success' => 'success',
-        ];
-        return $types[$level] ?? 'info';
+        $notification = UserNotification::where('user_id', Auth::id())
+            ->findOrFail($id);
+        
+        $notification->markAsRead();
+
+        return back()->with('success', 'Notification marked as read.');
     }
 
-    private function getNotificationTitle($log)
+    /**
+     * Mark all notifications as read
+     */
+    public function markAllAsRead()
     {
-        if (str_contains(strtolower($log->message ?? ''), 'verified')) {
-            return 'Backlink Verified';
-        }
-        if (str_contains(strtolower($log->message ?? ''), 'failed')) {
-            return 'Backlink Failed';
-        }
-        if (str_contains(strtolower($log->message ?? ''), 'created')) {
-            return 'Campaign Created';
-        }
-        return 'System Notification';
+        UserNotification::where('user_id', Auth::id())
+            ->unread()
+            ->update([
+                'read' => true,
+                'read_at' => now(),
+            ]);
+
+        return back()->with('success', 'All notifications marked as read.');
+    }
+
+    /**
+     * Delete notification
+     */
+    public function destroy($id)
+    {
+        $notification = UserNotification::where('user_id', Auth::id())
+            ->findOrFail($id);
+        
+        $notification->delete();
+
+        return back()->with('success', 'Notification deleted.');
     }
 }
 

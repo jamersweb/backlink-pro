@@ -8,6 +8,10 @@ use App\Models\State;
 use App\Models\City;
 use App\Models\Domain;
 use App\Models\ConnectedAccount;
+use App\Models\Backlink;
+use App\Services\ActivityLogService;
+use App\Services\NotificationService;
+use App\Services\ExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreUserCampaignRequest;
@@ -83,6 +87,11 @@ public function show($id)
 {
     $data = $request->validated();
     $data['user_id'] = Auth::id();
+    
+    // Set default name if not provided
+    if (empty($data['name'])) {
+        $data['name'] = $data['web_name'] ?? 'Untitled Campaign';
+    }
 
     if ($request->hasFile('company_logo')) {
         $file     = $request->file('company_logo');
@@ -107,6 +116,30 @@ public function show($id)
     $user = Auth::user();
     $plan = $user->plan;
     
+    // Check plan limits before creating campaign
+    if ($plan) {
+        // Check max campaigns limit (-1 means unlimited)
+        if ($plan->max_campaigns !== -1) {
+            $userCampaignCount = Campaign::where('user_id', $user->id)->count();
+            if ($userCampaignCount >= $plan->max_campaigns) {
+                return back()->withErrors([
+                    'campaign_limit' => "You have reached your plan's maximum campaign limit ({$plan->max_campaigns}). Please upgrade your plan or delete an existing campaign to create a new one."
+                ])->withInput();
+            }
+        }
+        
+        // Check if user has a plan (required for creating campaigns)
+        if (!$plan) {
+            return back()->withErrors([
+                'plan' => 'You need an active plan to create campaigns. Please subscribe to a plan first.'
+            ])->withInput();
+        }
+    } else {
+        return back()->withErrors([
+            'plan' => 'You need an active plan to create campaigns. Please subscribe to a plan first.'
+        ])->withInput();
+    }
+    
     // Use plan settings automatically
     $planDailyLimit = $plan ? $plan->daily_backlink_limit : 10;
     $planBacklinkTypes = $plan ? ($plan->backlink_types ?? []) : ['comment', 'profile'];
@@ -124,7 +157,13 @@ public function show($id)
     $data['total_limit'] = $data['total_limit'] ?? ($planDailyLimit * 30);
     $data['status'] = Campaign::STATUS_ACTIVE;
 
-    Campaign::create($data);
+    $campaign = Campaign::create($data);
+    
+    // Log activity
+    ActivityLogService::logCampaignCreated($campaign);
+    
+    // Send notification
+    NotificationService::notifyCampaignCreated($campaign);
 
     return redirect()
         ->route('user-campaign.index')
@@ -136,6 +175,7 @@ public function update(StoreUserCampaignRequest $request, $id)
     $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
     $data     = $request->validated();
 
+    // Handle company logo - only update if a new file is uploaded
     if ($request->hasFile('company_logo')) {
         // delete old file
         if ($campaign->company_logo && file_exists(public_path($campaign->company_logo))) {
@@ -149,9 +189,67 @@ public function update(StoreUserCampaignRequest $request, $id)
         }
         $file->move($destinationPath, $filename);
         $data['company_logo'] = 'images/company_logo/' . $filename;
+    } else {
+        // Remove company_logo from update data if no new file is uploaded
+        // Keep the existing logo in the database
+        unset($data['company_logo']);
+    }
+
+    // Convert country/state/city to integers
+    if (isset($data['company_country'])) {
+        $data['company_country'] = (int) $data['company_country'];
+    }
+    if (isset($data['company_state'])) {
+        $data['company_state'] = (int) $data['company_state'];
+    }
+    if (isset($data['company_city']) && !empty($data['company_city'])) {
+        $data['company_city'] = (int) $data['company_city'];
+    } else {
+        $data['company_city'] = null;
+    }
+
+    // Handle Gmail account
+    if (!empty($data['gmail_account_id'])) {
+        $data['gmail_account_id'] = (int) $data['gmail_account_id'];
+        unset($data['gmail']);
+        unset($data['password']);
+    } else {
+        $data['gmail_account_id'] = null;
+    }
+
+    // Get user's plan settings and update campaign settings automatically
+    $user = Auth::user();
+    $plan = $user->plan;
+    
+    if ($plan) {
+        $planDailyLimit = $plan->daily_backlink_limit;
+        $planBacklinkTypes = $plan->backlink_types ?? [];
+        
+        // Update settings from plan
+        $settings = is_array($campaign->settings) ? $campaign->settings : (json_decode($campaign->settings, true) ?? []);
+        $settings['backlink_types'] = $planBacklinkTypes;
+        $settings['daily_limit'] = $planDailyLimit;
+        $settings['total_limit'] = $settings['total_limit'] ?? ($planDailyLimit * 30);
+        $settings['content_tone'] = $settings['content_tone'] ?? 'professional';
+        $settings['anchor_text_strategy'] = $settings['anchor_text_strategy'] ?? 'variation';
+        
+        $data['settings'] = $settings;
+        $data['daily_limit'] = $planDailyLimit;
+        $data['total_limit'] = $data['total_limit'] ?? ($planDailyLimit * 30);
+    }
+
+    // Remove settings fields from data if they were submitted
+    unset($data['backlink_types']);
+    
+    // Remove company_logo if it's null (keep existing logo)
+    if (isset($data['company_logo']) && $data['company_logo'] === null) {
+        unset($data['company_logo']);
     }
 
     $campaign->update($data);
+    
+    // Log activity
+    ActivityLogService::logCampaignUpdated($campaign);
 
     return redirect()
         ->route('user-campaign.index')
@@ -161,6 +259,9 @@ public function update(StoreUserCampaignRequest $request, $id)
 public function destroy($id)
 {
     $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
+    
+    // Log activity before deletion
+    ActivityLogService::logCampaignDeleted($campaign);
     
     // Delete company logo file if exists
     if ($campaign->company_logo && file_exists(public_path($campaign->company_logo))) {
@@ -172,6 +273,119 @@ public function destroy($id)
     return redirect()
         ->route('user-campaign.index')
         ->with('success', 'Campaign deleted successfully.');
+}
+
+/**
+ * Pause a campaign
+ */
+public function pause($id)
+{
+    $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
+    
+    if ($campaign->status === Campaign::STATUS_PAUSED) {
+        return back()->with('info', 'Campaign is already paused.');
+    }
+    
+    $campaign->update(['status' => Campaign::STATUS_PAUSED]);
+    
+    // Log activity
+    ActivityLogService::logCampaignPaused($campaign);
+    
+    // Send notification
+    NotificationService::notifyCampaignPaused($campaign);
+    
+    return back()->with('success', 'Campaign paused successfully.');
+}
+
+/**
+ * Resume a campaign
+ */
+public function resume($id)
+{
+    $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
+    
+    if ($campaign->status === Campaign::STATUS_ACTIVE) {
+        return back()->with('info', 'Campaign is already active.');
+    }
+    
+    // Check if campaign has reached its total limit
+    $campaignTotalBacklinks = $campaign->backlinks()->count();
+    if ($campaignTotalBacklinks >= ($campaign->total_limit ?? 100)) {
+        return back()->with('error', 'Cannot resume campaign: Total limit reached.');
+    }
+    
+    $campaign->update(['status' => Campaign::STATUS_ACTIVE]);
+    
+    // Log activity
+    ActivityLogService::logCampaignResumed($campaign);
+    
+    // Send notification
+    NotificationService::notifyCampaignResumed($campaign);
+    
+    return back()->with('success', 'Campaign resumed successfully.');
+}
+
+/**
+ * Export campaigns data
+ */
+public function export(Request $request)
+{
+    $query = Campaign::where('user_id', Auth::id())
+        ->with(['domain:id,name', 'country:id,name', 'state:id,name', 'city:id,name'])
+        ->withCount('backlinks');
+
+    $campaigns = $query->get();
+
+    $format = $request->get('format', 'csv');
+
+    if ($format === 'json') {
+        $data = $campaigns->map(function($campaign) {
+            return [
+                'id' => $campaign->id,
+                'name' => $campaign->name,
+                'status' => $campaign->status,
+                'domain' => $campaign->domain->name ?? 'N/A',
+                'country' => $campaign->country->name ?? 'N/A',
+                'state' => $campaign->state->name ?? 'N/A',
+                'city' => $campaign->city->name ?? 'N/A',
+                'total_backlinks' => $campaign->backlinks_count,
+                'daily_limit' => $campaign->daily_limit,
+                'total_limit' => $campaign->total_limit,
+                'web_url' => $campaign->web_url,
+                'created_at' => $campaign->created_at->toISOString(),
+            ];
+        });
+
+        return ExportService::exportJson(
+            $data->toArray(),
+            'campaigns-' . now()->format('Y-m-d') . '.json'
+        );
+    }
+
+    // CSV export
+    $headers = ['ID', 'Name', 'Status', 'Domain', 'Country', 'State', 'City', 'Total Backlinks', 'Daily Limit', 'Total Limit', 'Web URL', 'Created At'];
+    $data = $campaigns->map(function($campaign) {
+        return [
+            $campaign->id,
+            $campaign->name,
+            $campaign->status,
+            $campaign->domain->name ?? 'N/A',
+            $campaign->country->name ?? 'N/A',
+            $campaign->state->name ?? 'N/A',
+            $campaign->city->name ?? 'N/A',
+            $campaign->backlinks_count,
+            $campaign->daily_limit ?? 'N/A',
+            $campaign->total_limit ?? 'N/A',
+            $campaign->web_url ?? 'N/A',
+            $campaign->created_at->toDateTimeString(),
+        ];
+    })->toArray();
+
+    return ExportService::exportCsv(
+        $data,
+        $headers,
+        'campaigns-' . now()->format('Y-m-d') . '.csv'
+    );
 }
 
 }

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class ProxyController extends Controller
 {
     /**
-     * Get proxy list
+     * Get proxy list with smart selection logic
      */
     public function index(Request $request)
     {
@@ -20,16 +20,46 @@ class ProxyController extends Controller
         }
 
         $country = $request->get('country');
+        $preferCountry = $request->get('prefer_country', true); // Prefer country match
         
+        // Start with active, healthy proxies (error_count < 3)
         $query = Proxy::where('status', Proxy::STATUS_ACTIVE)
-            ->orderBy('error_count', 'asc')
-            ->orderBy('last_used_at', 'asc');
+            ->healthy(3); // Only proxies with < 3 errors
 
-        if ($country) {
-            $query->where('country', $country);
+        // If country is specified and we prefer country matches
+        if ($country && $preferCountry) {
+            // First try to get proxies from the target country
+            $countryProxies = (clone $query)->forCountry($country)
+                ->orderBy('error_count', 'asc')
+                ->orderBy('last_used_at', 'asc')
+                ->get();
+
+            // If we have country-specific proxies, return them
+            if ($countryProxies->isNotEmpty()) {
+                $proxies = $countryProxies;
+            } else {
+                // Fallback to any healthy proxy
+                $proxies = $query->orderBy('error_count', 'asc')
+                    ->orderBy('last_used_at', 'asc')
+                    ->get();
+            }
+        } else {
+            // No country preference, just get healthy proxies
+            $proxies = $query->orderBy('error_count', 'asc')
+                ->orderBy('last_used_at', 'asc')
+                ->get();
         }
 
-        $proxies = $query->get()->map(function ($proxy) {
+        // Rotate proxies: prefer least recently used
+        $proxies = $proxies->sortBy([
+            ['error_count', 'asc'],
+            ['last_used_at', 'asc'],
+        ])->values();
+
+        $proxies = $proxies->map(function ($proxy) {
+            // Mark proxy as used
+            $proxy->markUsed();
+            
             return [
                 'id' => $proxy->id,
                 'host' => $proxy->host,

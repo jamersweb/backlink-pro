@@ -13,6 +13,7 @@ from automation.comment import CommentAutomation
 from automation.profile import ProfileAutomation
 from automation.forum import ForumAutomation
 from automation.guest import GuestPostAutomation
+from automation.email_confirmation import EmailConfirmationAutomation
 
 # Load environment variables
 load_dotenv()
@@ -43,6 +44,7 @@ def get_automation_class(task_type: str):
         'forum': ForumAutomation,
         'guest': GuestPostAutomation,
         'guestposting': GuestPostAutomation,  # Alias
+        'email_confirmation_click': EmailConfirmationAutomation,
     }
     return automation_classes.get(task_type)
 
@@ -69,8 +71,11 @@ def process_task(api_client: LaravelAPIClient, task: dict):
         if not automation_class:
             raise ValueError(f"Unknown task type: {task_type}")
         
-        # Get proxy if needed
-        proxies = api_client.get_proxies()
+        # Get proxy if needed - prefer country match from campaign
+        campaign = api_client.get_campaign(task['campaign_id'])
+        campaign_country = campaign.get('company_country') or campaign.get('country_name')
+        
+        proxies = api_client.get_proxies(country=campaign_country, prefer_country=True)
         proxy = proxies[0] if proxies else None
         
         # Execute automation

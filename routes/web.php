@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\UserCampaignController;
@@ -29,6 +31,14 @@ Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Password Reset Routes
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+Route::get('/forgot-password', [ForgotPasswordController::class, 'show'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+
 // Email Verification Routes (accessible without verified middleware)
 use App\Http\Controllers\Auth\EmailVerificationController;
 Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
@@ -42,10 +52,28 @@ Route::post('/email/verification-notification', [EmailVerificationController::cl
     ->name('verification.send');
 // Authentication Routes end
 
+// Health check endpoint (for monitoring)
+use App\Http\Controllers\HealthController;
+Route::get('/health', [HealthController::class, 'check'])->name('health');
+
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/pricing', [SubscriptionController::class, 'index'])->name('pricing');
 Route::get('/plans', [SubscriptionController::class, 'index'])->name('plans');
+
+// Marketing pages
+use App\Http\Controllers\AboutController;
+use App\Http\Controllers\FeaturesController;
+use App\Http\Controllers\ContactController;
+Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::get('/features', [FeaturesController::class, 'index'])->name('features');
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+// Blog Routes
+use App\Http\Controllers\BlogController;
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Stripe webhook (no CSRF protection)
 Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');
@@ -92,8 +120,22 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::get('{campaign}/edit',  [UserCampaignController::class,'edit'])->name('edit');
         Route::put('{campaign}',       [UserCampaignController::class,'update'])->name('update');
         Route::delete('{campaign}',    [UserCampaignController::class,'destroy'])->name('destroy');
+        Route::post('{campaign}/pause', [UserCampaignController::class, 'pause'])->name('pause');
+        Route::post('{campaign}/resume', [UserCampaignController::class, 'resume'])->name('resume');
         Route::get('{campaign}/backlinks', [BacklinkController::class, 'index'])->name('backlinks');
      });
+  
+  Route::get('/campaigns/export', [UserCampaignController::class, 'export'])->name('campaigns.export');
+  Route::get('/reports/export', [ReportsController::class, 'export'])->name('reports.export');
+
+    // Backlinks Management (all user's backlinks)
+    Route::prefix('backlinks')
+        ->name('backlinks.')
+        ->group(function() {
+            Route::get('/', [BacklinkController::class, 'all'])->name('index');
+            Route::get('/export', [BacklinkController::class, 'export'])->name('export');
+            Route::post('/{id}/recheck', [BacklinkController::class, 'recheck'])->name('recheck');
+        });
 
     // Domain Management
     Route::resource('domains', DomainController::class);
@@ -122,6 +164,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');

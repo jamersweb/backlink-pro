@@ -16,7 +16,9 @@ class SubscriptionController extends Controller
 {
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        if (config('services.stripe.secret')) {
+            Stripe::setApiKey(config('services.stripe.secret'));
+        }
     }
 
     /**
@@ -24,12 +26,20 @@ class SubscriptionController extends Controller
      */
     public function index()
     {
-        $plans = Plan::active()->ordered()->get();
-        
-        // If no plans exist, return empty array (will show empty state)
-        if ($plans->isEmpty()) {
-            $plans = collect([]);
-        }
+        $plans = Plan::active()->ordered()->get()->map(function($plan) {
+            return [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'slug' => $plan->slug,
+                'description' => $plan->description,
+                'price' => (float) $plan->price,
+                'billing_interval' => $plan->billing_interval,
+                'features' => $plan->features ?? [],
+                'max_domains' => $plan->max_domains,
+                'max_campaigns' => $plan->max_campaigns,
+                'daily_backlink_limit' => $plan->daily_backlink_limit,
+            ];
+        });
         
         return Inertia::render('Plans', [
             'plans' => $plans,
@@ -145,15 +155,22 @@ class SubscriptionController extends Controller
     /**
      * Create Stripe checkout session
      */
-    public function checkout(Request $request, $planId)
+    public function checkout(Request $request, $plan)
     {
-        $plan = Plan::findOrFail($planId);
+        // Try to find by ID first, then by slug
+        $planModel = Plan::where('id', $plan)
+            ->orWhere('slug', $plan)
+            ->firstOrFail();
         
         // If free plan, just assign it directly
-        if ($plan->price == 0) {
+        if ($planModel->price == 0) {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Please login to activate the free plan.');
+            }
+            
             $user = Auth::user();
             $user->update([
-                'plan_id' => $plan->id,
+                'plan_id' => $planModel->id,
                 'subscription_status' => 'active',
             ]);
             
@@ -194,12 +211,12 @@ class SubscriptionController extends Controller
                     'price_data' => [
                         'currency' => 'usd',
                         'product_data' => [
-                            'name' => $plan->name . ' Plan',
-                            'description' => $plan->description,
+                            'name' => $planModel->name . ' Plan',
+                            'description' => $planModel->description,
                         ],
-                        'unit_amount' => (int)($plan->price * 100), // Convert to cents
+                        'unit_amount' => (int)($planModel->price * 100), // Convert to cents
                         'recurring' => [
-                            'interval' => $plan->billing_interval === 'yearly' ? 'year' : 'month',
+                            'interval' => $planModel->billing_interval === 'yearly' ? 'year' : 'month',
                         ],
                     ],
                     'quantity' => 1,
@@ -209,12 +226,12 @@ class SubscriptionController extends Controller
                 'cancel_url' => route('subscription.cancel-page'),
                 'metadata' => [
                     'user_id' => $user->id,
-                    'plan_id' => $plan->id,
+                    'plan_id' => $planModel->id,
                 ],
                 'subscription_data' => [
                     'metadata' => [
                         'user_id' => $user->id,
-                        'plan_id' => $plan->id,
+                        'plan_id' => $planModel->id,
                     ],
                 ],
             ]);

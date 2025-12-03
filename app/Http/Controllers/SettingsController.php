@@ -15,8 +15,28 @@ class SettingsController extends Controller
      */
     public function index()
     {
+        $user = Auth::user();
+        
+        // Load plan and subscription info
+        $plan = $user->plan;
+        $connectedAccounts = $user->connectedAccounts()
+            ->where('provider', 'google')
+            ->withCount('campaigns')
+            ->latest()
+            ->get();
+
         return Inertia::render('Settings/Index', [
-            'user' => Auth::user()->only(['id', 'name', 'email', 'created_at']),
+            'user' => $user->only(['id', 'name', 'email', 'created_at', 'plan_id', 'subscription_status', 'stripe_customer_id', 'trial_ends_at']),
+            'plan' => $plan ? [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'price' => $plan->price,
+                'billing_interval' => $plan->billing_interval,
+                'max_domains' => $plan->max_domains,
+                'max_campaigns' => $plan->max_campaigns,
+                'daily_backlink_limit' => $plan->daily_backlink_limit,
+            ] : null,
+            'connectedAccounts' => $connectedAccounts,
         ]);
     }
 

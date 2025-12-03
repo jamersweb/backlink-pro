@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AutomationTask;
+use App\Services\RateLimitingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -18,6 +19,18 @@ class TaskController extends Controller
         $apiToken = $request->header('X-API-Token');
         if ($apiToken !== config('app.api_token')) {
             return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check API rate limit (100 requests per hour per worker)
+        $workerId = $request->header('X-Worker-ID', 'unknown');
+        $maxRequests = config('app.api_rate_limit', 100);
+        
+        if (!RateLimitingService::checkApiRateLimit($workerId, $maxRequests, 60)) {
+            return response()->json([
+                'error' => 'Rate limit exceeded',
+                'message' => 'API rate limit exceeded. Please wait before making more requests.',
+                'retry_after' => 3600, // seconds
+            ], 429);
         }
 
         $limit = $request->get('limit', 10);

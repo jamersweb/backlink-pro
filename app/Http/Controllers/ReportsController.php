@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Backlink;
+use App\Services\ExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -88,6 +89,88 @@ class ReportsController extends Controller
                 'end_date' => $endDate,
             ],
         ]);
+    }
+
+    /**
+     * Export reports data
+     */
+    public function export(Request $request)
+    {
+        $user = Auth::user();
+        $campaignIds = Campaign::where('user_id', $user->id)->pluck('id');
+
+        $startDate = $request->get('start_date', now()->subDays(30)->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $format = $request->get('format', 'csv');
+
+        // Get campaign performance data
+        $campaignPerformance = Campaign::where('user_id', $user->id)
+            ->withCount(['backlinks', 'backlinks as verified_backlinks_count' => function($query) {
+                $query->where('status', 'verified');
+            }])
+            ->get()
+            ->map(function($campaign) {
+                return [
+                    'id' => $campaign->id,
+                    'name' => $campaign->name,
+                    'status' => $campaign->status,
+                    'total_backlinks' => $campaign->backlinks_count,
+                    'verified_backlinks' => $campaign->verified_backlinks_count,
+                    'success_rate' => $campaign->backlinks_count > 0 
+                        ? round(($campaign->verified_backlinks_count / $campaign->backlinks_count) * 100, 2)
+                        : 0,
+                    'created_at' => $campaign->created_at->toDateTimeString(),
+                ];
+            });
+
+        // Get daily backlinks
+        $dailyBacklinks = Backlink::whereIn('campaign_id', $campaignIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(function($item) {
+                return [
+                    'date' => $item->date,
+                    'count' => $item->count,
+                ];
+            });
+
+        if ($format === 'json') {
+            $data = [
+                'report_period' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                ],
+                'campaign_performance' => $campaignPerformance,
+                'daily_backlinks' => $dailyBacklinks,
+            ];
+
+            return ExportService::exportJson(
+                $data,
+                'reports-' . now()->format('Y-m-d') . '.json'
+            );
+        }
+
+        // CSV export
+        $headers = ['Campaign Name', 'Status', 'Total Backlinks', 'Verified Backlinks', 'Success Rate %', 'Created At'];
+        $data = $campaignPerformance->map(function($campaign) {
+            return [
+                $campaign['name'],
+                $campaign['status'],
+                $campaign['total_backlinks'],
+                $campaign['verified_backlinks'],
+                $campaign['success_rate'],
+                $campaign['created_at'],
+            ];
+        })->toArray();
+
+        return ExportService::exportCsv(
+            $data,
+            $headers,
+            'reports-' . now()->format('Y-m-d') . '.csv'
+        );
     }
 }
 

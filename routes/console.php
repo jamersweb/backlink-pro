@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 
 // Schedule campaign job to run every hour
 Schedule::job(new ScheduleCampaignJob)->hourly();
+
+// Schedule proxy health checks
+Schedule::command('proxy:check-health --unhealthy')->hourly();
+Schedule::command('proxy:check-health --all')->daily();

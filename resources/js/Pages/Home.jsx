@@ -14,6 +14,9 @@ export default function Home() {
                             </Link>
                         </div>
                         <div className="hidden md:flex items-center space-x-8">
+                            <Link href="/blog" className="text-gray-700 hover:text-red-600 font-medium transition-colors">
+                                Blog
+                            </Link>
                             <Link href="/pricing" className="text-gray-700 hover:text-red-600 font-medium transition-colors">
                                 Pricing
                             </Link>
@@ -35,32 +38,101 @@ export default function Home() {
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-br from-red-50 via-white to-green-50 pt-20 pb-32">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center max-w-4xl mx-auto">
-                        <div className="inline-block mb-6">
-                            <span className="bg-gradient-to-r from-red-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                                🚀 On Auto-Pilot
-                            </span>
+                {/* Decorative Background Elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+                    <div className="absolute top-0 right-1/4 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-8 left-1/2 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        {/* Left Column - Text Content */}
+                        <div className="text-center lg:text-left">
+                            <div className="inline-block mb-6">
+                                <span className="bg-gradient-to-r from-red-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                                    🚀 On Auto-Pilot
+                                </span>
+                            </div>
+                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                                <span className="bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
+                                    Drive More Organic Traffic
+                                </span>
+                                <br />
+                                <span className="text-gray-900">to Your Website</span>
+                            </h1>
+                            <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                                Automate your backlink building process. Build quality links, track performance, and grow your SEO effortlessly.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+                                <Link href="/register">
+                                    <Button variant="primary" className="text-lg px-8 py-4 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all">
+                                        Start for Free
+                                    </Button>
+                                </Link>
+                                <p className="text-sm text-gray-500">No credit card required</p>
+                            </div>
                         </div>
-                        <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-                            <span className="bg-gradient-to-r from-red-600 via-red-500 to-green-600 bg-clip-text text-transparent">
-                                Drive More Organic Traffic
-                            </span>
-                            <br />
-                            <span className="text-gray-900">to Your Website</span>
-                        </h1>
-                        <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-                            Automate your backlink building process. Build quality links, track performance, and grow your SEO effortlessly.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                            <Link href="/register">
-                                <Button variant="primary" className="text-lg px-8 py-4 shadow-xl hover:shadow-2xl">
-                                    Start for Free
-                                </Button>
-                            </Link>
-                            <p className="text-sm text-gray-500">No credit card required</p>
+
+                        {/* Right Column - Hero Image/Video */}
+                        <div className="relative">
+                            <div className="relative rounded-2xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                                {/* Video Background Option */}
+                                <div className="relative w-full h-[500px] bg-gradient-to-br from-red-500 via-purple-500 to-green-500 rounded-2xl overflow-hidden">
+                                    {/* Placeholder for video - you can replace this with an actual video element */}
+                                    <video 
+                                        className="w-full h-full object-cover opacity-90"
+                                        autoPlay 
+                                        loop 
+                                        muted 
+                                        playsInline
+                                        poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ef4444;stop-opacity:1' /%3E%3Cstop offset='50%25' style='stop-color:%23a855f7;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%2316a34a;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='600' fill='url(%23grad)'/%3E%3C/svg%3E"
+                                    >
+                                        {/* Add your video source here when available */}
+                                        {/* <source src="/videos/hero-video.mp4" type="video/mp4" /> */}
+                                    </video>
+                                    
+                                    {/* Fallback Image/Illustration */}
+                                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-500/90 via-purple-500/90 to-green-500/90">
+                                        <div className="text-center p-8">
+                                            <div className="mb-6">
+                                                <div className="inline-block p-8 bg-white/20 backdrop-blur-lg rounded-3xl border-4 border-white/30 shadow-2xl">
+                                                    <svg className="w-32 h-32 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <h3 className="text-3xl font-bold text-white mb-2">Automated SEO</h3>
+                                            <p className="text-white/90 text-lg">Build Backlinks Faster</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Decorative Elements */}
+                                    <div className="absolute top-4 right-4 w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm border-2 border-white/30"></div>
+                                    <div className="absolute bottom-4 left-4 w-16 h-16 bg-white/20 rounded-full backdrop-blur-sm border-2 border-white/30"></div>
+                                </div>
+
+                                {/* Floating Stats Cards */}
+                                <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4">
+                                    <div className="bg-white rounded-xl p-4 shadow-xl border-2 border-green-200 transform hover:scale-110 transition-transform">
+                                        <div className="text-2xl font-bold text-green-600">350+</div>
+                                        <div className="text-xs text-gray-600">Links/Month</div>
+                                    </div>
+                                    <div className="bg-white rounded-xl p-4 shadow-xl border-2 border-red-200 transform hover:scale-110 transition-transform">
+                                        <div className="text-2xl font-bold text-red-600">95%</div>
+                                        <div className="text-xs text-gray-600">Success Rate</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Scroll Indicator */}
+                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
                 </div>
             </section>
 
@@ -301,10 +373,16 @@ export default function Home() {
                             </ul>
                         </div>
                         <div>
+                            <h4 className="text-white font-semibold mb-4">Company</h4>
+                            <ul className="space-y-2 text-sm">
+                                <li><Link href="/about" className="hover:text-green-400 transition-colors">About</Link></li>
+                                <li><Link href="/contact" className="hover:text-green-400 transition-colors">Contact</Link></li>
+                            </ul>
+                        </div>
+                        <div>
                             <h4 className="text-white font-semibold mb-4">Support</h4>
                             <ul className="space-y-2 text-sm">
                                 <li><Link href="/help" className="hover:text-green-400 transition-colors">Help Center</Link></li>
-                                <li><Link href="/contact" className="hover:text-green-400 transition-colors">Contact</Link></li>
                             </ul>
                         </div>
                         <div>

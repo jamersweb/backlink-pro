@@ -3,7 +3,7 @@ import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 
-export default function ProfileIndex({ user, plan, subscription, subscription_status, payment_method }) {
+export default function ProfileIndex({ user, plan, subscription, subscription_status, payment_method, upgradePlans = [] }) {
     const getStatusBadge = (status) => {
         const colors = {
             active: 'bg-green-100 text-green-800',
@@ -70,14 +70,14 @@ export default function ProfileIndex({ user, plan, subscription, subscription_st
                 </Card>
 
                 {/* Subscription Info */}
-                {(plan || subscription) && (
-                    <Card title="Subscription Information">
-                        <div className="space-y-4">
-                            {plan && (
+                <Card title="Subscription Information">
+                    <div className="space-y-4">
+                        {plan ? (
+                            <>
                                 <div className="flex items-center justify-between pb-4 border-b">
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                                        <p className="text-sm text-gray-600">Current Plan</p>
+                                        <p className="text-sm text-gray-600">{plan.description || 'Current Plan'}</p>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-2xl font-bold text-gray-900">
@@ -87,58 +87,154 @@ export default function ProfileIndex({ user, plan, subscription, subscription_st
                                         {subscription_status && getStatusBadge(subscription_status)}
                                     </div>
                                 </div>
-                            )}
-                            
-                            {subscription && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                                    <div>
-                                        <label className="text-sm font-medium text-gray-500">Subscription Start</label>
-                                        <p className="text-lg text-gray-900 font-semibold">
-                                            {formatDate(subscription.current_period_start)}
-                                        </p>
+                                
+                                {/* Plan Features */}
+                                {plan.features && plan.features.length > 0 && (
+                                    <div className="pt-4 border-t">
+                                        <label className="text-sm font-medium text-gray-500 mb-2 block">Plan Features</label>
+                                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            {plan.features.map((feature, index) => (
+                                                <li key={index} className="flex items-center text-sm text-gray-700">
+                                                    <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    {feature}
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-gray-500">Subscription End</label>
-                                        <p className="text-lg text-gray-900 font-semibold">
-                                            {formatDate(subscription.current_period_end)}
-                                        </p>
-                                    </div>
-                                    {subscription.cancel_at_period_end && (
-                                        <div className="md:col-span-2">
-                                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                                                <p className="text-sm text-yellow-800">
-                                                    ⚠️ Your subscription will be cancelled on {formatDate(subscription.current_period_end)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            
-                            {payment_method && (
+                                )}
+                                
+                                {/* Plan Limits */}
                                 <div className="pt-4 border-t">
-                                    <label className="text-sm font-medium text-gray-500">Payment Method</label>
-                                    <div className="mt-2 flex items-center space-x-3">
-                                        <span className="text-2xl">{getCardBrandIcon(payment_method.card?.brand)}</span>
+                                    <label className="text-sm font-medium text-gray-500 mb-2 block">Plan Limits</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
+                                            <p className="text-xs text-gray-500">Max Domains</p>
                                             <p className="text-lg font-semibold text-gray-900">
-                                                {payment_method.card?.brand ? payment_method.card.brand.charAt(0).toUpperCase() + payment_method.card.brand.slice(1) : 'Card'} 
-                                                {' •••• '}
-                                                {payment_method.card?.last4}
+                                                {plan.max_domains === -1 ? 'Unlimited' : plan.max_domains}
                                             </p>
-                                            <p className="text-sm text-gray-500">
-                                                Expires {payment_method.card?.exp_month}/{payment_method.card?.exp_year}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Max Campaigns</p>
+                                            <p className="text-lg font-semibold text-gray-900">
+                                                {plan.max_campaigns === -1 ? 'Unlimited' : plan.max_campaigns}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500">Daily Backlinks</p>
+                                            <p className="text-lg font-semibold text-gray-900">
+                                                {plan.daily_backlink_limit === -1 ? 'Unlimited' : plan.daily_backlink_limit}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                            
-                            <div className="pt-4 border-t">
-                                <Link href="/subscription/manage">
-                                    <Button variant="primary" className="w-full">Manage Subscription</Button>
+                            </>
+                        ) : (
+                            <div className="text-center py-4">
+                                <p className="text-gray-600 mb-4">You don't have an active subscription plan.</p>
+                                <Link href="/plans">
+                                    <Button variant="primary">View Plans</Button>
                                 </Link>
                             </div>
+                        )}
+                        
+                        {subscription && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Subscription Start</label>
+                                    <p className="text-lg text-gray-900 font-semibold">
+                                        {formatDate(subscription.current_period_start)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Subscription End</label>
+                                    <p className="text-lg text-gray-900 font-semibold">
+                                        {formatDate(subscription.current_period_end)}
+                                    </p>
+                                </div>
+                                {subscription.cancel_at_period_end && (
+                                    <div className="md:col-span-2">
+                                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                            <p className="text-sm text-yellow-800">
+                                                ⚠️ Your subscription will be cancelled on {formatDate(subscription.current_period_end)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {payment_method && (
+                            <div className="pt-4 border-t">
+                                <label className="text-sm font-medium text-gray-500">Payment Method</label>
+                                <div className="mt-2 flex items-center space-x-3">
+                                    <span className="text-2xl">{getCardBrandIcon(payment_method.card?.brand)}</span>
+                                    <div>
+                                        <p className="text-lg font-semibold text-gray-900">
+                                            {payment_method.card?.brand ? payment_method.card.brand.charAt(0).toUpperCase() + payment_method.card.brand.slice(1) : 'Card'} 
+                                            {' •••• '}
+                                            {payment_method.card?.last4}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            Expires {payment_method.card?.exp_month}/{payment_method.card?.exp_year}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="pt-4 border-t flex gap-2">
+                            <Link href="/subscription/manage" className="flex-1">
+                                <Button variant="outline" className="w-full">Manage Subscription</Button>
+                            </Link>
+                            <Link href="/plans" className="flex-1">
+                                <Button variant="primary" className="w-full">Change Plan</Button>
+                            </Link>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Upgrade Plans */}
+                {upgradePlans && upgradePlans.length > 0 && (
+                    <Card title="Upgrade Your Plan">
+                        <p className="text-sm text-gray-600 mb-4">
+                            {plan ? `Upgrade from ${plan.name} to unlock more features:` : 'Choose a plan to get started:'}
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {upgradePlans.map((upgradePlan) => (
+                                <div key={upgradePlan.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 transition-colors">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-lg font-semibold text-gray-900">{upgradePlan.name}</h4>
+                                        <div className="text-right">
+                                            <div className="text-xl font-bold text-gray-900">
+                                                ${upgradePlan.price}
+                                                <span className="text-xs font-normal text-gray-600">/{upgradePlan.billing_interval}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {upgradePlan.description && (
+                                        <p className="text-sm text-gray-600 mb-3">{upgradePlan.description}</p>
+                                    )}
+                                    {upgradePlan.features && upgradePlan.features.length > 0 && (
+                                        <ul className="text-xs text-gray-600 mb-4 space-y-1">
+                                            {upgradePlan.features.slice(0, 3).map((feature, index) => (
+                                                <li key={index} className="flex items-start">
+                                                    <svg className="h-3 w-3 text-green-500 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    {feature}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                    <Link href={`/subscription/checkout/${upgradePlan.id}`} className="block">
+                                        <Button variant="primary" className="w-full text-sm">
+                                            Upgrade to {upgradePlan.name}
+                                        </Button>
+                                    </Link>
+                                </div>
+                            ))}
                         </div>
                     </Card>
                 )}

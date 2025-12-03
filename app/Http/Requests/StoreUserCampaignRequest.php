@@ -11,30 +11,86 @@ class StoreUserCampaignRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation()
+    {
+        $input = $this->all();
+        
+        // Trim all string values
+        foreach ($input as $key => $value) {
+            if (is_string($value)) {
+                $input[$key] = trim($value);
+            }
+        }
+        
+        // Convert empty strings to null for optional fields
+        if (isset($input['domain_id']) && $input['domain_id'] === '') {
+            $input['domain_id'] = null;
+        }
+        if (isset($input['company_city']) && $input['company_city'] === '') {
+            $input['company_city'] = null;
+        }
+        if (isset($input['gmail_account_id']) && $input['gmail_account_id'] === '') {
+            $input['gmail_account_id'] = null;
+        }
+        
+        // Convert string IDs to integers
+        if (isset($input['company_country']) && $input['company_country'] !== null && $input['company_country'] !== '') {
+            $input['company_country'] = (int) $input['company_country'];
+        }
+        if (isset($input['company_state']) && $input['company_state'] !== null && $input['company_state'] !== '') {
+            $input['company_state'] = (int) $input['company_state'];
+        }
+        if (isset($input['company_city']) && $input['company_city'] !== null && $input['company_city'] !== '') {
+            $input['company_city'] = (int) $input['company_city'];
+        }
+        if (isset($input['gmail_account_id']) && $input['gmail_account_id'] !== null && $input['gmail_account_id'] !== '') {
+            $input['gmail_account_id'] = (int) $input['gmail_account_id'];
+        }
+        
+        // Clear country_name if web_target is worldwide
+        if (isset($input['web_target']) && $input['web_target'] === 'worldwide') {
+            $input['country_name'] = '';
+        }
+        
+        // Clear gmail/password if gmail_account_id is set
+        if (isset($input['gmail_account_id']) && $input['gmail_account_id'] !== null) {
+            $input['gmail'] = '';
+            $input['password'] = '';
+        }
+        
+        $this->merge($input);
+    }
+
     public function rules()
     {
+        // For update, company_logo is optional (can keep existing)
+        $logoRule = $this->isMethod('PUT') || $this->isMethod('PATCH') 
+            ? 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+            : 'required|image|mimes:jpg,jpeg,png|max:2048';
+        
         return [
+            'name'          => 'nullable|string|max:255',
             'web_name'      => 'required|string|max:255',
             'web_url'       => 'required|url',
-            'web_keyword'   => 'required|string|max:255',
+            'web_keyword'   => 'required|string|max:1000', // Increased to allow multiple comma-separated keywords
             'web_about'     => 'required|string',
             'web_target'    => 'required|in:worldwide,specific_country',
             'country_name'  => 'required_if:web_target,specific_country|string|max:255',
             'company_name'          => 'required|string|max:255',
-            'company_logo'          => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'company_logo'          => $logoRule,
             'company_email_address' => 'required|email',
             'company_address'       => 'required|string',
             'company_number'        => 'required|string|max:50',
+            'domain_id'             => 'nullable|integer|exists:domains,id',
             'company_country'       => 'required|integer|exists:countries,id',
             'company_state'         => 'required|integer|exists:states,id',
             'company_city'          => 'nullable|integer|exists:cities,id',
             'gmail_account_id'      => 'nullable|integer|exists:connected_accounts,id',
-            'gmail'                 => 'required_without:gmail_account_id|email',
-            'password'               => 'required_without:gmail_account_id|string',
-            // These are auto-set from plan, but we'll validate they exist
-            'backlink_types'        => 'nullable|array',
-            'daily_limit'           => 'nullable|integer|min:1',
-            'total_limit'           => 'nullable|integer|min:1',
+            'gmail'                 => 'required_without:gmail_account_id|nullable|email',
+            'password'               => 'required_without:gmail_account_id|nullable|string',
         ];
     }
 

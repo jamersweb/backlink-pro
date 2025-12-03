@@ -4,6 +4,8 @@ import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
+import Select from '../../Components/Shared/Select';
+import Textarea from '../../Components/Shared/Textarea';
 
 export default function CampaignCreate({ countries, states, cities, domains, connectedAccounts, planSettings, plan }) {
     const { flash } = usePage().props;
@@ -129,54 +131,50 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             error={errors.name}
                             required
                         />
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Domain <span className="text-xs text-gray-500">(Optional)</span>
-                            </label>
-                            {domains && domains.length > 0 ? (
-                                <select
-                                    name="domain_id"
-                                    value={data.domain_id}
-                                    onChange={(e) => setData('domain_id', e.target.value)}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                >
-                                    <option value="">Select a domain (optional)</option>
-                                    {domains.map((domain) => (
-                                        <option key={domain.id} value={domain.id}>
-                                            {domain.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                                    <p className="text-sm text-yellow-800 mb-2">
-                                        You don't have any domains yet. You can create a campaign without selecting a domain, or create a domain first.
-                                    </p>
-                                    <Link
-                                        href="/domains/create"
-                                        className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                                    >
-                                        Create Domain →
-                                    </Link>
+                        {domains && domains.length > 0 ? (
+                            <Select
+                                label="Domain (Optional)"
+                                name="domain_id"
+                                value={data.domain_id}
+                                onChange={(e) => setData('domain_id', e.target.value)}
+                                error={errors.domain_id}
+                            >
+                                <option value="">Select a domain (optional)</option>
+                                {domains.map((domain) => (
+                                    <option key={domain.id} value={domain.id}>
+                                        {domain.name}
+                                    </option>
+                                ))}
+                            </Select>
+                        ) : (
+                            <div className="mb-5 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                    <div className="text-2xl">📋</div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-yellow-900 mb-2">
+                                            No domains available
+                                        </p>
+                                        <p className="text-sm text-yellow-800 mb-3">
+                                            You don't have any domains yet. You can create a campaign without selecting a domain, or create a domain first.
+                                        </p>
+                                        <Link
+                                            href="/domains/create"
+                                            className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-800 transition-colors"
+                                        >
+                                            <span className="mr-1">➕</span> Create Domain →
+                                        </Link>
+                                    </div>
                                 </div>
-                            )}
-                            {errors.domain_id && (
-                                <p className="mt-1 text-sm text-red-600">{errors.domain_id}</p>
-                            )}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Target URLs (one per line)
-                            </label>
-                            <textarea
-                                name="target_urls"
-                                value={data.target_urls?.join('\n') || ''}
-                                onChange={(e) => setData('target_urls', e.target.value.split('\n').filter(url => url.trim()))}
-                                rows={5}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                placeholder="https://example.com/page1&#10;https://example.com/page2"
-                            />
-                        </div>
+                            </div>
+                        )}
+                        <Textarea
+                            label="Target URLs (one per line)"
+                            name="target_urls"
+                            value={data.target_urls?.join('\n') || ''}
+                            onChange={(e) => setData('target_urls', e.target.value.split('\n').filter(url => url.trim()))}
+                            rows={5}
+                            placeholder="https://example.com/page1&#10;https://example.com/page2"
+                        />
                     </div>
                 );
             case 2:
@@ -191,19 +189,26 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             error={errors.company_name}
                             required
                         />
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Company Logo * <span className="text-xs text-gray-500">(JPG, PNG, Max 2MB)</span>
+                        <div className="mb-5">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Company Logo * <span className="text-xs text-gray-500 font-normal">(JPG, PNG, Max 2MB)</span>
                             </label>
-                            <input
-                                type="file"
-                                name="company_logo"
-                                accept="image/jpeg,image/png,image/jpg"
-                                onChange={(e) => setData('company_logo', e.target.files[0])}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="file"
+                                    name="company_logo"
+                                    accept="image/jpeg,image/png,image/jpg"
+                                    onChange={(e) => setData('company_logo', e.target.files[0])}
+                                    className="block w-full h-12 px-4 py-2 text-base text-gray-500 file:mr-4 file:py-2 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-green-500 file:to-green-600 file:text-white hover:file:from-green-600 hover:file:to-green-700 file:cursor-pointer file:transition-all file:duration-200 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                                />
+                            </div>
                             {errors.company_logo && (
-                                <p className="mt-1 text-sm text-red-600">{errors.company_logo}</p>
+                                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                    {errors.company_logo}
+                                </p>
                             )}
                         </div>
                         <Input
@@ -215,22 +220,15 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             error={errors.company_email_address}
                             required
                         />
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Company Address *
-                            </label>
-                            <textarea
-                                name="company_address"
-                                value={data.company_address}
-                                onChange={(e) => setData('company_address', e.target.value)}
-                                rows={3}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                required
-                            />
-                            {errors.company_address && (
-                                <p className="mt-1 text-sm text-red-600">{errors.company_address}</p>
-                            )}
-                        </div>
+                        <Textarea
+                            label="Company Address *"
+                            name="company_address"
+                            value={data.company_address}
+                            onChange={(e) => setData('company_address', e.target.value)}
+                            rows={3}
+                            error={errors.company_address}
+                            required
+                        />
                         <Input
                             label="Company Phone Number *"
                             name="company_number"
@@ -239,84 +237,60 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             error={errors.company_number}
                             required
                         />
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Company Country *
-                            </label>
-                            <select
-                                name="company_country"
-                                value={data.company_country}
+                        <Select
+                            label="Company Country *"
+                            name="company_country"
+                            value={data.company_country}
+                            onChange={(e) => {
+                                setData('company_country', e.target.value);
+                                setData('company_state', ''); // Reset state when country changes
+                                setData('company_city', ''); // Reset city when country changes
+                            }}
+                            error={errors.company_country}
+                            required
+                        >
+                            <option value="">Select a country</option>
+                            {countries?.map((country) => (
+                                <option key={country.id} value={country.id}>
+                                    {country.name}
+                                </option>
+                            ))}
+                        </Select>
+                        {data.company_country && (
+                            <Select
+                                label="Company State *"
+                                name="company_state"
+                                value={data.company_state}
                                 onChange={(e) => {
-                                    setData('company_country', e.target.value);
-                                    setData('company_state', ''); // Reset state when country changes
-                                    setData('company_city', ''); // Reset city when country changes
+                                    setData('company_state', e.target.value);
+                                    setData('company_city', ''); // Reset city when state changes
                                 }}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                error={errors.company_state}
                                 required
                             >
-                                <option value="">Select a country</option>
-                                {countries?.map((country) => (
-                                    <option key={country.id} value={country.id}>
-                                        {country.name}
+                                <option value="">Select a state</option>
+                                {states?.filter(s => String(s.country_id) === String(data.company_country)).map((state) => (
+                                    <option key={state.id} value={state.id}>
+                                        {state.name}
                                     </option>
                                 ))}
-                            </select>
-                            {errors.company_country && (
-                                <p className="mt-1 text-sm text-red-600">{errors.company_country}</p>
-                            )}
-                        </div>
-                        {data.company_country && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Company State *
-                                </label>
-                                <select
-                                    name="company_state"
-                                    value={data.company_state}
-                                    onChange={(e) => {
-                                        setData('company_state', e.target.value);
-                                        setData('company_city', ''); // Reset city when state changes
-                                    }}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    required
-                                >
-                                    <option value="">Select a state</option>
-                                    {states?.filter(s => String(s.country_id) === String(data.company_country)).map((state) => (
-                                        <option key={state.id} value={state.id}>
-                                            {state.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.company_state && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.company_state}</p>
-                                )}
-                                {states?.filter(s => String(s.country_id) === String(data.company_country)).length === 0 && (
-                                    <p className="mt-1 text-sm text-yellow-600">No states available for this country. Please select a different country or contact support.</p>
-                                )}
-                            </div>
+                            </Select>
                         )}
                         {data.company_state && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Company City
-                                </label>
-                                <select
-                                    name="company_city"
-                                    value={data.company_city}
-                                    onChange={(e) => setData('company_city', e.target.value)}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                >
-                                    <option value="">Select a city</option>
-                                    {cities?.filter(c => String(c.state_id) === String(data.company_state)).map((city) => (
-                                        <option key={city.id} value={city.id}>
-                                            {city.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.company_city && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.company_city}</p>
-                                )}
-                            </div>
+                            <Select
+                                label="Company City"
+                                name="company_city"
+                                value={data.company_city}
+                                onChange={(e) => setData('company_city', e.target.value)}
+                                error={errors.company_city}
+                            >
+                                <option value="">Select a city</option>
+                                {cities?.filter(c => String(c.state_id) === String(data.company_state)).map((city) => (
+                                    <option key={city.id} value={city.id}>
+                                        {city.name}
+                                    </option>
+                                ))}
+                            </Select>
                         )}
                         <Input
                             label="Website Name *"
@@ -343,59 +317,37 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             error={errors.web_keyword}
                             required
                         />
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Website About *
-                            </label>
-                            <textarea
-                                name="web_about"
-                                value={data.web_about}
-                                onChange={(e) => setData('web_about', e.target.value)}
-                                rows={4}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        <Textarea
+                            label="Website About *"
+                            name="web_about"
+                            value={data.web_about}
+                            onChange={(e) => setData('web_about', e.target.value)}
+                            rows={4}
+                            error={errors.web_about}
+                            required
+                        />
+                        <Select
+                            label="Ranking Target *"
+                            name="web_target"
+                            value={data.web_target}
+                            onChange={(e) => setData('web_target', e.target.value)}
+                            error={errors.web_target}
+                            required
+                        >
+                            <option value="">Select target</option>
+                            <option value="worldwide">🌍 Worldwide</option>
+                            <option value="specific_country">📍 Specific Country</option>
+                        </Select>
+                        {data.web_target === 'specific_country' && (
+                            <Input
+                                label="Target Country Name *"
+                                name="country_name"
+                                value={data.country_name}
+                                onChange={(e) => setData('country_name', e.target.value)}
+                                placeholder="e.g., United States"
+                                error={errors.country_name}
                                 required
                             />
-                            {errors.web_about && (
-                                <p className="mt-1 text-sm text-red-600">{errors.web_about}</p>
-                            )}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Ranking Target *
-                            </label>
-                            <select
-                                name="web_target"
-                                value={data.web_target}
-                                onChange={(e) => setData('web_target', e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                required
-                            >
-                                <option value="">Select target</option>
-                                <option value="worldwide">Worldwide</option>
-                                <option value="specific_country">Specific Country</option>
-                            </select>
-                            {errors.web_target && (
-                                <p className="mt-1 text-sm text-red-600">{errors.web_target}</p>
-                            )}
-                        </div>
-                        {data.web_target === 'specific_country' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Target Country Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="country_name"
-                                    value={data.country_name}
-                                    onChange={(e) => setData('country_name', e.target.value)}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="e.g., United States"
-                                    required
-                                />
-                                {errors.country_name && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.country_name}</p>
-                                )}
-                            </div>
                         )}
                     </div>
                 );
@@ -403,19 +355,14 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                 return (
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium">Keywords</h3>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Keywords (one per line)
-                            </label>
-                            <textarea
-                                name="keywords"
-                                value={data.keywords?.join('\n') || ''}
-                                onChange={(e) => setData('keywords', e.target.value.split('\n').filter(k => k.trim()))}
-                                rows={6}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                placeholder="keyword 1&#10;keyword 2&#10;keyword 3"
-                            />
-                        </div>
+                        <Textarea
+                            label="Keywords (one per line)"
+                            name="keywords"
+                            value={data.keywords?.join('\n') || ''}
+                            onChange={(e) => setData('keywords', e.target.value.split('\n').filter(k => k.trim()))}
+                            rows={6}
+                            placeholder="keyword 1&#10;keyword 2&#10;keyword 3"
+                        />
                     </div>
                 );
             case 4:
@@ -485,37 +432,27 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                 return (
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium">Content Settings</h3>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Content Tone
-                            </label>
-                            <select
-                                name="content_tone"
-                                value={data.content_tone}
-                                onChange={(e) => setData('content_tone', e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            >
-                                <option value="professional">Professional</option>
-                                <option value="casual">Casual</option>
-                                <option value="friendly">Friendly</option>
-                                <option value="formal">Formal</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Anchor Text Strategy
-                            </label>
-                            <select
-                                name="anchor_text_strategy"
-                                value={data.anchor_text_strategy}
-                                onChange={(e) => setData('anchor_text_strategy', e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            >
-                                <option value="variation">Variation</option>
-                                <option value="exact">Exact Match</option>
-                                <option value="branded">Branded</option>
-                            </select>
-                        </div>
+                        <Select
+                            label="Content Tone"
+                            name="content_tone"
+                            value={data.content_tone}
+                            onChange={(e) => setData('content_tone', e.target.value)}
+                        >
+                            <option value="professional">💼 Professional</option>
+                            <option value="casual">😊 Casual</option>
+                            <option value="friendly">👋 Friendly</option>
+                            <option value="formal">🎩 Formal</option>
+                        </Select>
+                        <Select
+                            label="Anchor Text Strategy"
+                            name="anchor_text_strategy"
+                            value={data.anchor_text_strategy}
+                            onChange={(e) => setData('anchor_text_strategy', e.target.value)}
+                        >
+                            <option value="variation">🔄 Variation</option>
+                            <option value="exact">🎯 Exact Match</option>
+                            <option value="branded">🏷️ Branded</option>
+                        </Select>
                     </div>
                 );
             case 6:

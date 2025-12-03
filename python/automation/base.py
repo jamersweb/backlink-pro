@@ -11,6 +11,12 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Import captcha solver
+try:
+    from automation.captcha_solver import CaptchaSolver
+except ImportError:
+    CaptchaSolver = None
+
 
 class BaseAutomation(ABC):
     """Base class for all automation tasks"""
@@ -22,6 +28,7 @@ class BaseAutomation(ABC):
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
+        self.captcha_solver = CaptchaSolver(api_client) if CaptchaSolver else None
     
     def setup_browser(self):
         """Setup browser with proxy and stealth settings"""
@@ -104,6 +111,18 @@ class BaseAutomation(ABC):
                 self.page.screenshot(path=f"screenshots/{filename}")
             except Exception as e:
                 logger.warning(f"Failed to take screenshot: {e}")
+    
+    def solve_captcha_if_present(self) -> bool:
+        """Detect and solve captcha if present on page"""
+        if not self.captcha_solver or not self.page:
+            return False
+        
+        try:
+            solution = self.captcha_solver.detect_and_solve(self.page)
+            return solution is not None
+        except Exception as e:
+            logger.warning(f"Captcha solving failed: {e}")
+            return False
     
     def cleanup(self):
         """Cleanup browser resources"""

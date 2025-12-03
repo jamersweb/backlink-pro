@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\BacklinkController;
 use App\Http\Controllers\Api\SiteAccountController;
 use App\Http\Controllers\Api\ProxyController;
+use App\Http\Controllers\Api\LLMController;
+use App\Http\Controllers\Api\CaptchaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,13 +21,16 @@ use App\Http\Controllers\Api\ProxyController;
 |
 */
 
-Route::middleware('api')->group(function () {
+// API routes with rate limiting
+// Rate limit: 60 requests per minute per IP
+Route::middleware(['api', 'throttle:60,1'])->group(function () {
     // Campaign endpoints
     Route::get('campaigns', [CampaignController::class, 'index']);
     Route::get('campaigns/{id}', [CampaignController::class, 'show']);
     
     // Task endpoints (for Python workers)
-    Route::prefix('tasks')->group(function () {
+    // Higher rate limit for worker endpoints: 120 requests per minute
+    Route::prefix('tasks')->middleware('throttle:120,1')->group(function () {
         Route::get('/pending', [TaskController::class, 'getPendingTasks']);
         Route::post('/{id}/lock', [TaskController::class, 'lockTask']);
         Route::post('/{id}/unlock', [TaskController::class, 'unlockTask']);
@@ -46,4 +51,12 @@ Route::middleware('api')->group(function () {
     
     // Proxy endpoints (for Python workers)
     Route::get('/proxies', [ProxyController::class, 'index']);
+    
+    // LLM Content Generation
+    // Lower rate limit for expensive operations: 30 requests per minute
+    Route::post('/llm/generate', [LLMController::class, 'generate'])->middleware('throttle:30,1');
+    
+    // Captcha Solving
+    // Lower rate limit for expensive operations: 30 requests per minute
+    Route::post('/captcha/solve', [CaptchaController::class, 'solve'])->middleware('throttle:30,1');
 });

@@ -85,6 +85,53 @@ class ProfileController extends Controller
             }
         }
         
+        // Get available upgrade plans based on current plan
+        $upgradePlans = [];
+        if ($user->plan) {
+            $currentPlanSlug = $user->plan->slug;
+            $planOrder = ['free' => 1, 'starter' => 2, 'pro' => 3, 'agency' => 4];
+            $currentOrder = $planOrder[$currentPlanSlug] ?? 0;
+            
+            // Get all plans that are higher than current plan
+            $upgradePlans = \App\Models\Plan::where('is_active', true)
+                ->where(function($query) use ($planOrder, $currentOrder) {
+                    foreach ($planOrder as $slug => $order) {
+                        if ($order > $currentOrder) {
+                            $query->orWhere('slug', $slug);
+                        }
+                    }
+                })
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'slug', 'price', 'billing_interval', 'description', 'features'])
+                ->map(function($plan) {
+                    return [
+                        'id' => $plan->id,
+                        'name' => $plan->name,
+                        'slug' => $plan->slug,
+                        'price' => $plan->price,
+                        'billing_interval' => $plan->billing_interval,
+                        'description' => $plan->description,
+                        'features' => $plan->features,
+                    ];
+                });
+        } else {
+            // If no plan, show all plans
+            $upgradePlans = \App\Models\Plan::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'slug', 'price', 'billing_interval', 'description', 'features'])
+                ->map(function($plan) {
+                    return [
+                        'id' => $plan->id,
+                        'name' => $plan->name,
+                        'slug' => $plan->slug,
+                        'price' => $plan->price,
+                        'billing_interval' => $plan->billing_interval,
+                        'description' => $plan->description,
+                        'features' => $plan->features,
+                    ];
+                });
+        }
+        
         return Inertia::render('Profile/Index', [
             'user' => [
                 'id' => $user->id,
@@ -102,10 +149,16 @@ class ProfileController extends Controller
                 'slug' => $user->plan->slug,
                 'price' => $user->plan->price,
                 'billing_interval' => $user->plan->billing_interval,
+                'description' => $user->plan->description,
+                'features' => $user->plan->features,
+                'max_domains' => $user->plan->max_domains,
+                'max_campaigns' => $user->plan->max_campaigns,
+                'daily_backlink_limit' => $user->plan->daily_backlink_limit,
             ] : null,
             'subscription' => $subscription,
             'subscription_status' => $user->subscription_status,
             'payment_method' => $paymentMethod,
+            'upgradePlans' => $upgradePlans,
         ]);
     }
 }

@@ -57,9 +57,9 @@ class DashboardController extends Controller
             }
         }
         
-        // Get analytics preview (last 7 days)
+        // Get analytics preview (last 30 days for flexibility)
         $dailyBacklinks = Backlink::whereIn('campaign_id', $campaignIds)
-            ->whereBetween('created_at', [now()->subDays(7), now()])
+            ->whereBetween('created_at', [now()->subDays(30), now()])
             ->selectRaw('DATE(created_at) as date, count(*) as count')
             ->groupBy('date')
             ->orderBy('date')

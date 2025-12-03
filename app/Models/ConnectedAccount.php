@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 
 class ConnectedAccount extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'user_id',
         'provider',
@@ -60,7 +62,7 @@ class ConnectedAccount extends Model
      */
     public function setAccessTokenAttribute($value)
     {
-        $this->attributes['access_token'] = $value ? Crypt::encryptString($value) : null;
+        $this->attributes['access_token'] = ($value && $value !== '') ? Crypt::encryptString($value) : null;
     }
 
     /**
@@ -76,7 +78,7 @@ class ConnectedAccount extends Model
      */
     public function setRefreshTokenAttribute($value)
     {
-        $this->attributes['refresh_token'] = $value ? Crypt::encryptString($value) : null;
+        $this->attributes['refresh_token'] = ($value && $value !== '') ? Crypt::encryptString($value) : null;
     }
 
     /**

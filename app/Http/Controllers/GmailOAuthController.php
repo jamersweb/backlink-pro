@@ -79,10 +79,10 @@ class GmailOAuthController extends Controller
                 ]
             );
 
-            return redirect()->route('dashboard')
+            return redirect()->route('gmail.index')
                 ->with('success', 'Gmail account connected successfully!');
         } catch (\Exception $e) {
-            return redirect()->route('dashboard')
+            return redirect()->route('gmail.index')
                 ->with('error', 'Failed to connect Gmail: ' . $e->getMessage());
         }
     }
@@ -123,7 +123,7 @@ class GmailOAuthController extends Controller
             'status' => ConnectedAccount::STATUS_REVOKED,
         ]);
 
-        return redirect()->back()
+        return redirect()->route('gmail.index')
             ->with('success', 'Gmail account disconnected successfully');
     }
 }

@@ -3,74 +3,140 @@ import { Head } from '@inertiajs/react';
 import Button from '../Components/Shared/Button';
 import Card from '../Components/Shared/Card';
 
-export default function Plans({ plans, user }) {
+export default function Plans({ plans = [], user = null }) {
     const isAuthenticated = !!user;
 
     return (
         <>
             <Head title="Choose Your Plan - Backlink Pro" />
-            <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-green-50 py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="text-center mb-12">
-                        <div className="inline-block mb-4">
-                            <span className="bg-gradient-to-r from-red-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                                ⚡ POWERFUL AUTOMATION
-                            </span>
+            <div className="min-h-screen bg-white">
+                {/* Navigation Header */}
+                <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm bg-white/95 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center h-20">
+                            <div className="flex items-center">
+                                <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-red-600 to-green-600 bg-clip-text text-transparent">
+                                    ⚡ Backlink Pro
+                                </Link>
+                            </div>
+                            <div className="hidden md:flex items-center space-x-8">
+                                <Link href="/" className="text-gray-700 hover:text-red-600 font-medium transition-colors">
+                                    Home
+                                </Link>
+                                <Link href="/pricing" className="text-red-600 font-semibold border-b-2 border-red-600 pb-1">
+                                    Pricing
+                                </Link>
+                                <Link href="/help" className="text-gray-700 hover:text-red-600 font-medium transition-colors">
+                                    Help
+                                </Link>
+                                {isAuthenticated ? (
+                                    <Link href="/dashboard">
+                                        <Button variant="primary" className="px-6 py-2.5">
+                                            Dashboard
+                                        </Button>
+                                    </Link>
+                                ) : (
+                                    <>
+                                        <Link href="/login" className="text-gray-700 hover:text-red-600 font-medium transition-colors">
+                                            Login
+                                        </Link>
+                                        <Link href="/register">
+                                            <Button variant="primary" className="px-6 py-2.5">
+                                                Get Started
+                                            </Button>
+                                        </Link>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                        <h1 className="text-5xl font-bold bg-gradient-to-r from-red-600 to-green-600 bg-clip-text text-transparent mb-4">
-                            Choose Your Plan
-                        </h1>
-                        <p className="text-xl text-gray-700 max-w-2xl mx-auto font-medium">
-                            Select the perfect plan for your backlink building needs. All plans include our powerful automation tools.
-                        </p>
+                    </div>
+                </nav>
+
+                {/* Hero Header Section */}
+                <section className="relative overflow-hidden bg-gradient-to-br from-red-50 via-white to-green-50 pt-16 pb-20">
+                    {/* Decorative Background Elements */}
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute top-0 left-1/4 w-72 h-72 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                        <div className="absolute top-0 right-1/4 w-72 h-72 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
                     </div>
 
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                        <div className="text-center mb-12">
+                            <div className="inline-block mb-6">
+                                <span className="bg-gradient-to-r from-red-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                                    ⚡ POWERFUL AUTOMATION
+                                </span>
+                            </div>
+                            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-red-600 to-green-600 bg-clip-text text-transparent mb-6">
+                                Choose Your Plan
+                            </h1>
+                            <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto font-medium leading-relaxed">
+                                Select the perfect plan for your backlink building needs. All plans include our powerful automation tools.
+                            </p>
+
+                            {/* Trust Indicators */}
+                            <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-green-500">✓</span>
+                                    <span>No credit card required</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-green-500">✓</span>
+                                    <span>Cancel anytime</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-green-500">✓</span>
+                                    <span>14-day money-back guarantee</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Plans Section */}
+                <section className="py-12 bg-gradient-to-b from-white to-gray-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
                     {/* Plans Grid */}
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 mb-12">
-                        {plans?.map((plan) => (
-                            <Card
+                    {plans && plans.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-12">
+                        {plans.map((plan) => (
+                            <div
                                 key={plan.id}
-                                className={`relative h-full flex flex-col border-2 ${
+                                className={`relative h-full flex flex-col rounded-2xl border-2 transition-all duration-300 ${
                                     plan.slug === 'pro'
-                                        ? 'border-green-500 scale-105 shadow-2xl bg-gradient-to-br from-green-50 to-white'
-                                        : plan.price === 0
-                                        ? 'border-red-500 bg-gradient-to-br from-red-50 to-white hover:shadow-xl'
-                                        : 'border-gray-200 hover:border-red-300 hover:shadow-xl transition-all'
+                                        ? 'border-green-300 bg-green-50 shadow-xl scale-105'
+                                        : 'border-gray-200 bg-white hover:shadow-lg hover:border-gray-300'
                                 }`}
                             >
+                                {/* Popular Badge - Top Right for Pro Plan */}
                                 {plan.slug === 'pro' && (
-                                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                                        <span className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                                            ⭐ Most Popular
-                                        </span>
-                                    </div>
-                                )}
-                                {plan.price === 0 && (
-                                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                                        <span className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                                            🎁 Free Forever
+                                    <div className="absolute -top-3 -right-3">
+                                        <span className="bg-green-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md">
+                                            Popular
                                         </span>
                                     </div>
                                 )}
 
-                                <div className="flex flex-col h-full">
-                                    <div className="text-center mb-6">
+                                <div className="flex flex-col h-full p-6">
+                                    {/* Plan Header */}
+                                    <div className="mb-6">
                                         <h3 className="text-2xl font-bold text-gray-900 mb-2">
                                             {plan.name}
                                         </h3>
-                                        <p className="text-gray-600 text-sm mb-4">
+                                        <p className="text-gray-600 text-sm mb-6">
                                             {plan.description}
                                         </p>
 
+                                        {/* Price */}
                                         <div className="mb-6">
-                                            <span className={`text-5xl font-bold ${
-                                                plan.slug === 'pro' ? 'text-green-600' : plan.price === 0 ? 'text-red-600' : 'text-gray-900'
+                                            <span className={`text-4xl font-bold ${
+                                                plan.slug === 'pro' ? 'text-green-600' : 'text-gray-900'
                                             }`}>
-                                                ${plan.price}
+                                                ${(plan.price || 0).toFixed(2)}
                                             </span>
-                                            <span className="text-gray-600 ml-2 font-medium">
-                                                /{plan.billing_interval}
+                                            <span className="text-gray-600 ml-2 text-base font-normal">
+                                                /{plan.billing_interval === 'monthly' ? 'monthly' : plan.billing_interval || 'monthly'}
                                             </span>
                                         </div>
                                     </div>
@@ -87,8 +153,8 @@ export default function Plans({ plans, user }) {
                                                         stroke="currentColor"
                                                     >
                                                         <path
-                                                            strokeLineCap="round"
-                                                            strokeLineJoin="round"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
                                                             strokeWidth={2}
                                                             d="M5 13l4 4L19 7"
                                                         />
@@ -101,44 +167,22 @@ export default function Plans({ plans, user }) {
                                         </ul>
                                     </div>
 
-                                    {/* Limits Info */}
-                                    <div className="border-t border-gray-200 pt-4 mb-6 space-y-2 text-sm text-gray-600">
-                                        {plan.max_domains && (
-                                            <div className="flex justify-between">
-                                                <span>Max Domains:</span>
-                                                <span className="font-semibold">{plan.max_domains === -1 ? 'Unlimited' : plan.max_domains}</span>
-                                            </div>
-                                        )}
-                                        {plan.max_campaigns && (
-                                            <div className="flex justify-between">
-                                                <span>Max Campaigns:</span>
-                                                <span className="font-semibold">{plan.max_campaigns === -1 ? 'Unlimited' : plan.max_campaigns}</span>
-                                            </div>
-                                        )}
-                                        {plan.daily_backlink_limit && (
-                                            <div className="flex justify-between">
-                                                <span>Daily Backlinks:</span>
-                                                <span className="font-semibold">{plan.daily_backlink_limit === -1 ? 'Unlimited' : plan.daily_backlink_limit}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
                                     {/* CTA Button */}
-                                    <div className="mt-auto">
+                                    <div className="mt-auto pt-4">
                                         {isAuthenticated ? (
-                                            <Link href={`/subscription/checkout/${plan.id}`}>
+                                            <a href={`/subscription/checkout/${plan.id}`} className="inline-block w-full">
                                                 <Button
                                                     variant={plan.slug === 'pro' ? 'success' : plan.price === 0 ? 'primary' : 'outline'}
-                                                    className="w-full font-bold"
+                                                    className="w-full font-semibold py-3"
                                                 >
                                                     {plan.price == 0 ? 'Get Started Free' : 'Subscribe Now'}
                                                 </Button>
-                                            </Link>
+                                            </a>
                                         ) : (
-                                            <Link href="/register">
+                                            <Link href="/register" className="inline-block w-full">
                                                 <Button
-                                                    variant={plan.slug === 'pro' ? 'primary' : 'outline'}
-                                                    className="w-full"
+                                                    variant={plan.slug === 'pro' ? 'success' : plan.price === 0 ? 'primary' : 'outline'}
+                                                    className="w-full font-semibold py-3"
                                                 >
                                                     {plan.price == 0 ? 'Sign Up Free' : 'Get Started'}
                                                 </Button>
@@ -146,9 +190,18 @@ export default function Plans({ plans, user }) {
                                         )}
                                     </div>
                                 </div>
-                            </Card>
+                            </div>
                         ))}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-16">
+                            <div className="inline-block p-8 bg-gray-100 rounded-full mb-6">
+                                <span className="text-5xl">💳</span>
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">No Plans Available</h3>
+                            <p className="text-gray-600 mb-8">Plans are currently being set up. Please check back soon.</p>
+                        </div>
+                    )}
 
                     {/* FAQ Section */}
                     <div className="mt-16 bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-xl border-2 border-red-100 p-8">
@@ -190,7 +243,51 @@ export default function Plans({ plans, user }) {
                             </div>
                         </div>
                     </div>
-                </div>
+                    </div>
+                </section>
+
+                {/* Footer */}
+                <footer className="bg-gray-900 text-gray-400 py-12 mt-20">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                            <div>
+                                <h3 className="text-white font-bold text-xl mb-4 bg-gradient-to-r from-red-600 to-green-600 bg-clip-text text-transparent">
+                                    Backlink Pro
+                                </h3>
+                                <p className="text-sm">Automated backlink building platform for SEO professionals.</p>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold mb-4">Product</h4>
+                                <ul className="space-y-2 text-sm">
+                                    <li><Link href="/pricing" className="hover:text-green-400 transition-colors">Pricing</Link></li>
+                                    <li><Link href="/features" className="hover:text-green-400 transition-colors">Features</Link></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold mb-4">Support</h4>
+                                <ul className="space-y-2 text-sm">
+                                    <li><Link href="/help" className="hover:text-green-400 transition-colors">Help Center</Link></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold mb-4">Account</h4>
+                                <ul className="space-y-2 text-sm">
+                                    {isAuthenticated ? (
+                                        <li><Link href="/dashboard" className="hover:text-green-400 transition-colors">Dashboard</Link></li>
+                                    ) : (
+                                        <>
+                                            <li><Link href="/login" className="hover:text-green-400 transition-colors">Login</Link></li>
+                                            <li><Link href="/register" className="hover:text-green-400 transition-colors">Sign Up</Link></li>
+                                        </>
+                                    )}
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="pt-8 border-t border-gray-800 text-center text-sm">
+                            <p>&copy; {new Date().getFullYear()} Backlink Pro. Made with <span className="text-red-500">❤️</span> for marketers.</p>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </>
     );

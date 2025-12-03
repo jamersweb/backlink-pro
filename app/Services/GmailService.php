@@ -5,6 +5,7 @@ namespace App\Services;
 use Google_Client;
 use Google_Service_Gmail;
 use App\Models\ConnectedAccount;
+use App\Services\RateLimitingService;
 use Illuminate\Support\Facades\Log;
 
 class GmailService
@@ -163,6 +164,12 @@ class GmailService
      */
     public function searchEmails(string $query, int $maxResults = 10): array
     {
+        // Check Gmail API rate limit
+        $userId = $this->connectedAccount?->user_id ?? 0;
+        if (!RateLimitingService::checkGmailApiRateLimit($userId, 250, 100)) {
+            throw new \Exception('Gmail API rate limit exceeded. Please wait before making more requests.');
+        }
+
         try {
             $service = $this->getGmailService();
             $messages = $service->users_messages->listUsersMessages('me', [
@@ -191,6 +198,12 @@ class GmailService
      */
     public function getEmail(string $messageId): array
     {
+        // Check Gmail API rate limit
+        $userId = $this->connectedAccount?->user_id ?? 0;
+        if (!RateLimitingService::checkGmailApiRateLimit($userId, 250, 100)) {
+            throw new \Exception('Gmail API rate limit exceeded. Please wait before making more requests.');
+        }
+
         try {
             $service = $this->getGmailService();
             $message = $service->users_messages->get('me', $messageId);

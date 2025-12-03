@@ -1,9 +1,26 @@
+import { useState } from 'react';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import AppLayout from '../Components/Layout/AppLayout';
 import Card from '../Components/Shared/Card';
 import Button from '../Components/Shared/Button';
 import { Link } from '@inertiajs/react';
 
 export default function Dashboard({ user, subscription, stats, recentBacklinks, recentCampaigns, dailyBacklinks, backlinksByType }) {
+    const [chartPeriod, setChartPeriod] = useState(7); // 7 or 30 days
+
+    // Prepare chart data
+    const dailyBacklinksData = dailyBacklinks?.map(item => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        count: item.count,
+    })) || [];
+
+    const backlinksByTypeData = backlinksByType ? Object.entries(backlinksByType).map(([type, count]) => ({
+        name: type.charAt(0).toUpperCase() + type.slice(1),
+        value: count,
+    })) : [];
+
+    const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
     const getStatusBadge = (status) => {
         const colors = {
             active: 'bg-green-100 text-green-800',
@@ -125,6 +142,92 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                     </Card>
                 </div>
 
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Daily Backlinks Chart */}
+                    <Card className="bg-white border border-gray-200 shadow-md">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-900">Backlinks Created (Last 7 Days)</h3>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setChartPeriod(7)}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md ${
+                                        chartPeriod === 7 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    7 Days
+                                </button>
+                                <button
+                                    onClick={() => setChartPeriod(30)}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md ${
+                                        chartPeriod === 30 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    30 Days
+                                </button>
+                            </div>
+                        </div>
+                        {dailyBacklinksData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={dailyBacklinksData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="date" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} name="Backlinks" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="text-center py-12 text-gray-500">
+                                No data available yet. Create campaigns to see your backlink growth!
+                            </div>
+                        )}
+                    </Card>
+
+                    {/* Backlinks by Type Pie Chart */}
+                    <Card className="bg-white border border-gray-200 shadow-md">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Backlinks by Type</h3>
+                        {backlinksByTypeData.length > 0 ? (
+                            <div>
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <PieChart>
+                                        <Pie
+                                            data={backlinksByTypeData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                            outerRadius={70}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {backlinksByTypeData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="mt-4 space-y-2">
+                                    {backlinksByTypeData.map((item, index) => (
+                                        <div key={item.name} className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                                <span className="text-gray-700">{item.name}</span>
+                                            </div>
+                                            <span className="font-semibold text-gray-900">{item.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-gray-500">
+                                No data available yet
+                            </div>
+                        )}
+                    </Card>
+                </div>
+
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card title="Quick Actions">
@@ -135,38 +238,29 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                             <Link href="/campaign">
                                 <Button variant="secondary" className="w-full">View Campaigns</Button>
                             </Link>
+                            <Link href="/backlinks">
+                                <Button variant="secondary" className="w-full">View Backlinks</Button>
+                            </Link>
                             <Link href="/reports">
                                 <Button variant="secondary" className="w-full">View Reports</Button>
-                            </Link>
-                            <Link href="/activity">
-                                <Button variant="secondary" className="w-full">Activity Feed</Button>
                             </Link>
                         </div>
                     </Card>
 
-                    {/* Analytics Preview */}
-                    <Card title="Analytics Preview">
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-medium text-gray-700 mb-2">Backlinks by Type</h4>
-                                <div className="space-y-2">
-                                    {backlinksByType && Object.keys(backlinksByType).length > 0 ? (
-                                        Object.entries(backlinksByType).map(([type, count]) => (
-                                            <div key={type} className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600 capitalize">{type}</span>
-                                                <span className="text-sm font-semibold text-gray-900">{count}</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm text-gray-500">No data yet</p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="pt-2 border-t">
-                                <Link href="/reports">
-                                    <Button variant="outline" className="w-full">View Full Analytics</Button>
-                                </Link>
-                            </div>
+                    <Card title="Quick Links">
+                        <div className="grid grid-cols-2 gap-4">
+                            <Link href="/domains">
+                                <Button variant="secondary" className="w-full">Domains</Button>
+                            </Link>
+                            <Link href="/site-accounts">
+                                <Button variant="secondary" className="w-full">Site Accounts</Button>
+                            </Link>
+                            <Link href="/gmail">
+                                <Button variant="secondary" className="w-full">Gmail Accounts</Button>
+                            </Link>
+                            <Link href="/settings">
+                                <Button variant="secondary" className="w-full">Settings</Button>
+                            </Link>
                         </div>
                     </Card>
                 </div>

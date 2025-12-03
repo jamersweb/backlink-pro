@@ -186,7 +186,27 @@ class ForumAutomation(BaseAutomation):
     
     def _generate_post(self, keywords: list, task: Dict) -> str:
         """Generate forum post using LLM"""
-        # TODO: Implement LLM integration
+        try:
+            topic = keywords[0] if keywords else "topic"
+            target_url = task.get('payload', {}).get('target_url', '')
+            tone = task.get('payload', {}).get('content_tone', 'professional')
+            
+            # Generate using LLM
+            post = self.api_client.generate_content(
+                'forum_post',
+                {
+                    'topic': topic,
+                    'target_url': target_url,
+                },
+                tone
+            )
+            
+            if post:
+                return post.strip()
+        except Exception as e:
+            logger.warning(f"LLM forum post generation failed: {e}")
+        
+        # Fallback to simple post
         keyword = keywords[0] if keywords else "topic"
         return f"This is a great discussion about {keyword}. I found this very informative!"
 

@@ -123,10 +123,11 @@ class LaravelAPIClient:
         response = self._request('POST', '/api/site-accounts', json=data)
         return response or {}
     
-    def update_site_account(self, site_account_id: int, status: Optional[str] = None,
-                          verification_link: Optional[str] = None) -> Dict:
+    def update_site_account(self, site_account_id: int, data: Optional[Dict] = None, 
+                          status: Optional[str] = None, verification_link: Optional[str] = None) -> Dict:
         """Update a site account"""
-        data = {}
+        if data is None:
+            data = {}
         if status:
             data['status'] = status
         if verification_link:
@@ -135,12 +136,48 @@ class LaravelAPIClient:
         response = self._request('PUT', f'/api/site-accounts/{site_account_id}', json=data)
         return response or {}
     
-    def get_proxies(self, country: Optional[str] = None) -> List[Dict]:
-        """Get proxy list"""
+    def get_proxies(self, country: Optional[str] = None, prefer_country: bool = True) -> List[Dict]:
+        """Get proxy list with smart selection"""
         params = {}
         if country:
             params['country'] = country
+        if prefer_country:
+            params['prefer_country'] = '1'
         
         response = self._request('GET', '/api/proxies', params=params)
         return response.get('proxies', []) if response else []
+    
+    def generate_content(self, content_type: str, data: Dict, tone: str = 'professional') -> Optional[str]:
+        """Generate content using LLM"""
+        try:
+            payload = {
+                'type': content_type,
+                'data': {**data, 'tone': tone},
+            }
+            response = self._request('POST', '/api/llm/generate', json=payload)
+            
+            if response and response.get('success'):
+                if content_type == 'anchor_text':
+                    return response.get('variations', [])
+                return response.get('content')
+            return None
+        except Exception as e:
+            logger.error(f"Failed to generate content: {e}")
+            return None
+    
+    def solve_captcha(self, captcha_type: str, captcha_data: Dict) -> Optional[Dict]:
+        """Solve captcha via API"""
+        try:
+            payload = {
+                'captcha_type' => captcha_type,
+                'data' => captcha_data,
+            }
+            response = self._request('POST', '/api/captcha/solve', json=payload)
+            
+            if response and response.get('success'):
+                return response
+            return None
+        except Exception as e:
+            logger.error(f"Failed to solve captcha: {e}")
+            return None
 

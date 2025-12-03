@@ -128,8 +128,43 @@ class CommentAutomation(BaseAutomation):
     
     def _generate_comment(self, keywords: list, strategy: str, task: Dict) -> str:
         """Generate comment using LLM"""
-        # TODO: Implement LLM integration
-        # For now, return a simple comment
+        try:
+            # Get article title/excerpt from page
+            article_title = self.page.title() if self.page else ""
+            article_excerpt = ""
+            try:
+                # Try to get article excerpt/meta description
+                meta_desc = self.page.locator('meta[name="description"]').get_attribute('content')
+                if meta_desc:
+                    article_excerpt = meta_desc[:200]
+                else:
+                    # Fallback to first paragraph
+                    first_p = self.page.locator('article p, .post p, .content p').first
+                    if first_p.is_visible():
+                        article_excerpt = first_p.text_content()[:200]
+            except:
+                pass
+            
+            target_url = task.get('payload', {}).get('target_url', '')
+            tone = task.get('payload', {}).get('content_tone', 'professional')
+            
+            # Generate using LLM
+            comment = self.api_client.generate_content(
+                'comment',
+                {
+                    'article_title': article_title,
+                    'article_excerpt': article_excerpt,
+                    'target_url': target_url,
+                },
+                tone
+            )
+            
+            if comment:
+                return comment.strip()
+        except Exception as e:
+            logger.warning(f"LLM comment generation failed: {e}")
+        
+        # Fallback to simple comment
         keyword = keywords[0] if keywords else "great article"
         return f"This is a {keyword} article. Thanks for sharing!"
     

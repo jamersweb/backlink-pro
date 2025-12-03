@@ -1,81 +1,131 @@
-# Quick Start Guide - Docker
+# 🚀 Quick Start Guide - Docker & Testing
 
-## 🚀 Fast Setup (5 minutes)
+## ⚡ Quick Commands
 
-### 1. Create `.env` file
+### Docker Setup (First Time)
+
 ```bash
-# Copy from env.blade.php or create new
-cp env.blade.php .env
-```
+# 1. Copy environment file
+cp .env.example .env
 
-### 2. Update `.env` with these Docker settings:
-```env
-DB_HOST=mysql
-DB_DATABASE=backlink_pro
-DB_USERNAME=root
-DB_PASSWORD=root
-REDIS_HOST=redis
-QUEUE_CONNECTION=redis
-```
+# 2. Update .env with Docker settings (DB_HOST=mysql, REDIS_HOST=redis)
 
-### 3. Build and Start
-```bash
+# 3. Build and start containers
 docker-compose build
 docker-compose up -d
-```
 
-### 4. Install Dependencies
-```bash
+# 4. Install dependencies
 docker-compose exec app composer install
 docker-compose exec app npm install
-```
 
-### 5. Setup Laravel
-```bash
+# 5. Setup Laravel
 docker-compose exec app php artisan key:generate
 docker-compose exec app php artisan migrate
-docker-compose exec app chmod -R 775 storage bootstrap/cache
+docker-compose exec app npm run build
+
+# 6. Access application
+# http://localhost
 ```
 
-### 6. Access Application
-- **Web**: http://localhost
-- **Horizon**: http://localhost/horizon
-
----
-
-## 📋 Useful Commands
+### Daily Use
 
 ```bash
+# Start containers
+docker-compose up -d
+
+# Run tests
+docker-compose exec app php artisan test
+
 # View logs
 docker-compose logs -f app
 
-# Run artisan commands
-docker-compose exec app php artisan [command]
-
-# Access container
-docker-compose exec app bash
-
-# Stop containers
-docker-compose stop
-
-# Start containers
-docker-compose start
-
-# Restart containers
-docker-compose restart
+# Access application
+# http://localhost
 ```
 
 ---
 
-## ⚠️ Troubleshooting
+## 📚 Detailed Guides
 
-**Port conflict?** Stop XAMPP/MySQL/Redis on your machine first.
-
-**Container won't start?** Check logs: `docker-compose logs app`
-
-**Database error?** Wait 30 seconds for MySQL to initialize, then retry.
+- **Complete Docker Setup**: See `DOCKER_AND_TESTING_GUIDE.md`
+- **Step-by-Step Testing**: See `TESTING_STEP_BY_STEP.md`
+- **Docker Commands**: See `DOCKER_SETUP.md`
 
 ---
 
-See `DOCKER_SETUP.md` for detailed instructions.
+## ✅ Current Status
 
+Your Docker containers are **running**:
+- ✅ backlink-nginx (Web server)
+- ✅ backlink-app (Laravel)
+- ✅ backlink-mysql (Database)
+- ✅ backlink-redis (Cache/Queue)
+- ✅ backlink-queue (Queue worker)
+- ✅ backlink-horizon (Queue dashboard)
+- ✅ backlink-python-worker (Python automation)
+
+**Access**: http://localhost
+
+---
+
+## 🧪 Testing - Quick Steps
+
+### Step 1: Verify Setup
+
+```bash
+# Check containers
+docker-compose ps
+
+# Should show all containers as "Up"
+```
+
+### Step 2: Run Tests
+
+```bash
+# Run all tests
+docker-compose exec app php artisan test
+
+# Expected: ✅ 41 tests passing, 68 assertions
+```
+
+### Step 3: Verify Results
+
+```
+✅ 41 tests passing
+✅ 68 assertions
+✅ Duration: ~4 seconds
+```
+
+---
+
+## 🔧 Common Commands
+
+```bash
+# Docker
+docker-compose up -d          # Start containers
+docker-compose stop            # Stop containers
+docker-compose restart         # Restart containers
+docker-compose logs -f app     # View logs
+docker-compose exec app bash   # Access container
+
+# Laravel
+docker-compose exec app php artisan migrate
+docker-compose exec app php artisan test
+docker-compose exec app composer install
+
+# Testing
+docker-compose exec app php artisan test                    # All tests
+docker-compose exec app php artisan test --testsuite=Unit  # Unit tests only
+docker-compose exec app php artisan test --filter=UserTest  # Specific test
+```
+
+---
+
+## 📖 Full Documentation
+
+For complete instructions, see:
+- `DOCKER_AND_TESTING_GUIDE.md` - Complete Docker & testing guide
+- `TESTING_STEP_BY_STEP.md` - Detailed testing instructions
+- `DOCKER_SETUP.md` - Docker setup reference
+- `API_DOCUMENTATION.md` - Python worker API docs
+- `SETUP.md` - Development setup guide

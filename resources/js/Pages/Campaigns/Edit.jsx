@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage, Link } from '@inertiajs/react';
 import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
 export default function CampaignEdit({ campaign, countries, states, cities, domains, connectedAccounts }) {
+    const { flash } = usePage().props;
     const { data, setData, put, processing, errors } = useForm({
         name: campaign.name || '',
         domain_id: campaign.domain_id || '',
@@ -15,35 +16,132 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
         company_email_address: campaign.company_email_address || '',
         company_address: campaign.company_address || '',
         company_number: campaign.company_number || '',
-        company_country: campaign.company_country || '',
-        company_state: campaign.company_state || '',
-        company_city: campaign.company_city || '',
+        company_country: campaign.company_country ? String(campaign.company_country) : '',
+        company_state: campaign.company_state ? String(campaign.company_state) : '',
+        company_city: campaign.company_city ? String(campaign.company_city) : '',
         web_name: campaign.web_name || '',
         web_url: campaign.web_url || '',
         web_keyword: campaign.web_keyword || '',
         web_about: campaign.web_about || '',
-        web_target: campaign.web_target || '',
+        web_target: campaign.web_target || 'worldwide',
+        country_name: campaign.country_name || '',
         keywords: campaign.keywords || [],
-        backlink_types: campaign.settings?.backlink_types || [],
-        daily_limit: campaign.settings?.daily_limit || campaign.daily_limit || 10,
-        total_limit: campaign.settings?.total_limit || campaign.total_limit || 100,
-        content_tone: campaign.settings?.content_tone || 'professional',
-        anchor_text_strategy: campaign.settings?.anchor_text_strategy || 'variation',
         start_date: campaign.start_date || '',
         end_date: campaign.end_date || '',
-        gmail_account_id: campaign.gmail_account_id || '',
+        gmail_account_id: campaign.gmail_account_id ? String(campaign.gmail_account_id) : '',
         requires_email_verification: campaign.requires_email_verification ?? true,
+        gmail: campaign.gmail || '',
+        password: campaign.password || '',
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(`/campaign/${campaign.id}`);
+        
+        // Transform data before submission - similar to Create form
+        const submitData = { ...data };
+        
+        // Trim all string values
+        Object.keys(submitData).forEach(key => {
+            if (typeof submitData[key] === 'string') {
+                submitData[key] = submitData[key].trim();
+            }
+        });
+        
+        // Convert empty strings to null for optional fields
+        if (submitData.domain_id === '') submitData.domain_id = null;
+        if (submitData.company_city === '') submitData.company_city = null;
+        if (submitData.gmail_account_id === '') submitData.gmail_account_id = null;
+        
+        // Convert country/state to integers
+        if (submitData.company_country) {
+            submitData.company_country = parseInt(submitData.company_country) || null;
+        }
+        if (submitData.company_state) {
+            submitData.company_state = parseInt(submitData.company_state) || null;
+        }
+        if (submitData.company_city) {
+            submitData.company_city = parseInt(submitData.company_city) || null;
+        }
+        if (submitData.gmail_account_id) {
+            submitData.gmail_account_id = parseInt(submitData.gmail_account_id) || null;
+        }
+        
+        // Clear gmail/password if gmail_account_id is set
+        if (submitData.gmail_account_id) {
+            submitData.gmail = '';
+            submitData.password = '';
+        }
+        
+        // Clear country_name if web_target is worldwide
+        if (submitData.web_target === 'worldwide') {
+            submitData.country_name = '';
+        }
+        
+        // Remove logo if not changed (null or empty)
+        if (!submitData.company_logo) {
+            delete submitData.company_logo;
+        }
+        
+        // Update form fields in DOM to ensure forceFormData reads correct values
+        Object.keys(submitData).forEach(key => {
+            const element = document.querySelector(`[name="${key}"]`);
+            if (element) {
+                if (element.tagName === 'SELECT' || element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                    if (element.type === 'checkbox' || element.type === 'radio') {
+                        element.checked = submitData[key];
+                    } else {
+                        element.value = submitData[key] !== null && submitData[key] !== undefined ? submitData[key] : '';
+                    }
+                }
+            }
+        });
+        
+        // Update form state
+        Object.keys(submitData).forEach(key => {
+            setData(key, submitData[key]);
+        });
+        
+        // Use forceFormData only if there's a file upload
+        const hasFileUpload = submitData.company_logo instanceof File;
+        
+        // Submit with a small delay to ensure DOM and state are synced
+        setTimeout(() => {
+            put(`/campaign/${campaign.id}`, {
+                forceFormData: hasFileUpload,
+                preserveScroll: true,
+                onSuccess: () => {
+                    // Success handled by redirect
+                },
+                onError: (errors) => {
+                    // Scroll to first error
+                    const firstError = Object.keys(errors)[0];
+                    if (firstError) {
+                        const element = document.querySelector(`[name="${firstError}"]`);
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                },
+            });
+        }, 50);
     };
 
     return (
         <AppLayout header="Edit Campaign">
+            {/* Success/Error Messages */}
+            {flash?.success && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-800">{flash.success}</p>
+                </div>
+            )}
+            {flash?.error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-800">{flash.error}</p>
+                </div>
+            )}
+            
             <Card>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
                     {/* Basic Info */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
@@ -96,13 +194,30 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                             onChange={(e) => setData('web_url', e.target.value)}
                             error={errors.web_url}
                         />
-                        <Input
-                            label="Website Keyword"
-                            name="web_keyword"
-                            value={data.web_keyword}
-                            onChange={(e) => setData('web_keyword', e.target.value)}
-                            error={errors.web_keyword}
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Website Keywords * (comma-separated)
+                            </label>
+                            <input
+                                type="text"
+                                name="web_keyword"
+                                value={Array.isArray(data.web_keyword) ? data.web_keyword.join(', ') : (data.web_keyword || '')}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    // Store as comma-separated string for backend
+                                    setData('web_keyword', value);
+                                }}
+                                placeholder="keyword1, keyword2, keyword3"
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                required
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                                Enter multiple keywords separated by commas (e.g., "SEO, backlinks, digital marketing")
+                            </p>
+                            {errors.web_keyword && (
+                                <p className="mt-1 text-sm text-red-600">{errors.web_keyword}</p>
+                            )}
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Website About
@@ -114,7 +229,38 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                                 rows={4}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             />
+                            {errors.web_about && (
+                                <p className="mt-1 text-sm text-red-600">{errors.web_about}</p>
+                            )}
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ranking Target *
+                            </label>
+                            <select
+                                name="web_target"
+                                value={data.web_target}
+                                onChange={(e) => setData('web_target', e.target.value)}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                required
+                            >
+                                <option value="worldwide">Worldwide</option>
+                                <option value="specific_country">Specific Country</option>
+                            </select>
+                            {errors.web_target && (
+                                <p className="mt-1 text-sm text-red-600">{errors.web_target}</p>
+                            )}
+                        </div>
+                        {data.web_target === 'specific_country' && (
+                            <Input
+                                label="Target Country Name *"
+                                name="country_name"
+                                value={data.country_name}
+                                onChange={(e) => setData('country_name', e.target.value)}
+                                error={errors.country_name}
+                                required
+                            />
+                        )}
                     </div>
 
                     {/* Company Info */}
@@ -151,6 +297,82 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                         />
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Company Country *
+                            </label>
+                            <select
+                                name="company_country"
+                                value={data.company_country}
+                                onChange={(e) => {
+                                    setData('company_country', e.target.value);
+                                    setData('company_state', ''); // Reset state when country changes
+                                    setData('company_city', ''); // Reset city when country changes
+                                }}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                required
+                            >
+                                <option value="">Select a country</option>
+                                {countries?.map((country) => (
+                                    <option key={country.id} value={country.id}>
+                                        {country.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.company_country && (
+                                <p className="mt-1 text-sm text-red-600">{errors.company_country}</p>
+                            )}
+                        </div>
+                        {data.company_country && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Company State *
+                                </label>
+                                <select
+                                    name="company_state"
+                                    value={data.company_state}
+                                    onChange={(e) => {
+                                        setData('company_state', e.target.value);
+                                        setData('company_city', ''); // Reset city when state changes
+                                    }}
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    required
+                                >
+                                    <option value="">Select a state</option>
+                                    {states?.filter(s => String(s.country_id) === String(data.company_country)).map((state) => (
+                                        <option key={state.id} value={state.id}>
+                                            {state.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.company_state && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.company_state}</p>
+                                )}
+                            </div>
+                        )}
+                        {data.company_state && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Company City
+                                </label>
+                                <select
+                                    name="company_city"
+                                    value={data.company_city}
+                                    onChange={(e) => setData('company_city', e.target.value)}
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                >
+                                    <option value="">Select a city</option>
+                                    {cities?.filter(c => String(c.state_id) === String(data.company_state)).map((city) => (
+                                        <option key={city.id} value={city.id}>
+                                            {city.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.company_city && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.company_city}</p>
+                                )}
+                            </div>
+                        )}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Company Logo (leave empty to keep current)
                             </label>
                             <input
@@ -163,55 +385,80 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                             {campaign.company_logo && (
                                 <p className="mt-2 text-sm text-gray-500">Current: {campaign.company_logo}</p>
                             )}
+                            {errors.company_logo && (
+                                <p className="mt-1 text-sm text-red-600">{errors.company_logo}</p>
+                            )}
                         </div>
                     </div>
 
-                    {/* Settings */}
+                    {/* Gmail Verification */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium border-b pb-2">Campaign Settings</h3>
+                        <h3 className="text-lg font-medium border-b pb-2">Gmail Verification Settings</h3>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Backlink Types
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Connected Gmail Account (Optional)
                             </label>
-                            <div className="space-y-2">
-                                {['comment', 'profile', 'forum', 'guestposting'].map((type) => (
-                                    <label key={type} className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.backlink_types?.includes(type) || false}
-                                            onChange={(e) => {
-                                                const types = data.backlink_types || [];
-                                                if (e.target.checked) {
-                                                    setData('backlink_types', [...types, type]);
-                                                } else {
-                                                    setData('backlink_types', types.filter(t => t !== type));
-                                                }
-                                            }}
-                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-700 capitalize">{type}</span>
-                                    </label>
+                            <select
+                                name="gmail_account_id"
+                                value={data.gmail_account_id}
+                                onChange={(e) => {
+                                    setData('gmail_account_id', e.target.value);
+                                    // Clear manual gmail/password if a connected account is selected
+                                    if (e.target.value) {
+                                        setData('gmail', '');
+                                        setData('password', '');
+                                    }
+                                }}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="">Select a Gmail account (or enter manually below)</option>
+                                {connectedAccounts?.map((account) => (
+                                    <option key={account.id} value={account.id}>
+                                        {account.email}
+                                    </option>
                                 ))}
-                            </div>
+                            </select>
+                            {errors.gmail_account_id && (
+                                <p className="mt-1 text-sm text-red-600">{errors.gmail_account_id}</p>
+                            )}
+                            {data.gmail_account_id && (
+                                <p className="mt-2 text-sm text-green-600">
+                                    Using connected account: {connectedAccounts?.find(acc => String(acc.id) === String(data.gmail_account_id))?.email}
+                                </p>
+                            )}
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input
-                                label="Daily Limit"
-                                name="daily_limit"
-                                type="number"
-                                value={data.daily_limit}
-                                onChange={(e) => setData('daily_limit', parseInt(e.target.value))}
-                                error={errors.daily_limit}
+                        {!data.gmail_account_id && (
+                            <>
+                                <Input
+                                    label="Gmail Address *"
+                                    name="gmail"
+                                    type="email"
+                                    value={data.gmail}
+                                    onChange={(e) => setData('gmail', e.target.value)}
+                                    error={errors.gmail}
+                                    placeholder="your-email@gmail.com"
+                                    required
+                                />
+                                <Input
+                                    label="Gmail Password *"
+                                    name="password"
+                                    type="password"
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    error={errors.password}
+                                    required
+                                />
+                            </>
+                        )}
+                        <label className="flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={data.requires_email_verification}
+                                onChange={(e) => setData('requires_email_verification', e.target.checked)}
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                             />
-                            <Input
-                                label="Total Limit"
-                                name="total_limit"
-                                type="number"
-                                value={data.total_limit}
-                                onChange={(e) => setData('total_limit', parseInt(e.target.value))}
-                                error={errors.total_limit}
-                            />
-                        </div>
+                            <span className="ml-2 text-sm text-gray-700">Require email verification</span>
+                        </label>
                     </div>
 
                     {/* Actions */}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Backlink;
 use App\Models\Campaign;
+use App\Services\RateLimitingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -34,6 +35,14 @@ class BacklinkController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Check domain rate limit (max 1 backlink per domain per day per campaign)
+        if (!RateLimitingService::checkDomainRateLimit($request->url, $request->campaign_id)) {
+            return response()->json([
+                'error' => 'Rate limit exceeded: Maximum 1 backlink per domain per day for this campaign',
+                'message' => 'This domain has already received a backlink today for this campaign. Please try again tomorrow.',
+            ], 429);
         }
 
         $backlink = Backlink::create([

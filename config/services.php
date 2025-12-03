@@ -47,4 +47,23 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'llm' => [
+        'provider' => env('LLM_PROVIDER', 'openai'), // 'openai' or 'deepseek'
+        'api_key' => env('LLM_API_KEY'),
+        'openai_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1'),
+        'deepseek_url' => env('DEEPSEEK_API_URL', 'https://api.deepseek.com/v1'),
+    ],
+
+    'captcha' => [
+        'provider' => env('CAPTCHA_PROVIDER', '2captcha'), // '2captcha' or 'anticaptcha'
+        '2captcha' => [
+            'api_key' => env('2CAPTCHA_API_KEY'),
+            'api_url' => env('2CAPTCHA_API_URL', 'https://2captcha.com/in.php'),
+        ],
+        'anticaptcha' => [
+            'api_key' => env('ANTICAPTCHA_API_KEY'),
+            'api_url' => env('ANTICAPTCHA_API_URL', 'https://api.anti-captcha.com'),
+        ],
+    ],
+
 ];
