@@ -1,7 +1,7 @@
 """
 Forum backlink automation
 """
-from typing import Dict
+from typing import Dict, Optional
 import logging
 import random
 from .base import BaseAutomation
@@ -15,17 +15,36 @@ class ForumAutomation(BaseAutomation):
     def execute(self, task: Dict) -> Dict:
         """Execute forum backlink task"""
         payload = task.get('payload', {})
-        target_urls = payload.get('target_urls', [])
         keywords = payload.get('keywords', [])
+        campaign_id = task.get('campaign_id')
         
-        if not target_urls:
-            return {
-                'success': False,
-                'error': 'No target URLs provided',
-            }
+        # Use opportunity selector if available, otherwise fallback to payload target_urls
+        target_url = None
+        opportunity = None
+        
+        if self.opportunity_selector and campaign_id:
+            try:
+                opportunity = self.opportunity_selector.select_opportunity(
+                    campaign_id=campaign_id,
+                    task_type='forum'
+                )
+                if opportunity:
+                    target_url = opportunity.get('url')
+                    logger.info(f"Selected opportunity {opportunity.get('id')} with PA:{opportunity.get('pa')} DA:{opportunity.get('da')}")
+            except Exception as e:
+                logger.warning(f"Failed to get opportunity: {e}, falling back to payload URLs")
+        
+        # Fallback to payload target_urls if no opportunity found
+        if not target_url:
+            target_urls = payload.get('target_urls', [])
+            if not target_urls:
+                return {
+                    'success': False,
+                    'error': 'No target URLs provided and no opportunities available',
+                }
+            target_url = target_urls[0]
         
         try:
-            target_url = target_urls[0]
             logger.info(f"Processing forum backlink for {target_url}")
             
             # Check if site account exists
@@ -58,11 +77,17 @@ class ForumAutomation(BaseAutomation):
             post_url = self._post_reply(thread_url, post_text)
             
             if post_url:
-                return {
+                result = {
                     'success': True,
                     'url': post_url,
                     'type': 'forum',
                 }
+                
+                # Include opportunity ID if available
+                if opportunity:
+                    result['backlink_opportunity_id'] = opportunity.get('id')
+                
+                return result
             else:
                 return {
                     'success': False,

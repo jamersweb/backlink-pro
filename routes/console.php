@@ -15,3 +15,6 @@ Schedule::job(new ScheduleCampaignJob)->hourly();
 // Schedule proxy health checks
 Schedule::command('proxy:check-health --unhealthy')->hourly();
 Schedule::command('proxy:check-health --all')->daily();
+
+// Auto-run pending automation tasks every minute (short single-pass)
+Schedule::command('automation:run-worker --limit=5')->everyMinute();

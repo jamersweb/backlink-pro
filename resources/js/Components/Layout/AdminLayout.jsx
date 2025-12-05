@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 export default function AdminLayout({ children, header }) {
     const { auth } = usePage().props;
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [leadsDropdownOpen, setLeadsDropdownOpen] = useState(false);
     const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -24,260 +24,291 @@ export default function AdminLayout({ children, header }) {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [profileDropdownOpen]);
 
+    // Close sidebar on mobile when clicking outside
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true);
+            } else {
+                setSidebarOpen(false);
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const menuItems = [
+        {
+            name: 'Dashboard',
+            href: '/admin/dashboard',
+            icon: 'bi-speedometer2',
+            active: currentUrl === '/admin/dashboard',
+        },
+        {
+            name: 'Leads',
+            icon: 'bi-people',
+            active: isLeadsActive,
+            children: [
+                { name: 'Verified Users', href: '/admin/leads/verified', icon: 'bi-check-circle' },
+                { name: 'Non-Verified', href: '/admin/leads/non-verified', icon: 'bi-x-circle' },
+                { name: 'Purchase Users', href: '/admin/leads/purchase', icon: 'bi-cart-check' },
+            ],
+        },
+        {
+            name: 'Users',
+            href: '/admin/users',
+            icon: 'bi-person',
+            active: currentUrl.startsWith('/admin/users'),
+        },
+        {
+            name: 'Plans',
+            href: '/admin/plans',
+            icon: 'bi-box-seam',
+            active: currentUrl.startsWith('/admin/plans'),
+        },
+        {
+            name: 'Subscriptions',
+            href: '/admin/subscriptions',
+            icon: 'bi-credit-card',
+            active: currentUrl.startsWith('/admin/subscriptions'),
+        },
+        {
+            name: 'Campaigns',
+            href: '/admin/campaigns',
+            icon: 'bi-bullseye',
+            active: currentUrl.startsWith('/admin/campaigns'),
+        },
+        {
+            name: 'Categories',
+            href: '/admin/categories',
+            icon: 'bi-folder',
+            active: currentUrl.startsWith('/admin/categories'),
+        },
+        {
+            name: 'Opportunities',
+            href: '/admin/backlink-opportunities',
+            icon: 'bi-database',
+            active: currentUrl.startsWith('/admin/backlink-opportunities'),
+        },
+        {
+            name: 'Backlinks',
+            href: '/admin/backlinks',
+            icon: 'bi-link-45deg',
+            active: currentUrl.startsWith('/admin/backlinks'),
+        },
+        {
+            name: 'Tasks',
+            href: '/admin/automation-tasks',
+            icon: 'bi-gear',
+            active: currentUrl.startsWith('/admin/automation-tasks'),
+        },
+        {
+            name: 'System',
+            icon: 'bi-server',
+            active: currentUrl.startsWith('/admin/proxies') ||
+                    currentUrl.startsWith('/admin/captcha') ||
+                    currentUrl.startsWith('/admin/system-health') ||
+                    currentUrl.startsWith('/admin/blocked-sites'),
+            children: [
+                { name: 'Proxies', href: '/admin/proxies', icon: 'bi-router' },
+                { name: 'Captcha Logs', href: '/admin/captcha-logs', icon: 'bi-shield-check' },
+                { name: 'System Health', href: '/admin/system-health', icon: 'bi-heart-pulse' },
+                { name: 'Blocked Sites', href: '/admin/blocked-sites', icon: 'bi-ban' },
+            ],
+        },
+        {
+            name: 'Settings',
+            href: '/admin/settings',
+            icon: 'bi-sliders',
+            active: currentUrl.startsWith('/admin/settings'),
+        },
+        {
+            name: 'Locations',
+            href: '/admin/locations/create',
+            icon: 'bi-geo-alt',
+            active: currentUrl.startsWith('/admin/locations'),
+        },
+    ];
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Navigation */}
-            <nav className="bg-white shadow-md border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex">
-                            <div className="flex-shrink-0 flex items-center">
-                                <Link href="/admin/dashboard" className="text-xl font-bold text-gray-900 hover:text-gray-700 transition-colors duration-200">
-                                    <span className="text-2xl mr-2">⚡</span>
-                                    Admin Panel
-                                </Link>
-                            </div>
-                            <div className="hidden sm:ml-8 sm:flex sm:space-x-4 items-center">
-                                <Link
-                                    href="/admin/dashboard"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl === '/admin/dashboard'
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Dashboard
-                                </Link>
-
-                                {/* Leads Dropdown */}
-                                <div className="relative" onMouseEnter={() => setLeadsDropdownOpen(true)} onMouseLeave={() => setLeadsDropdownOpen(false)}>
-                                    <button
-                                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                                            isLeadsActive
-                                                ? 'bg-gray-100 text-gray-900'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                        }`}
-                                    >
-                                        Leads
-                                        <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    {leadsDropdownOpen && (
-                                        <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                            <Link
-                                                href="/admin/leads/verified"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                ✓ Verified Users
-                                            </Link>
-                                            <Link
-                                                href="/admin/leads/non-verified"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                ✗ Non-Verified Users
-                                            </Link>
-                                            <Link
-                                                href="/admin/leads/purchase"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                💳 Purchase Users
-                                            </Link>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <Link
-                                    href="/admin/users"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/users')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Users
-                                </Link>
-                                <Link
-                                    href="/admin/plans"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/plans')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Plans
-                                </Link>
-                                <Link
-                                    href="/admin/campaigns"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/campaigns')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Campaigns
-                                </Link>
-                                <Link
-                                    href="/admin/backlinks"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/backlinks')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Backlinks
-                                </Link>
-                                <Link
-                                    href="/admin/automation-tasks"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/automation-tasks')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Tasks
-                                </Link>
-
-                                {/* System Dropdown */}
-                                <div className="relative" onMouseEnter={() => setSystemDropdownOpen(true)} onMouseLeave={() => setSystemDropdownOpen(false)}>
-                                    <button
-                                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                                            currentUrl.startsWith('/admin/proxies') ||
-                                            currentUrl.startsWith('/admin/captcha') ||
-                                            currentUrl.startsWith('/admin/system-health') ||
-                                            currentUrl.startsWith('/admin/blocked-sites')
-                                                ? 'bg-gray-100 text-gray-900'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                        }`}
-                                    >
-                                        System
-                                        <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    {(systemDropdownOpen || currentUrl.startsWith('/admin/proxies') ||
-                                      currentUrl.startsWith('/admin/captcha') ||
-                                      currentUrl.startsWith('/admin/system-health') ||
-                                      currentUrl.startsWith('/admin/blocked-sites')) && (
-                                        <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                            <Link
-                                                href="/admin/proxies"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                🔌 Proxies
-                                            </Link>
-                                            <Link
-                                                href="/admin/captcha-logs"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                🧩 Captcha Logs
-                                            </Link>
-                                            <Link
-                                                href="/admin/system-health"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                💚 System Health
-                                            </Link>
-                                            <Link
-                                                href="/admin/blocked-sites"
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            >
-                                                🚫 Blocked Sites
-                                            </Link>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <Link
-                                    href="/admin/blocked-sites"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/blocked-sites')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    🚫 Blocked Sites
-                                </Link>
-                                <Link
-                                    href="/admin/settings"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/settings')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    ⚙️ Settings
-                                </Link>
-                                <Link
-                                    href="/admin/locations/create"
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                        currentUrl.startsWith('/admin/locations')
-                                            ? 'bg-gray-100 text-gray-900'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Locations
-                                </Link>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            {/* Profile Dropdown */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                                    className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-gray-300 rounded-lg p-1"
-                                >
-                                    <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold text-sm hover:bg-gray-400 transition-colors">
-                                        {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-700 hidden md:block">{auth?.user?.name}</span>
-                                    <svg className="h-4 w-4 text-gray-600 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                                {profileDropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                        <div className="px-4 py-3 border-b border-gray-200">
-                                            <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
-                                            <p className="text-sm text-gray-500">{auth?.user?.email}</p>
-                                        </div>
-                                        <Link
-                                            href="/profile"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            onClick={() => setProfileDropdownOpen(false)}
-                                        >
-                                            👤 View Profile
-                                        </Link>
-                                        <Link
-                                            href="/logout"
-                                            method="post"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                            onClick={() => setProfileDropdownOpen(false)}
-                                        >
-                                            🚪 Logout
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            {/* Page Header */}
-            {header && (
-                <header className="bg-white border-b border-gray-200 shadow-sm">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-3xl font-bold text-gray-900">{header}</h2>
-                    </div>
-                </header>
+        <div className="min-h-screen bg-gray-50 flex relative">
+            {/* Mobile Sidebar Overlay */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                ></div>
             )}
 
-            {/* Page Content */}
-            <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
-                {children}
-            </main>
+            {/* Sidebar */}
+            <aside className={`fixed lg:static inset-y-0 left-0 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 ${
+                sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'
+            } flex flex-col shadow-xl lg:shadow-none`}>
+                {/* Sidebar Header */}
+                <div className={`h-14 flex items-center border-b border-gray-200 ${
+                    sidebarOpen ? 'justify-between px-4' : 'justify-center px-2'
+                }`}>
+                    {sidebarOpen ? (
+                        <>
+                            <Link href="/admin/dashboard" className="flex items-center space-x-2">
+                                <span className="text-2xl">⚡</span>
+                                <span className="text-lg font-bold text-gray-900">Admin</span>
+                            </Link>
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                <i className="bi bi-chevron-left text-gray-600"></i>
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors w-full flex justify-center"
+                        >
+                            <span className="text-2xl">⚡</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Sidebar Navigation */}
+                <nav className="flex-1 overflow-y-auto py-4">
+                    <ul className="space-y-1 px-2">
+                        {menuItems.map((item, index) => (
+                            <li key={index}>
+                                {item.children ? (
+                                    <div>
+                                        <button
+                                            onClick={() => {
+                                                if (item.name === 'Leads') setLeadsDropdownOpen(!leadsDropdownOpen);
+                                                if (item.name === 'System') setSystemDropdownOpen(!systemDropdownOpen);
+                                            }}
+                                            className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                                                item.active
+                                                    ? 'bg-gray-900 text-white'
+                                                    : 'text-gray-700 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <i className={`bi ${item.icon} text-lg ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}></i>
+                                            {sidebarOpen && (
+                                                <>
+                                                    <span className="flex-1 text-left font-medium">{item.name}</span>
+                                                    <i className={`bi ${item.name === 'Leads' && leadsDropdownOpen || item.name === 'System' && systemDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'} text-xs`}></i>
+                                                </>
+                                            )}
+                                        </button>
+                                        {sidebarOpen && ((item.name === 'Leads' && leadsDropdownOpen) || (item.name === 'System' && systemDropdownOpen)) && (
+                                            <ul className="mt-1 ml-4 space-y-1">
+                                                {item.children.map((child, childIndex) => (
+                                                    <li key={childIndex}>
+                                                        <Link
+                                                            href={child.href}
+                                                            className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                                                                currentUrl === child.href || currentUrl.startsWith(child.href + '/')
+                                                                    ? 'bg-gray-900 text-white'
+                                                                    : 'text-gray-600 hover:bg-gray-100'
+                                                            }`}
+                                                        >
+                                                            <i className={`bi ${child.icon} text-sm mr-3`}></i>
+                                                            <span className="text-sm">{child.name}</span>
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <Link
+                                        href={item.href}
+                                        className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                                            item.active
+                                                ? 'bg-gray-900 text-white'
+                                                : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                        title={!sidebarOpen ? item.name : ''}
+                                    >
+                                        <i className={`bi ${item.icon} text-lg ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}></i>
+                                        {sidebarOpen && <span className="font-medium">{item.name}</span>}
+                                    </Link>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+
+                {/* Sidebar Footer */}
+                <div className="border-t border-gray-200 p-4">
+                    <div className="relative">
+                        <button
+                            onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                            className={`w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                                sidebarOpen ? 'justify-start' : 'justify-center'
+                            }`}
+                        >
+                            <div className="h-8 w-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">
+                                {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                            </div>
+                            {sidebarOpen && (
+                                <div className="ml-3 flex-1 text-left">
+                                    <p className="text-sm font-medium text-gray-900">{auth?.user?.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{auth?.user?.email}</p>
+                                </div>
+                            )}
+                        </button>
+                        {profileDropdownOpen && (
+                            <div className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                                <Link
+                                    href="/profile"
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    onClick={() => setProfileDropdownOpen(false)}
+                                >
+                                    <i className="bi bi-person mr-2"></i>View Profile
+                                </Link>
+                                <Link
+                                    href="/logout"
+                                    method="post"
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    onClick={() => setProfileDropdownOpen(false)}
+                                >
+                                    <i className="bi bi-box-arrow-right mr-2"></i>Logout
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                {/* Top Header - Small */}
+                <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm sticky top-0 z-30">
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                            <i className="bi bi-list text-xl text-gray-600"></i>
+                        </button>
+                        {header && (
+                            <h1 className="text-lg font-semibold text-gray-900">{header}</h1>
+                        )}
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        {/* Notifications or other header items can go here */}
+                        <div className="h-8 w-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm lg:hidden">
+                            {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                        </div>
+                    </div>
+                </header>
+
+                {/* Content Area */}
+                <main className="flex-1 overflow-y-auto bg-gray-50">
+                    <div className="p-6">
+                        {children}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }
-

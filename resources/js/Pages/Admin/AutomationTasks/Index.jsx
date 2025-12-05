@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import AdminLayout from '../../../Components/Layout/AdminLayout';
 import Card from '../../../Components/Shared/Card';
 import Button from '../../../Components/Shared/Button';
@@ -43,6 +43,45 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
             });
         }
     };
+
+    const groupedTasks = tasks?.data?.reduce((groups, task) => {
+        const key = task.campaign_id || 'uncategorized';
+        const label = task.campaign?.name || 'No Campaign';
+
+        if (!groups[key]) {
+            groups[key] = {
+                label,
+                campaignId: task.campaign_id,
+                userName: task.campaign?.user?.name || 'N/A',
+                counts: {
+                    total: 0,
+                    pending: 0,
+                    running: 0,
+                    success: 0,
+                    failed: 0,
+                    cancelled: 0,
+                },
+                items: [],
+            };
+        }
+
+        groups[key].counts.total += 1;
+        const status = task.status || 'pending';
+        if (groups[key].counts[status] !== undefined) {
+            groups[key].counts[status] += 1;
+        }
+        groups[key].items.push(task);
+
+        return groups;
+    }, {});
+
+    // Sort groups by campaign name, then by total count (descending)
+    const sortedGroups = groupedTasks ? Object.values(groupedTasks).sort((a, b) => {
+        if (a.label !== b.label) {
+            return a.label.localeCompare(b.label);
+        }
+        return b.counts.total - a.counts.total;
+    }) : [];
 
     return (
         <AdminLayout header="Automation Tasks Management">
@@ -219,66 +258,102 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {tasks.data.map((task) => (
-                                        <tr key={task.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">#{task.id}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <Link href={`/admin/campaigns/${task.campaign_id}`} className="text-sm text-blue-600 hover:text-blue-900">
-                                                    {task.campaign?.name || 'N/A'}
-                                                </Link>
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                                {task.campaign?.user?.name || 'N/A'}
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 capitalize">{task.type}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    task.status === 'success' ? 'bg-green-100 text-green-800' :
-                                                    task.status === 'running' ? 'bg-blue-100 text-blue-800' :
-                                                    task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    task.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                                    'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {task.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {task.locked_by || '-'}
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {task.retry_count || 0} / {task.max_retries || 3}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={task.error_message || ''}>
-                                                {task.error_message ? (
-                                                    <span className="text-red-600">{task.error_message.substring(0, 50)}...</span>
-                                                ) : '-'}
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {new Date(task.created_at).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    {task.status === 'failed' && (
-                                                        <button
-                                                            onClick={() => handleRetry(task.id)}
-                                                            className="text-green-600 hover:text-green-900"
-                                                            title="Retry"
-                                                        >
-                                                            🔄
-                                                        </button>
-                                                    )}
-                                                    {(task.status === 'pending' || task.status === 'running') && (
-                                                        <button
-                                                            onClick={() => handleCancel(task.id)}
-                                                            className="text-red-600 hover:text-red-900"
-                                                            title="Cancel"
-                                                        >
-                                                            ❌
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
+                                    {sortedGroups.map((group) => (
+                                        <Fragment key={`group-${group.campaignId || 'none'}`}>
+                                            <tr className="bg-gray-100">
+                                                <td colSpan={10} className="px-4 py-3">
+                                                    <div className="flex flex-wrap items-center gap-3 justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-sm font-semibold text-gray-800">{group.label}</span>
+                                                            <span className="text-xs text-gray-600">User: {group.userName}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-xs">
+                                                            <span className="px-2 py-1 rounded-full bg-gray-200 text-gray-800">Total {group.counts.total}</span>
+                                                            {group.counts.pending > 0 && (
+                                                                <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">Pending {group.counts.pending}</span>
+                                                            )}
+                                                            {group.counts.running > 0 && (
+                                                                <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">Running {group.counts.running}</span>
+                                                            )}
+                                                            {group.counts.success > 0 && (
+                                                                <span className="px-2 py-1 rounded-full bg-green-100 text-green-800">Success {group.counts.success}</span>
+                                                            )}
+                                                            {group.counts.failed > 0 && (
+                                                                <span className="px-2 py-1 rounded-full bg-red-100 text-red-800">Failed {group.counts.failed}</span>
+                                                            )}
+                                                            {group.counts.cancelled > 0 && (
+                                                                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-800">Cancelled {group.counts.cancelled}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {group.items.map((task) => (
+                                                <tr key={task.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                        <Link href={`/admin/automation-tasks/${task.id}`} className="text-gray-900 hover:text-gray-700 font-medium">
+                                                            #{task.id}
+                                                        </Link>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <Link href={`/admin/campaigns/${task.campaign_id}`} className="text-sm text-blue-600 hover:text-blue-900">
+                                                            {task.campaign?.name || 'N/A'}
+                                                        </Link>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {task.campaign?.user?.name || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 capitalize">{task.type}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                            task.status === 'success' ? 'bg-green-100 text-green-800' :
+                                                            task.status === 'running' ? 'bg-blue-100 text-blue-800' :
+                                                            task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            task.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                            {task.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                        {task.locked_by || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                        {task.retry_count || 0} / {task.max_retries || 3}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={task.error_message || ''}>
+                                                        {task.error_message ? (
+                                                            <span className="text-red-600">{task.error_message.substring(0, 50)}...</span>
+                                                        ) : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                        {new Date(task.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            {task.status === 'failed' && (
+                                                                <button
+                                                                    onClick={() => handleRetry(task.id)}
+                                                                    className="text-green-600 hover:text-green-900"
+                                                                    title="Retry"
+                                                                >
+                                                                    🔄
+                                                                </button>
+                                                            )}
+                                                            {(task.status === 'pending' || task.status === 'running') && (
+                                                                <button
+                                                                    onClick={() => handleCancel(task.id)}
+                                                                    className="text-red-600 hover:text-red-900"
+                                                                    title="Cancel"
+                                                                >
+                                                                    ❌
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </Fragment>
                                     ))}
                                 </tbody>
                             </table>

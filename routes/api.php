@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\SiteAccountController;
 use App\Http\Controllers\Api\ProxyController;
 use App\Http\Controllers\Api\LLMController;
 use App\Http\Controllers\Api\CaptchaController;
+use App\Http\Controllers\Api\OpportunityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,9 @@ Route::middleware(['api', 'throttle:60,1'])->group(function () {
     // Campaign endpoints
     Route::get('campaigns', [CampaignController::class, 'index']);
     Route::get('campaigns/{id}', [CampaignController::class, 'show']);
+    
+    // Opportunity endpoints (for Python workers)
+    Route::get('opportunities/for-campaign/{campaign_id}', [OpportunityController::class, 'getForCampaign']);
     
     // Task endpoints (for Python workers)
     // Higher rate limit for worker endpoints: 120 requests per minute

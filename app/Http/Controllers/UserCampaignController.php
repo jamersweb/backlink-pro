@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\Domain;
 use App\Models\ConnectedAccount;
 use App\Models\Backlink;
+use App\Models\AutomationTask;
 use App\Services\ActivityLogService;
 use App\Services\NotificationService;
 use App\Services\ExportService;
@@ -159,6 +160,9 @@ public function show($id)
 
     $campaign = Campaign::create($data);
     
+    // Create initial automation tasks based on plan
+    $this->createInitialTasks($campaign, $plan, $settings);
+    
     // Log activity
     ActivityLogService::logCampaignCreated($campaign);
     
@@ -167,7 +171,7 @@ public function show($id)
 
     return redirect()
         ->route('user-campaign.index')
-        ->with('success', 'Campaign created successfully.');
+        ->with('success', 'Campaign created successfully. Initial tasks have been queued.');
 }
 
 public function update(StoreUserCampaignRequest $request, $id)
@@ -246,14 +250,47 @@ public function update(StoreUserCampaignRequest $request, $id)
         unset($data['company_logo']);
     }
 
+    $oldStatus = $campaign->status;
+    $oldStartDate = $campaign->start_date;
+    
     $campaign->update($data);
+    $campaign->refresh();
+
+    // Create tasks if campaign becomes active or start_date is set/updated
+    $shouldCreateTasks = false;
+    
+    if ($campaign->status === Campaign::STATUS_ACTIVE) {
+        // Check if start_date is now or in the past (or not set)
+        $startDatePassed = !$campaign->start_date || 
+                          ($campaign->start_date instanceof \Carbon\Carbon ? $campaign->start_date->lte(now()) : strtotime($campaign->start_date) <= time());
+        
+        if ($startDatePassed) {
+            // Check if we have existing tasks
+            $existingTasksCount = AutomationTask::where('campaign_id', $campaign->id)->count();
+            
+            // Create tasks if:
+            // 1. Campaign just became active (status changed from inactive/paused to active)
+            // 2. Start date was just set/updated and is now or in the past
+            // 3. No tasks exist yet
+            $statusChanged = $oldStatus !== Campaign::STATUS_ACTIVE;
+            $startDateChanged = $oldStartDate != $campaign->start_date;
+            
+            if (($statusChanged || $startDateChanged) && $existingTasksCount === 0) {
+                $shouldCreateTasks = true;
+            }
+        }
+    }
+
+    if ($shouldCreateTasks) {
+        $this->createInitialTasks($campaign, $plan, $settings);
+    }
     
     // Log activity
     ActivityLogService::logCampaignUpdated($campaign);
 
     return redirect()
         ->route('user-campaign.index')
-        ->with('success', 'Campaign updated successfully.');
+        ->with('success', 'Campaign updated successfully.' . ($shouldCreateTasks ? ' Tasks have been queued.' : ''));
 }
 
 public function destroy($id)
@@ -387,5 +424,62 @@ public function export(Request $request)
         'campaigns-' . now()->format('Y-m-d') . '.csv'
     );
 }
+
+    /**
+     * Create initial automation tasks for a new campaign based on plan
+     */
+    protected function createInitialTasks(Campaign $campaign, $plan, array $settings): void
+    {
+        if (!$plan) {
+            return;
+        }
+
+        // Get backlink types from plan
+        $backlinkTypes = $plan->backlink_types ?? ['comment', 'profile'];
+        
+        if (empty($backlinkTypes)) {
+            return; // No backlink types allowed
+        }
+        
+        // Calculate initial tasks per type (based on daily limit)
+        $dailyLimit = $plan->daily_backlink_limit ?? 10;
+        $tasksPerType = max(1, floor($dailyLimit / count($backlinkTypes)));
+
+        // Handle keywords - convert string to array if needed
+        $keywords = $campaign->web_keyword ?? '';
+        if (is_string($keywords)) {
+            $keywords = !empty($keywords) ? explode(',', $keywords) : [];
+            $keywords = array_map('trim', $keywords);
+            $keywords = array_filter($keywords);
+        }
+        if (empty($keywords)) {
+            $keywords = [$campaign->web_name ?? 'SEO'];
+        }
+
+        // Create tasks for each backlink type
+        foreach ($backlinkTypes as $type) {
+            // Check if plan allows this backlink type
+            if (!$plan->allowsBacklinkType($type)) {
+                continue;
+            }
+
+            // Create initial batch of tasks
+            for ($i = 0; $i < $tasksPerType; $i++) {
+                AutomationTask::create([
+                    'campaign_id' => $campaign->id,
+                    'type' => $type,
+                    'status' => AutomationTask::STATUS_PENDING,
+                    'payload' => [
+                        'campaign_id' => $campaign->id,
+                        'keywords' => $keywords,
+                        'anchor_text_strategy' => $settings['anchor_text_strategy'] ?? 'variation',
+                        'content_tone' => $settings['content_tone'] ?? 'professional',
+                    ],
+                    'max_retries' => 3,
+                    'retry_count' => 0,
+                ]);
+            }
+        }
+    }
 
 }

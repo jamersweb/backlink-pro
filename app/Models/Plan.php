@@ -22,6 +22,10 @@ class Plan extends Model
         'features', // JSON array of features
         'is_active',
         'sort_order',
+        'min_pa',
+        'max_pa',
+        'min_da',
+        'max_da',
     ];
 
     protected $casts = [

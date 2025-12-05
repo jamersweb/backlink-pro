@@ -17,6 +17,12 @@ try:
 except ImportError:
     CaptchaSolver = None
 
+# Import opportunity selector
+try:
+    from opportunity_selector import OpportunitySelector
+except ImportError:
+    OpportunitySelector = None
+
 
 class BaseAutomation(ABC):
     """Base class for all automation tasks"""
@@ -29,6 +35,7 @@ class BaseAutomation(ABC):
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.captcha_solver = CaptchaSolver(api_client) if CaptchaSolver else None
+        self.opportunity_selector = OpportunitySelector(api_client) if OpportunitySelector else None
     
     def setup_browser(self):
         """Setup browser with proxy and stealth settings"""

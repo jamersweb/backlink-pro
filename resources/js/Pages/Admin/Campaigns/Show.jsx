@@ -16,6 +16,14 @@ export default function AdminCampaignsShow({ campaign, backlinkStats, taskStats 
         });
     };
 
+    const handleCreateTasks = () => {
+        if (window.confirm('Create automation tasks for this campaign based on the user\'s plan?')) {
+            router.post(`/admin/campaigns/${campaign.id}/create-tasks`, {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
     const handleDelete = () => {
         if (window.confirm(`Are you sure you want to delete "${campaign.name}"? This action cannot be undone.`)) {
             router.delete(`/admin/campaigns/${campaign.id}`);
@@ -38,6 +46,7 @@ export default function AdminCampaignsShow({ campaign, backlinkStats, taskStats 
                     ) : campaign.status === 'paused' ? (
                         <Button variant="primary" onClick={handleResume}>▶️ Resume</Button>
                     ) : null}
+                    <Button variant="primary" onClick={handleCreateTasks}>⚙️ Create Tasks</Button>
                     <Button variant="danger" onClick={handleDelete}>🗑️ Delete</Button>
                 </div>
 

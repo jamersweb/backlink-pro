@@ -39,6 +39,8 @@ class Campaign extends Model
         'end_date',
         'daily_limit',
         'total_limit',
+        'category_id',
+        'subcategory_id',
     ];
 
     protected $casts = [
@@ -68,6 +70,16 @@ class Campaign extends Model
     public function domain(): BelongsTo
     {
         return $this->belongsTo(Domain::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function subcategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'subcategory_id');
     }
 
     public function country(): BelongsTo

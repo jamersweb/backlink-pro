@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LeadsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\PlansController;
+use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\ProfileController;
 
 // Note: prefix('admin'), middleware(['auth', 'role:admin']), and name('admin.') 
@@ -34,6 +35,10 @@ Route::get('/plans/{id}/edit', [PlansController::class, 'edit'])->name('plans.ed
 Route::put('/plans/{id}', [PlansController::class, 'update'])->name('plans.update');
 Route::delete('/plans/{id}', [PlansController::class, 'destroy'])->name('plans.destroy');
 
+// Subscriptions Management
+Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+Route::get('/subscriptions/{id}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
+
 // country/city/state
 Route::get('locations/create', [LocationController::class, 'create'])
      ->name('locations.create');
@@ -42,15 +47,32 @@ Route::get('locations/states/{country}', [LocationController::class, 'getStates'
 Route::get('locations/cities/{state}', [LocationController::class, 'getCities'])
      ->name('locations.cities');
 Route::resource('campaigns', \App\Http\Controllers\Admin\CampaignController::class);
+Route::post('/campaigns/{campaign}/create-tasks', [\App\Http\Controllers\Admin\CampaignController::class, 'createTasks'])->name('campaigns.create-tasks');
 Route::post('/campaigns/{campaign}/pause', [\App\Http\Controllers\Admin\CampaignController::class, 'pause'])->name('campaigns.pause');
 Route::post('/campaigns/{campaign}/resume', [\App\Http\Controllers\Admin\CampaignController::class, 'resume'])->name('campaigns.resume');
 
-// Backlinks Management
+// Backlink Categories Management
+Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->except(['show']);
+
+// Backlink Opportunities Management
+Route::get('/backlink-opportunities', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'index'])->name('backlink-opportunities.index');
+Route::get('/backlink-opportunities/create', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'create'])->name('backlink-opportunities.create');
+Route::post('/backlink-opportunities', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'store'])->name('backlink-opportunities.store');
+Route::get('/backlink-opportunities/{id}/edit', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'edit'])->name('backlink-opportunities.edit');
+Route::put('/backlink-opportunities/{id}', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'update'])->name('backlink-opportunities.update');
+Route::delete('/backlink-opportunities/{id}', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'destroy'])->name('backlink-opportunities.destroy');
+Route::post('/backlink-opportunities/bulk-import', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'bulkImport'])->name('backlink-opportunities.bulk-import');
+Route::get('/backlink-opportunities/export', [\App\Http\Controllers\Admin\BacklinkOpportunityController::class, 'export'])->name('backlink-opportunities.export');
+
+// Backlinks Management (actual created backlinks)
 Route::get('/backlinks', [\App\Http\Controllers\Admin\BacklinkController::class, 'index'])->name('backlinks.index');
+Route::post('/backlinks', [\App\Http\Controllers\Admin\BacklinkController::class, 'store'])->name('backlinks.store');
+Route::post('/backlinks/bulk-import', [\App\Http\Controllers\Admin\BacklinkController::class, 'bulkImport'])->name('backlinks.bulk-import');
 Route::get('/backlinks/export', [\App\Http\Controllers\Admin\BacklinkController::class, 'export'])->name('backlinks.export');
 
 // Automation Tasks Management
 Route::get('/automation-tasks', [\App\Http\Controllers\Admin\AutomationTaskController::class, 'index'])->name('automation-tasks.index');
+Route::get('/automation-tasks/{task}', [\App\Http\Controllers\Admin\AutomationTaskController::class, 'show'])->name('automation-tasks.show');
 Route::post('/automation-tasks/{task}/retry', [\App\Http\Controllers\Admin\AutomationTaskController::class, 'retry'])->name('automation-tasks.retry');
 Route::post('/automation-tasks/{task}/cancel', [\App\Http\Controllers\Admin\AutomationTaskController::class, 'cancel'])->name('automation-tasks.cancel');
 

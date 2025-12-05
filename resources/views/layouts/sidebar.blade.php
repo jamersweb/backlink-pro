@@ -20,6 +20,12 @@
           <span class="nav-label">Admin Dashboard</span>
         </a>
       </li>
+      <li class="nav-item">
+        <a href="/admin/subscriptions" class="nav-link">
+          <i class="bi bi-credit-card"></i>
+          <span class="nav-label">Subscriptions</span>
+        </a>
+      </li>
       @endrole
        @role('user')
 <li class="nav-item">

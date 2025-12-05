@@ -9,8 +9,68 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Apply Google Fonts globally */
+* {
+    font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+body {
+    font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+/* Global link styles - black instead of blue */
+a {
+    color: #111827; /* gray-900 */
+}
+
+a:hover {
+    color: #374151; /* gray-700 */
+}
+
+/* Override common blue link classes */
+.text-blue-600,
+a.text-blue-600 {
+    color: #111827; /* gray-900 */
+}
+
+.hover\:text-blue-900:hover,
+a:hover.text-blue-900 {
+    color: #374151; /* gray-700 */
+}
+
+/* Button styles */
+.bg-blue-600 {
+    background-color: #111827; /* gray-900 */
+}
+
+.hover\:bg-blue-700:hover {
+    background-color: #1f2937; /* gray-800 */
+}
+
+/* Focus ring */
+.focus\:ring-blue-500:focus {
+    --tw-ring-color: #111827; /* gray-900 */
+}
+
+/* Active states in admin */
+.bg-blue-50 {
+    background-color: #111827; /* gray-900 */
+}
+
+.text-blue-700 {
+    color: #ffffff; /* white */
+}
+
+.text-blue-800 {
+    color: #ffffff; /* white */
+}
+
+.border-blue-200 {
+    border-color: #111827; /* gray-900 */
 }
 
 /* Hero Section Animations */

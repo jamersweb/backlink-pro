@@ -30,6 +30,7 @@ class BacklinkController extends Controller
             'anchor_text' => 'nullable|string',
             'status' => 'required|in:pending,submitted,verified,error',
             'site_account_id' => 'nullable|exists:site_accounts,id',
+            'backlink_opportunity_id' => 'nullable|exists:backlink_opportunities,id',
             'error_message' => 'nullable|string',
         ]);
 
@@ -53,6 +54,7 @@ class BacklinkController extends Controller
             'anchor_text' => $request->anchor_text,
             'status' => $request->status,
             'site_account_id' => $request->site_account_id,
+            'backlink_opportunity_id' => $request->backlink_opportunity_id,
             'error_message' => $request->error_message,
             'verified_at' => $request->status === 'verified' ? now() : null,
         ]);

@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
         
         // Seed admin user
         $this->call(AdminSeeder::class);
+        
+        // Seed categories and subcategories
+        $this->call(CategorySeeder::class);
 
         // Create test user
         $testUser = User::factory()->create([

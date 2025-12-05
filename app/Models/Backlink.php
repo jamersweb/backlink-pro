@@ -12,10 +12,13 @@ class Backlink extends Model
     use HasFactory;
     protected $fillable = [
         'campaign_id',
+        'backlink_opportunity_id',
         'url',
         'type',
         'keyword',
         'anchor_text',
+        'pa',
+        'da',
         'status',
         'verified_at',
         'error_message',
@@ -56,6 +59,14 @@ class Backlink extends Model
     public function siteAccount(): BelongsTo
     {
         return $this->belongsTo(SiteAccount::class);
+    }
+
+    /**
+     * Get the backlink opportunity this was created from
+     */
+    public function opportunity(): BelongsTo
+    {
+        return $this->belongsTo(BacklinkOpportunity::class, 'backlink_opportunity_id');
     }
 
     /**

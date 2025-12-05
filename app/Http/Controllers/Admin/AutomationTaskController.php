@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AutomationTask;
 use App\Models\Campaign;
 use App\Models\User;
+use App\Models\Backlink;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -116,6 +117,29 @@ class AutomationTaskController extends Controller
         ]);
 
         return back()->with('success', 'Task cancelled successfully.');
+    }
+
+    public function show(AutomationTask $task)
+    {
+        $task->load([
+            'campaign:id,name,user_id,web_url,web_keyword,category_id,subcategory_id',
+            'campaign.user:id,name,email',
+            'campaign.category:id,name',
+            'campaign.subcategory:id,name',
+        ]);
+
+        // Get related backlinks created by this task
+        $backlinks = Backlink::where('campaign_id', $task->campaign_id)
+            ->where('type', $task->type)
+            ->whereDate('created_at', $task->created_at->toDateString())
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return Inertia::render('Admin/AutomationTasks/Show', [
+            'task' => $task,
+            'backlinks' => $backlinks,
+        ]);
     }
 }
 

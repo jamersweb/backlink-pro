@@ -65,9 +65,25 @@ class LaravelAPIClient:
         response = self._request('PUT', f'/api/tasks/{task_id}/status', json=data)
         return response or {}
     
+    def get_opportunities_for_campaign(self, campaign_id: int, count: int = 1, 
+                                      task_type: Optional[str] = None,
+                                      site_type: Optional[str] = None) -> List[Dict]:
+        """Get opportunities for a campaign based on category, plan limits, and daily limits"""
+        params = {'count': count}
+        if task_type:
+            params['task_type'] = task_type
+        if site_type:
+            params['site_type'] = site_type
+        
+        response = self._request('GET', f'/api/opportunities/for-campaign/{campaign_id}', params=params)
+        if response and response.get('success'):
+            return response.get('opportunities', [])
+        return []
+    
     def create_backlink(self, campaign_id: int, url: str, task_type: str, 
                        keyword: Optional[str] = None, anchor_text: Optional[str] = None,
                        status: str = 'submitted', site_account_id: Optional[int] = None,
+                       backlink_opportunity_id: Optional[int] = None,
                        error_message: Optional[str] = None) -> Dict:
         """Create a backlink"""
         data = {
@@ -82,6 +98,8 @@ class LaravelAPIClient:
             data['anchor_text'] = anchor_text
         if site_account_id:
             data['site_account_id'] = site_account_id
+        if backlink_opportunity_id:
+            data['backlink_opportunity_id'] = backlink_opportunity_id
         if error_message:
             data['error_message'] = error_message
         
