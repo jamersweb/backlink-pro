@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -9,18 +10,37 @@ use Illuminate\Support\Facades\Cache;
 class LLMContentService
 {
     protected $apiKey;
-    protected $provider; // 'openai' or 'deepseek'
+    protected $provider; // 'openai', 'deepseek', or 'anthropic'
     protected $baseUrl;
+    protected $model;
+    protected $enabled;
 
     public function __construct()
     {
-        $this->provider = config('services.llm.provider', 'openai');
-        $this->apiKey = config('services.llm.api_key');
-        
+        // Read from Settings table (set via Admin Settings UI)
+        $this->provider = Setting::get('llm_provider', 'deepseek');
+        $this->model = Setting::get('llm_model', 'deepseek-chat');
+        $this->enabled = Setting::get('llm_enabled', true);
+
+        // Get API key based on provider
         if ($this->provider === 'deepseek') {
+            $this->apiKey = Setting::get('llm_deepseek_api_key', '');
             $this->baseUrl = config('services.llm.deepseek_url', 'https://api.deepseek.com/v1');
+        } elseif ($this->provider === 'anthropic') {
+            $this->apiKey = Setting::get('llm_anthropic_api_key', '');
+            $this->baseUrl = config('services.llm.anthropic_url', 'https://api.anthropic.com/v1');
         } else {
+            // Default to OpenAI
+            $this->apiKey = Setting::get('llm_openai_api_key', '');
             $this->baseUrl = config('services.llm.openai_url', 'https://api.openai.com/v1');
+        }
+
+        // Fallback to config if Settings table doesn't have values (for backward compatibility)
+        if (!$this->apiKey) {
+            $this->apiKey = config('services.llm.api_key', '');
+            if (!$this->provider || $this->provider === 'openai') {
+                $this->provider = config('services.llm.provider', 'openai');
+            }
         }
     }
 
@@ -29,40 +49,87 @@ class LLMContentService
      */
     public function generate(string $prompt, array $options = []): ?string
     {
+        if (!$this->enabled) {
+            Log::info('LLM content generation is disabled');
+            return null;
+        }
+
         if (!$this->apiKey) {
             Log::warning('LLM API key not configured');
             return null;
         }
 
-        $model = $options['model'] ?? ($this->provider === 'deepseek' ? 'deepseek-chat' : 'gpt-3.5-turbo');
+        // Use model from settings or options, with provider-specific defaults
+        $model = $options['model'] ?? $this->model;
+        if (!$model) {
+            // Fallback defaults based on provider
+            if ($this->provider === 'deepseek') {
+                $model = 'deepseek-chat';
+            } elseif ($this->provider === 'anthropic') {
+                $model = 'claude-3-opus-20240229';
+            } else {
+                $model = 'gpt-3.5-turbo';
+            }
+        }
+
         $maxTokens = $options['max_tokens'] ?? 500;
         $temperature = $options['temperature'] ?? 0.7;
 
         try {
-            $response = Http::timeout(60)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ])
-                ->post("{$this->baseUrl}/chat/completions", [
-                    'model' => $model,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => $maxTokens,
-                    'temperature' => $temperature,
-                ]);
+            // Anthropic API uses a different format
+            if ($this->provider === 'anthropic') {
+                $response = Http::timeout(60)
+                    ->withHeaders([
+                        'x-api-key' => $this->apiKey,
+                        'anthropic-version' => '2023-06-01',
+                        'Content-Type' => 'application/json',
+                    ])
+                    ->post("{$this->baseUrl}/messages", [
+                        'model' => $model,
+                        'max_tokens' => $maxTokens,
+                        'temperature' => $temperature,
+                        'messages' => [
+                            ['role' => 'user', 'content' => $prompt],
+                        ],
+                    ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                return $data['choices'][0]['message']['content'] ?? null;
+                if ($response->successful()) {
+                    $data = $response->json();
+                    // Anthropic returns content in a different structure
+                    if (isset($data['content']) && is_array($data['content']) && count($data['content']) > 0) {
+                        return $data['content'][0]['text'] ?? null;
+                    }
+                    return null;
+                }
             } else {
-                Log::error('LLM API request failed', [
-                    'status' => $response->status(),
-                    'response' => $response->body(),
-                ]);
-                return null;
+                // OpenAI and DeepSeek use the same format
+                $response = Http::timeout(60)
+                    ->withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                    ])
+                    ->post("{$this->baseUrl}/chat/completions", [
+                        'model' => $model,
+                        'messages' => [
+                            ['role' => 'user', 'content' => $prompt],
+                        ],
+                        'max_tokens' => $maxTokens,
+                        'temperature' => $temperature,
+                    ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    return $data['choices'][0]['message']['content'] ?? null;
+                }
             }
+
+            // If we get here, the request failed
+            Log::error('LLM API request failed', [
+                'status' => $response->status(),
+                'response' => $response->body(),
+                'provider' => $this->provider,
+            ]);
+            return null;
         } catch (\Exception $e) {
             Log::error('LLM content generation failed', [
                 'error' => $e->getMessage(),
@@ -167,7 +234,7 @@ class LLMContentService
         $prompt .= "Anchor Text Variations:";
 
         $result = $this->generate($prompt, ['max_tokens' => 200, 'temperature' => 0.9]);
-        
+
         if ($result) {
             $variations = array_filter(array_map('trim', explode("\n", $result)));
             return array_slice($variations, 0, $count);

@@ -14,7 +14,7 @@ class RateLimitingService
     public static function checkDomainRateLimit(string $url, int $campaignId): bool
     {
         $domain = self::extractDomain($url);
-        
+
         if (!$domain) {
             return false;
         }
@@ -52,13 +52,13 @@ class RateLimitingService
         }
 
         $host = $parsed['host'];
-        
+
         // Remove www.
         $host = preg_replace('/^www\./', '', $host);
-        
+
         // Convert to lowercase
         $host = strtolower($host);
-        
+
         return $host;
     }
 

@@ -91,7 +91,7 @@ class AutomationTask extends Model
      */
     public function isLocked(): bool
     {
-        return $this->locked_at !== null && 
+        return $this->locked_at !== null &&
                $this->locked_at->addMinutes(30)->isFuture(); // 30 min lock timeout
     }
 
@@ -114,18 +114,30 @@ class AutomationTask extends Model
      */
     public function markFailed(string $errorMessage): bool
     {
+        // Truncate error message if too long (database text column can handle it, but keep reasonable)
+        if (strlen($errorMessage) > 5000) {
+            $errorMessage = substr($errorMessage, 0, 4997) . '...';
+        }
+
         $this->increment('retry_count');
 
-        $status = ($this->retry_count >= $this->max_retries) 
-            ? self::STATUS_FAILED 
+        $status = ($this->retry_count >= $this->max_retries)
+            ? self::STATUS_FAILED
             : self::STATUS_PENDING;
 
-        return $this->update([
+        $updateData = [
             'status' => $status,
             'error_message' => $errorMessage,
             'locked_at' => null,
             'locked_by' => null,
-        ]);
+        ];
+
+        // If retrying, clear started_at so it can be picked up again
+        if ($status === self::STATUS_PENDING) {
+            $updateData['started_at'] = null;
+        }
+
+        return $this->update($updateData);
     }
 
     /**

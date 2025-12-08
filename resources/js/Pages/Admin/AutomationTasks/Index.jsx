@@ -321,9 +321,25 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                                                         {task.retry_count || 0} / {task.max_retries || 3}
                                                     </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={task.error_message || ''}>
+                                                    <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
                                                         {task.error_message ? (
-                                                            <span className="text-red-600">{task.error_message.substring(0, 50)}...</span>
+                                                            <div className="group relative">
+                                                                <span className="text-red-600 cursor-help underline decoration-dotted">
+                                                                    {task.error_message.substring(0, 50)}...
+                                                                </span>
+                                                                {/* Tooltip with full error */}
+                                                                <div className="hidden group-hover:block absolute z-50 w-96 p-3 mt-2 bg-gray-900 text-white text-xs rounded shadow-lg pointer-events-none">
+                                                                    <div className="font-semibold mb-1">Error Details:</div>
+                                                                    <pre className="whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                                                                        {task.error_message}
+                                                                    </pre>
+                                                                    {task.retry_count > 0 && (
+                                                                        <div className="mt-2 pt-2 border-t border-gray-700">
+                                                                            Retries: {task.retry_count}/{task.max_retries}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         ) : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">

@@ -48,10 +48,11 @@ return [
     ],
 
     'llm' => [
-        'provider' => env('LLM_PROVIDER', 'openai'), // 'openai' or 'deepseek'
-        'api_key' => env('LLM_API_KEY'),
+        'provider' => env('LLM_PROVIDER', 'openai'), // 'openai', 'deepseek', or 'anthropic'
+        'api_key' => env('LLM_API_KEY'), // Fallback - prefer Settings table via Admin UI
         'openai_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1'),
         'deepseek_url' => env('DEEPSEEK_API_URL', 'https://api.deepseek.com/v1'),
+        'anthropic_url' => env('ANTHROPIC_API_URL', 'https://api.anthropic.com/v1'),
     ],
 
     'captcha' => [

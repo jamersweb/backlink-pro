@@ -13,7 +13,7 @@ class SettingsController extends Controller
     {
         // Get all settings grouped by service
         $settings = Setting::orderBy('group')->orderBy('key')->get()->groupBy('group');
-        
+
         // Get current values for each service
         $captchaSettings = [
             '2captcha_api_key' => Setting::get('captcha_2captcha_api_key', ''),
@@ -46,9 +46,9 @@ class SettingsController extends Controller
         ];
 
         $apiSettings = [
-            'python_api_token' => Setting::get('python_api_token', config('app.api_token', '')),
-            'api_rate_limit' => Setting::get('api_rate_limit', 100),
-            'api_enabled' => Setting::get('api_enabled', true),
+            'python_api_token' => Setting::get('api_python_api_token', config('app.api_token', '')),
+            'api_rate_limit' => Setting::get('api_api_rate_limit', 300),
+            'api_enabled' => Setting::get('api_api_enabled', true),
         ];
 
         return Inertia::render('Admin/Settings/Index', [
@@ -66,10 +66,10 @@ class SettingsController extends Controller
 
         foreach ($data as $key => $value) {
             $fullKey = $group . '_' . $key;
-            
+
             // Determine if this should be encrypted (passwords, secrets, keys)
             $encrypt = in_array($key, [
-                'api_key', 'api_secret', 'client_secret', 'secret', 
+                'api_key', 'api_secret', 'client_secret', 'secret',
                 'webhook_secret', 'password', 'token', '2captcha_api_key',
                 'anticaptcha_api_key', 'stripe_secret', 'stripe_webhook_secret',
                 'google_client_secret', 'deepseek_api_key', 'openai_api_key',
@@ -92,6 +92,13 @@ class SettingsController extends Controller
         if (str_contains($key, 'enabled') || str_contains($key, 'active')) {
             return 'boolean';
         }
+        // Detect numeric settings (rate limits, counts, etc.)
+        if (str_contains($key, 'rate_limit') || str_contains($key, 'limit') ||
+            str_contains($key, 'count') || str_contains($key, 'max_') ||
+            str_contains($key, 'min_') || str_contains($key, 'timeout') ||
+            str_contains($key, 'interval') || str_contains($key, 'port')) {
+            return 'number';
+        }
         if (is_numeric($key)) {
             return 'number';
         }
@@ -101,7 +108,7 @@ class SettingsController extends Controller
     public function testConnection(Request $request)
     {
         $service = $request->input('service');
-        
+
         try {
             switch ($service) {
                 case 'stripe':
@@ -114,7 +121,7 @@ class SettingsController extends Controller
                     \Stripe\Stripe::setApiKey($secret);
                     \Stripe\Account::retrieve();
                     return response()->json(['success' => true, 'message' => 'Stripe connection successful', 'service' => 'stripe']);
-                    
+
                 case 'google':
                     $clientId = Setting::get('google_client_id');
                     $clientSecret = Setting::get('google_client_secret');
@@ -122,7 +129,7 @@ class SettingsController extends Controller
                         return response()->json(['success' => false, 'message' => 'Google OAuth credentials not configured', 'service' => 'google']);
                     }
                     return response()->json(['success' => true, 'message' => 'Google OAuth credentials configured', 'service' => 'google']);
-                    
+
                 case '2captcha':
                     $apiKey = Setting::get('captcha_2captcha_api_key');
                     if (!$apiKey) {
@@ -139,7 +146,7 @@ class SettingsController extends Controller
                     } catch (\Exception $e) {
                         return response()->json(['success' => false, 'message' => '2Captcha connection error: ' . $e->getMessage(), 'service' => '2captcha']);
                     }
-                    
+
                 default:
                     return response()->json(['success' => false, 'message' => 'Unknown service']);
             }

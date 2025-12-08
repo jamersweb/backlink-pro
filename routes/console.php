@@ -17,4 +17,7 @@ Schedule::command('proxy:check-health --unhealthy')->hourly();
 Schedule::command('proxy:check-health --all')->daily();
 
 // Auto-run pending automation tasks every minute (short single-pass)
-Schedule::command('automation:run-worker --limit=5')->everyMinute();
+// Prevent overlapping executions - if a task is still running, skip the next scheduled run
+Schedule::command('automation:run-worker --limit=5')
+    ->everyMinute()
+    ->withoutOverlapping(5); // 5 minute timeout to prevent stuck processes

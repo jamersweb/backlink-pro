@@ -201,8 +201,24 @@ export default function AdminAutomationTaskShow({ task, backlinks }) {
                         {/* Error Message */}
                         {task.error_message && (
                             <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
-                                <h3 className="text-sm font-medium text-red-800 mb-2">Error Message</h3>
-                                <p className="text-sm text-red-700">{task.error_message}</p>
+                                <div className="flex items-start justify-between mb-2">
+                                    <h3 className="text-sm font-medium text-red-800">Error Message</h3>
+                                    {task.retry_count > 0 && (
+                                        <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                                            Retry {task.retry_count}/{task.max_retries}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="mt-2">
+                                    <pre className="text-xs text-red-700 whitespace-pre-wrap break-words font-mono bg-white p-3 rounded border border-red-200 max-h-96 overflow-y-auto">
+                                        {task.error_message}
+                                    </pre>
+                                </div>
+                                {task.status === 'failed' && task.retry_count < task.max_retries && (
+                                    <p className="text-xs text-red-600 mt-2">
+                                        ⚠️ This task will be automatically retried ({task.max_retries - task.retry_count} retries remaining)
+                                    </p>
+                                )}
                             </div>
                         )}
 

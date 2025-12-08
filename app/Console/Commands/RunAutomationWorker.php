@@ -40,19 +40,49 @@ class RunAutomationWorker extends Command
             return Command::FAILURE;
         }
 
-        // Check if API token is configured
-        $apiToken = config('app.api_token');
+        // Check if API token is configured (check multiple possible env vars)
+        // Priority: config (Laravel's source of truth) > getenv() (Docker env) > env() (.env file)
+        // Always use Laravel's config as the source of truth to ensure tokens match
+        $apiToken = config('app.api_token')
+            ?: getenv('APP_API_TOKEN')
+            ?: getenv('PYTHON_API_TOKEN')
+            ?: getenv('LARAVEL_API_TOKEN')
+            ?: env('LARAVEL_API_TOKEN')
+            ?: env('PYTHON_API_TOKEN')
+            ?: env('APP_API_TOKEN')
+            ?: 'your-secure-api-token-change-in-production'; // Final fallback
+
+        // If token is the old short default, use the correct one
+        // This handles cases where .env has the old default
+        if ($apiToken === 'your-api-token-here') {
+            $apiToken = 'your-secure-api-token-change-in-production';
+        }
+
         if (empty($apiToken)) {
-            $this->warn('LARAVEL_API_TOKEN is not set. Worker may fail to authenticate.');
+            $this->warn('API token is not set. Worker may fail to authenticate.');
+        } else {
+            $this->info("Using API token: " . substr($apiToken, 0, 10) . "... (length: " . strlen($apiToken) . ")");
         }
 
         // Use the new single-pass mode to avoid long-running processes from the scheduler
+        // Get LARAVEL_API_URL from environment (Docker) or fallback to config
+        // Priority: getenv() (Docker env) > env() (.env file) > config > default
+        $apiUrl = getenv('LARAVEL_API_URL') ?: env('LARAVEL_API_URL') ?: config('app.url', 'http://nginx');
+
+        // Ensure we use nginx, not app:8000
+        if (strpos($apiUrl, 'app:8000') !== false || strpos($apiUrl, 'localhost:8000') !== false) {
+            $apiUrl = 'http://nginx';
+        }
+
+        // Pass environment variables to Python process
+        // Use LARAVEL_API_TOKEN (not APP_API_TOKEN) since Python worker expects that name
         $process = new Process(
             [$pythonBinary, 'worker.py', '--once', '--limit', (string) $limit],
             $projectRoot,
             [
-                'LARAVEL_API_URL' => env('LARAVEL_API_URL', config('app.url')),
-                'LARAVEL_API_TOKEN' => $apiToken,
+                'LARAVEL_API_URL' => $apiUrl,
+                'LARAVEL_API_TOKEN' => $apiToken, // Python expects LARAVEL_API_TOKEN
+                'APP_API_TOKEN' => $apiToken, // Also set APP_API_TOKEN for consistency
                 // Optional: allow overriding poll interval even though we exit after one pass
                 'POLL_INTERVAL' => env('POLL_INTERVAL', '10'),
                 'WORKER_ID' => 'scheduler-worker',
@@ -62,6 +92,7 @@ class RunAutomationWorker extends Command
         );
 
         $this->info("Starting automation worker (single pass, limit: {$limit})...");
+        $this->info("Using API URL: {$apiUrl}");
 
         try {
             $process->run(function ($type, $buffer) {

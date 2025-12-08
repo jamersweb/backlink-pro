@@ -46,8 +46,9 @@ REDIS_PASSWORD=null
 # Queue
 QUEUE_CONNECTION=redis
 
-# Python Worker API Token (generate a secure token)
-PYTHON_API_TOKEN=your-secure-api-token-here-change-this
+# API Token for Python Worker and Automation (generate a secure token)
+APP_API_TOKEN=your-secure-api-token-here-change-this
+# Alternative: PYTHON_API_TOKEN (will fallback to APP_API_TOKEN if not set)
 
 # Gmail OAuth (will be configured later)
 GOOGLE_CLIENT_ID=
@@ -83,8 +84,9 @@ You should see these containers running:
 - `backlink-mysql` (Database)
 - `backlink-redis` (Cache/Queue)
 - `backlink-queue` (Queue worker)
+- `backlink-scheduler` (Laravel Task Scheduler - runs scheduled tasks automatically)
 - `backlink-horizon` (Queue dashboard)
-- `backlink-python-worker` (Python automation)
+- `backlink-python-worker` (Python automation worker)
 
 ---
 
@@ -195,6 +197,43 @@ docker-compose exec app npm run build
 
 ---
 
+## Step 7: Understanding Docker Services
+
+### Laravel Scheduler Service
+
+The `backlink-scheduler` container runs Laravel's task scheduler automatically. It executes `php artisan schedule:work` which:
+
+- **Runs scheduled tasks every minute** (as defined in `routes/console.php`)
+- **Automatically processes automation tasks** via the `automation:run-worker` command
+- **Runs campaign scheduling jobs** hourly
+- **Performs proxy health checks** hourly/daily
+
+**What gets scheduled:**
+- Automation tasks auto-run (every minute) - processes pending automation tasks
+- Campaign scheduling (hourly) - creates new automation tasks for active campaigns
+- Proxy health checks (hourly/daily) - monitors proxy status
+
+**To view scheduler logs:**
+```bash
+docker-compose logs -f scheduler
+```
+
+**To manually trigger automation worker:**
+```bash
+docker-compose exec scheduler php artisan automation:run-worker
+```
+
+### Python Worker Service
+
+The `backlink-python-worker` container runs the Python automation worker continuously. This is optional if you're using the scheduler, but can be kept as a backup for continuous processing.
+
+**To view Python worker logs:**
+```bash
+docker-compose logs -f python-worker
+```
+
+---
+
 ## Common Docker Commands
 
 ### View Logs
@@ -206,6 +245,7 @@ docker-compose logs
 # Specific container
 docker-compose logs app
 docker-compose logs queue
+docker-compose logs scheduler
 docker-compose logs python-worker
 
 # Follow logs (live)
@@ -273,6 +313,7 @@ docker-compose exec app npm run dev
 
 # Access container shell
 docker-compose exec app bash
+docker-compose exec scheduler bash
 docker-compose exec python-worker bash
 ```
 
