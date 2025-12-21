@@ -27,16 +27,16 @@ backlink__pro.sql
 # Python virtualenvs
 .venv/
 python/.venv/
+venv/
+env/
+ENV/
 
 # Python junk (recommended)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
 .pytest_cache/
 .mypy_cache/
-
-# Virtualenv
-.venv/
-python/.venv/
 
