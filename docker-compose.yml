@@ -91,6 +91,7 @@ services:
       QUEUE_CONNECTION: redis
       LARAVEL_API_URL: http://nginx
       APP_API_TOKEN: ${APP_API_TOKEN:-${PYTHON_API_TOKEN:-your-secure-api-token-change-in-production}}
+      LARAVEL_API_TOKEN: ${APP_API_TOKEN:-${PYTHON_API_TOKEN:-your-secure-api-token-change-in-production}}
       PYTHON_BINARY: python3
       PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1
       # Set LD_LIBRARY_PATH to help find system libraries
@@ -115,6 +116,8 @@ services:
     environment:
       LARAVEL_API_URL: http://nginx
       LARAVEL_API_TOKEN: ${PYTHON_API_TOKEN:-${APP_API_TOKEN:-your-secure-api-token-change-in-production}}
+      # Slow polling to avoid API rate-limit (300 req/hour). 30s ≈ 120 req/hour.
+      POLL_INTERVAL: 30
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-backlink_pro}
@@ -122,6 +125,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-root}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1
+      # Set LD_LIBRARY_PATH to help find system libraries
+      LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:/usr/lib:/lib/x86_64-linux-gnu:/lib:/usr/local/lib
     networks:
       - backlink-network
     restart: unless-stopped

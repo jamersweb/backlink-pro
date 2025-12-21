@@ -7,11 +7,12 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     ca-certificates \
-    # Playwright/Chromium dependencies
+    # Playwright/Chromium dependencies - CRITICAL: libglib2.0-0 must be included
     libnss3 \
     libnspr4 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
+    libatspi2.0-0 \
     libcups2 \
     libdrm2 \
     libdbus-1-3 \
@@ -22,14 +23,37 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libasound2 \
+    # Critical: GLib library (required for Chromium)
+    libglib2.0-0 \
+    libglib2.0-bin \
+    # Additional X11 and graphics libraries
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgtk-3-0 \
+    libgdk-pixbuf-2.0-0 \
+    libfontconfig1 \
+    libfreetype6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcb-dri3-0 \
+    libxcb-shm0 \
+    libxcb-xfixes0 \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
     # Fonts (using available packages)
     fonts-liberation \
     fonts-unifont \
     fonts-dejavu-core \
-    # Additional dependencies (removed deprecated packages)
+    # Additional dependencies
     libxss1 \
     libxshmfence1 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ldconfig \
+    && echo "Verifying libglib installation..." \
+    && (ldconfig -p | grep -q "libglib-2.0.so.0" && echo "✓ libglib-2.0.so.0 found in library cache" || echo "WARNING: libglib-2.0.so.0 not in cache")
 
 # Set working directory
 WORKDIR /app

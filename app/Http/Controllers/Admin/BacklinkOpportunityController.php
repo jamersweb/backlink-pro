@@ -4,58 +4,61 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BacklinkOpportunity;
-use App\Models\Category;
+use App\Models\Campaign;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class BacklinkOpportunityController extends Controller
 {
     /**
-     * Display a listing of backlink opportunities
+     * Display a listing of backlink opportunities (campaign-specific)
+     * Shows where user links were added
      */
     public function index(Request $request)
     {
-        $query = BacklinkOpportunity::with('categories');
+        $query = BacklinkOpportunity::with(['campaign:id,name,user_id', 'campaign.user:id,name,email', 'backlink:id,url,pa,da,site_type', 'siteAccount:id,site_domain']);
 
-        // Filter by category
-        if ($request->has('category_id') && $request->category_id) {
-            $query->whereHas('categories', function($q) use ($request) {
-                $q->where('categories.id', $request->category_id);
+        // Filter by campaign
+        if ($request->has('campaign_id') && $request->campaign_id) {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+
+        // Filter by user
+        if ($request->has('user_id') && $request->user_id) {
+            $query->whereHas('campaign', function($q) use ($request) {
+                $q->where('user_id', $request->user_id);
             });
         }
 
-        // Filter by PA range
-        if ($request->has('pa_min') && $request->pa_min !== null) {
-            $query->where('pa', '>=', $request->pa_min);
-        }
-        if ($request->has('pa_max') && $request->pa_max !== null) {
-            $query->where('pa', '<=', $request->pa_max);
-        }
-
-        // Filter by DA range
-        if ($request->has('da_min') && $request->da_min !== null) {
-            $query->where('da', '>=', $request->da_min);
-        }
-        if ($request->has('da_max') && $request->da_max !== null) {
-            $query->where('da', '<=', $request->da_max);
-        }
-
         // Filter by status
-        if ($request->has('status') && $request->status !== 'all') {
+        if ($request->has('status') && $request->status && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        // Filter by site type
-        if ($request->has('site_type') && $request->site_type) {
-            $query->where('site_type', $request->site_type);
+        // Filter by type
+        if ($request->has('type') && $request->type) {
+            $query->where('type', $request->type);
+        }
+
+        // Date range filter
+        if ($request->has('date_from') && $request->date_from) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to') && $request->date_to) {
+            $query->whereDate('created_at', '<=', $request->date_to);
         }
 
         // Search
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('url', 'like', "%{$search}%");
+                $q->where('url', 'like', "%{$search}%")
+                  ->orWhere('keyword', 'like', "%{$search}%")
+                  ->orWhere('anchor_text', 'like', "%{$search}%")
+                  ->orWhereHas('backlink', function($q) use ($search) {
+                      $q->where('url', 'like', "%{$search}%");
+                  });
             });
         }
 
@@ -64,37 +67,53 @@ class BacklinkOpportunityController extends Controller
         // Get stats
         $stats = [
             'total' => BacklinkOpportunity::count(),
-            'active' => BacklinkOpportunity::where('status', 'active')->count(),
-            'inactive' => BacklinkOpportunity::where('status', 'inactive')->count(),
-            'banned' => BacklinkOpportunity::where('status', 'banned')->count(),
+            'verified' => BacklinkOpportunity::where('status', BacklinkOpportunity::STATUS_VERIFIED)->count(),
+            'pending' => BacklinkOpportunity::where('status', BacklinkOpportunity::STATUS_PENDING)->count(),
+            'submitted' => BacklinkOpportunity::where('status', BacklinkOpportunity::STATUS_SUBMITTED)->count(),
+            'error' => BacklinkOpportunity::where('status', BacklinkOpportunity::STATUS_FAILED)->count(),
+            'today' => BacklinkOpportunity::whereDate('created_at', today())->count(),
+            'this_week' => BacklinkOpportunity::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'this_month' => BacklinkOpportunity::whereMonth('created_at', now()->month)->count(),
         ];
 
         // Get filter options
-        $categories = Category::where('status', 'active')
-            ->orderBy('parent_id')
+        $campaigns = Campaign::select('id', 'name', 'user_id')
+            ->with('user:id,name')
             ->orderBy('name')
             ->get();
+        
+        $users = User::select('id', 'name', 'email')->orderBy('name')->get();
 
         return Inertia::render('Admin/BacklinkOpportunities/Index', [
             'opportunities' => $opportunities,
             'stats' => $stats,
-            'categories' => $categories,
-            'filters' => $request->only(['category_id', 'pa_min', 'pa_max', 'da_min', 'da_max', 'status', 'site_type', 'search']),
+            'campaigns' => $campaigns,
+            'users' => $users,
+            'filters' => $request->only(['status', 'type', 'campaign_id', 'user_id', 'date_from', 'date_to', 'search']),
         ]);
     }
 
     /**
      * Show the form for creating a new opportunity
+     * Note: Opportunities are usually created automatically by Python worker
+     * This is mainly for manual creation if needed
      */
     public function create()
     {
-        $categories = Category::where('status', 'active')
-            ->orderBy('parent_id')
+        $campaigns = Campaign::select('id', 'name', 'user_id')
+            ->with('user:id,name')
             ->orderBy('name')
+            ->get();
+        
+        $backlinks = \App\Models\Backlink::where('status', \App\Models\Backlink::STATUS_ACTIVE)
+            ->select('id', 'url', 'pa', 'da', 'site_type')
+            ->orderBy('url')
+            ->limit(1000)
             ->get();
 
         return Inertia::render('Admin/BacklinkOpportunities/Create', [
-            'categories' => $categories,
+            'campaigns' => $campaigns,
+            'backlinks' => $backlinks,
         ]);
     }
 
@@ -104,28 +123,28 @@ class BacklinkOpportunityController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'url' => 'required|url',
-            'pa' => 'nullable|integer|min:0|max:100',
-            'da' => 'nullable|integer|min:0|max:100',
-            'site_type' => 'required|in:comment,profile,forum,guestposting,other',
-            'status' => 'required|in:active,inactive,banned',
-            'daily_site_limit' => 'nullable|integer|min:0',
-            'category_ids' => 'required|array|min:1',
-            'category_ids.*' => 'exists:categories,id',
+            'campaign_id' => 'required|exists:campaigns,id',
+            'backlink_id' => 'required|exists:backlinks,id',
+            'url' => 'nullable|url',
+            'type' => 'required|in:comment,profile,forum,guestposting',
+            'keyword' => 'nullable|string|max:255',
+            'anchor_text' => 'nullable|string|max:255',
+            'status' => 'required|in:pending,submitted,verified,error',
         ]);
 
-        DB::transaction(function() use ($validated) {
-            $opportunity = BacklinkOpportunity::create([
-                'url' => $validated['url'],
-                'pa' => $validated['pa'] ?? null,
-                'da' => $validated['da'] ?? null,
-                'site_type' => $validated['site_type'],
-                'status' => $validated['status'],
-                'daily_site_limit' => $validated['daily_site_limit'] ?? null,
-            ]);
+        $backlink = \App\Models\Backlink::findOrFail($validated['backlink_id']);
+        $actualUrl = $validated['url'] ?? $backlink->url;
 
-            $opportunity->categories()->attach($validated['category_ids']);
-        });
+        $opportunity = BacklinkOpportunity::create([
+            'campaign_id' => $validated['campaign_id'],
+            'backlink_id' => $validated['backlink_id'],
+            'url' => $actualUrl,
+            'type' => $validated['type'],
+            'keyword' => $validated['keyword'] ?? null,
+            'anchor_text' => $validated['anchor_text'] ?? null,
+            'status' => $validated['status'],
+            'verified_at' => $validated['status'] === 'verified' ? now() : null,
+        ]);
 
         return redirect()->route('admin.backlink-opportunities.index')
             ->with('success', 'Backlink opportunity created successfully.');
@@ -136,15 +155,23 @@ class BacklinkOpportunityController extends Controller
      */
     public function edit($id)
     {
-        $opportunity = BacklinkOpportunity::with('categories')->findOrFail($id);
-        $categories = Category::where('status', 'active')
-            ->orderBy('parent_id')
+        $opportunity = BacklinkOpportunity::with(['campaign', 'backlink'])->findOrFail($id);
+        
+        $campaigns = Campaign::select('id', 'name', 'user_id')
+            ->with('user:id,name')
             ->orderBy('name')
+            ->get();
+        
+        $backlinks = \App\Models\Backlink::where('status', \App\Models\Backlink::STATUS_ACTIVE)
+            ->select('id', 'url', 'pa', 'da', 'site_type')
+            ->orderBy('url')
+            ->limit(1000)
             ->get();
 
         return Inertia::render('Admin/BacklinkOpportunities/Edit', [
             'opportunity' => $opportunity,
-            'categories' => $categories,
+            'campaigns' => $campaigns,
+            'backlinks' => $backlinks,
         ]);
     }
 
@@ -156,28 +183,25 @@ class BacklinkOpportunityController extends Controller
         $opportunity = BacklinkOpportunity::findOrFail($id);
 
         $validated = $request->validate([
-            'url' => 'required|url',
-            'pa' => 'nullable|integer|min:0|max:100',
-            'da' => 'nullable|integer|min:0|max:100',
-            'site_type' => 'required|in:comment,profile,forum,guestposting,other',
-            'status' => 'required|in:active,inactive,banned',
-            'daily_site_limit' => 'nullable|integer|min:0',
-            'category_ids' => 'required|array|min:1',
-            'category_ids.*' => 'exists:categories,id',
+            'campaign_id' => 'required|exists:campaigns,id',
+            'backlink_id' => 'required|exists:backlinks,id',
+            'url' => 'nullable|url',
+            'type' => 'required|in:comment,profile,forum,guestposting',
+            'keyword' => 'nullable|string|max:255',
+            'anchor_text' => 'nullable|string|max:255',
+            'status' => 'required|in:pending,submitted,verified,error',
         ]);
 
-        DB::transaction(function() use ($opportunity, $validated) {
-            $opportunity->update([
-                'url' => $validated['url'],
-                'pa' => $validated['pa'] ?? null,
-                'da' => $validated['da'] ?? null,
-                'site_type' => $validated['site_type'],
-                'status' => $validated['status'],
-                'daily_site_limit' => $validated['daily_site_limit'] ?? null,
-            ]);
-
-            $opportunity->categories()->sync($validated['category_ids']);
-        });
+        $opportunity->update([
+            'campaign_id' => $validated['campaign_id'],
+            'backlink_id' => $validated['backlink_id'],
+            'url' => $validated['url'] ?? $opportunity->backlink->url,
+            'type' => $validated['type'],
+            'keyword' => $validated['keyword'] ?? null,
+            'anchor_text' => $validated['anchor_text'] ?? null,
+            'status' => $validated['status'],
+            'verified_at' => $validated['status'] === 'verified' && !$opportunity->verified_at ? now() : $opportunity->verified_at,
+        ]);
 
         return redirect()->route('admin.backlink-opportunities.index')
             ->with('success', 'Backlink opportunity updated successfully.');
@@ -196,179 +220,36 @@ class BacklinkOpportunityController extends Controller
     }
 
     /**
-     * Bulk import from CSV
+     * Bulk import - Not applicable for opportunities (they're created automatically)
+     * Redirect to backlinks bulk import instead
      */
     public function bulkImport(Request $request)
     {
-        $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
-        ]);
-
-        $file = $request->file('csv_file');
-        $handle = fopen($file->getRealPath(), 'r');
-        
-        if ($handle === false) {
-            return back()->with('error', 'Failed to read CSV file.');
-        }
-
-        // Read header row
-        $headers = fgetcsv($handle);
-        if (!$headers) {
-            fclose($handle);
-            return back()->with('error', 'CSV file is empty.');
-        }
-
-        // Normalize headers
-        $headers = array_map(function($header) {
-            return strtolower(trim($header));
-        }, $headers);
-
-        // Map columns
-        $columnMap = [];
-        $expectedColumns = ['url', 'pa', 'da', 'categories', 'site_type', 'status'];
-        foreach ($expectedColumns as $col) {
-            foreach ($headers as $index => $header) {
-                if ($header === $col || strpos($header, $col) !== false) {
-                    $columnMap[$col] = $index;
-                    break;
-                }
-            }
-        }
-
-        if (!isset($columnMap['url'])) {
-            fclose($handle);
-            return back()->with('error', 'CSV file must contain a URL column.');
-        }
-
-        $imported = 0;
-        $skipped = 0;
-        $errors = [];
-
-        DB::beginTransaction();
-        try {
-            $rowNumber = 1;
-            while (($row = fgetcsv($handle)) !== false) {
-                $rowNumber++;
-                
-                if (empty(array_filter($row))) {
-                    continue;
-                }
-
-                $url = isset($row[$columnMap['url']]) ? trim($row[$columnMap['url']]) : '';
-                if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-                    $skipped++;
-                    $errors[] = "Row {$rowNumber}: Invalid or missing URL";
-                    continue;
-                }
-
-                $pa = isset($columnMap['pa']) && isset($row[$columnMap['pa']]) 
-                    ? (int)trim($row[$columnMap['pa']]) 
-                    : null;
-                $pa = ($pa >= 0 && $pa <= 100) ? $pa : null;
-
-                $da = isset($columnMap['da']) && isset($row[$columnMap['da']]) 
-                    ? (int)trim($row[$columnMap['da']]) 
-                    : null;
-                $da = ($da >= 0 && $da <= 100) ? $da : null;
-
-                $siteType = isset($columnMap['site_type']) && isset($row[$columnMap['site_type']]) 
-                    ? trim($row[$columnMap['site_type']]) 
-                    : 'comment';
-                if (!in_array($siteType, ['comment', 'profile', 'forum', 'guestposting', 'other'])) {
-                    $siteType = 'comment';
-                }
-
-                $status = isset($columnMap['status']) && isset($row[$columnMap['status']]) 
-                    ? trim($row[$columnMap['status']]) 
-                    : 'active';
-                if (!in_array($status, ['active', 'inactive', 'banned'])) {
-                    $status = 'active';
-                }
-
-                // Parse categories (pipe-separated)
-                $categoryNames = [];
-                if (isset($columnMap['categories']) && isset($row[$columnMap['categories']])) {
-                    $categoryString = trim($row[$columnMap['categories']]);
-                    $categoryNames = array_filter(array_map('trim', explode('|', $categoryString)));
-                }
-
-                if (empty($categoryNames)) {
-                    $skipped++;
-                    $errors[] = "Row {$rowNumber}: No categories specified";
-                    continue;
-                }
-
-                // Find category IDs by name or slug
-                $categoryIds = [];
-                foreach ($categoryNames as $catName) {
-                    $category = Category::where('name', $catName)
-                        ->orWhere('slug', \Illuminate\Support\Str::slug($catName))
-                        ->first();
-                    if ($category) {
-                        $categoryIds[] = $category->id;
-                    }
-                }
-
-                if (empty($categoryIds)) {
-                    $skipped++;
-                    $errors[] = "Row {$rowNumber}: Categories not found: " . implode(', ', $categoryNames);
-                    continue;
-                }
-
-                try {
-                    $opportunity = BacklinkOpportunity::create([
-                        'url' => $url,
-                        'pa' => $pa,
-                        'da' => $da,
-                        'site_type' => $siteType,
-                        'status' => $status,
-                    ]);
-
-                    $opportunity->categories()->attach($categoryIds);
-                    $imported++;
-                } catch (\Exception $e) {
-                    $skipped++;
-                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
-                }
-            }
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            fclose($handle);
-            return back()->with('error', 'Import failed: ' . $e->getMessage());
-        }
-
-        fclose($handle);
-
-        $message = "Successfully imported {$imported} opportunity(s).";
-        if ($skipped > 0) {
-            $message .= " {$skipped} row(s) skipped.";
-        }
-
-        return redirect()->route('admin.backlink-opportunities.index')
-            ->with('success', $message)
-            ->with('import_errors', array_slice($errors, 0, 20)); // Limit errors shown
+        return redirect()->route('admin.backlinks.index')
+            ->with('info', 'To add sites to the store, use the Backlinks page bulk import feature.');
     }
 
     /**
-     * Export opportunities to CSV
+     * Export opportunities
      */
     public function export(Request $request)
     {
-        $query = BacklinkOpportunity::with('categories');
+        $query = BacklinkOpportunity::with(['campaign:id,name', 'campaign.user:id,name,email', 'backlink:id,url,pa,da']);
 
         // Apply filters
-        if ($request->has('category_id') && $request->category_id) {
-            $query->whereHas('categories', function($q) use ($request) {
-                $q->where('categories.id', $request->category_id);
-            });
-        }
-        if ($request->has('status') && $request->status !== 'all') {
+        if ($request->has('status') && $request->status && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
-        if ($request->has('site_type') && $request->site_type) {
-            $query->where('site_type', $request->site_type);
+        if ($request->has('type') && $request->type) {
+            $query->where('type', $request->type);
+        }
+        if ($request->has('campaign_id') && $request->campaign_id) {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+        if ($request->has('user_id') && $request->user_id) {
+            $query->whereHas('campaign', function($q) use ($request) {
+                $q->where('user_id', $request->user_id);
+            });
         }
 
         $opportunities = $query->get();
@@ -383,18 +264,40 @@ class BacklinkOpportunityController extends Controller
             $file = fopen('php://output', 'w');
             
             // Header row
-            fputcsv($file, ['url', 'pa', 'da', 'categories', 'site_type', 'status']);
+            fputcsv($file, [
+                'ID',
+                'Campaign',
+                'User',
+                'Backlink Store URL',
+                'Actual URL',
+                'Type',
+                'Keyword',
+                'Anchor Text',
+                'PA',
+                'DA',
+                'Status',
+                'Verified At',
+                'Error Message',
+                'Created At',
+            ]);
 
             // Data rows
             foreach ($opportunities as $opp) {
-                $categoryNames = $opp->categories->pluck('name')->implode('|');
                 fputcsv($file, [
-                    $opp->url,
-                    $opp->pa ?? '',
-                    $opp->da ?? '',
-                    $categoryNames,
-                    $opp->site_type,
+                    $opp->id,
+                    $opp->campaign->name ?? 'N/A',
+                    $opp->campaign->user->name ?? 'N/A',
+                    $opp->backlink->url ?? 'N/A',
+                    $opp->url ?? $opp->backlink->url ?? 'N/A',
+                    $opp->type,
+                    $opp->keyword ?? '',
+                    $opp->anchor_text ?? '',
+                    $opp->backlink->pa ?? '',
+                    $opp->backlink->da ?? '',
                     $opp->status,
+                    $opp->verified_at ? $opp->verified_at->format('Y-m-d H:i:s') : '',
+                    $opp->error_message ?? '',
+                    $opp->created_at->format('Y-m-d H:i:s'),
                 ]);
             }
 
@@ -404,4 +307,3 @@ class BacklinkOpportunityController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 }
-

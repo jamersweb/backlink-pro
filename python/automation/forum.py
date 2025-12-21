@@ -31,6 +31,8 @@ class ForumAutomation(BaseAutomation):
                 if opportunity:
                     target_url = opportunity.get('url')
                     logger.info(f"Selected opportunity {opportunity.get('id')} with PA:{opportunity.get('pa')} DA:{opportunity.get('da')}")
+                    # Store opportunity for shadow mode logging
+                    self.last_opportunity = opportunity
             except Exception as e:
                 logger.warning(f"Failed to get opportunity: {e}, falling back to payload URLs")
         
@@ -85,7 +87,7 @@ class ForumAutomation(BaseAutomation):
                 
                 # Include opportunity ID if available
                 if opportunity:
-                    result['backlink_opportunity_id'] = opportunity.get('id')
+                    result['backlink_id'] = opportunity.get('id')
                 
                 return result
             else:
@@ -140,7 +142,8 @@ class ForumAutomation(BaseAutomation):
         """Find or create thread"""
         # Search for existing thread
         search_url = f"{self.page.url}/search"
-        self.page.goto(search_url, wait_until='networkidle')
+        if not self._safe_navigate(search_url, wait_until='networkidle'):
+            return None
         
         # Try to find thread with keywords
         keyword = keywords[0] if keywords else "discussion"
@@ -189,7 +192,8 @@ class ForumAutomation(BaseAutomation):
     
     def _post_reply(self, thread_url: str, post_text: str) -> str:
         """Post reply to thread"""
-        self.page.goto(thread_url, wait_until='networkidle')
+        if not self._safe_navigate(thread_url, wait_until='networkidle'):
+            return None
         self.random_delay(1, 2)
         
         # Find reply form

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Campaign;
 use App\Models\Backlink;
 use App\Models\AutomationTask;
+use App\Models\BacklinkOpportunity;
 use App\Models\Plan;
 use App\Models\Proxy;
 use Illuminate\Http\Request;
@@ -23,8 +24,8 @@ class DashboardController extends Controller
             })->count(),
             'total_campaigns' => Campaign::count(),
             'active_campaigns' => Campaign::where('status', Campaign::STATUS_ACTIVE)->count(),
-            'total_backlinks' => Backlink::count(),
-            'verified_backlinks' => Backlink::where('status', Backlink::STATUS_VERIFIED)->count(),
+            'total_backlinks' => BacklinkOpportunity::count(),
+            'verified_backlinks' => BacklinkOpportunity::where('status', BacklinkOpportunity::STATUS_VERIFIED)->count(),
             'pending_tasks' => AutomationTask::where('status', AutomationTask::STATUS_PENDING)->count(),
             'running_tasks' => AutomationTask::where('status', AutomationTask::STATUS_RUNNING)->count(),
             'failed_tasks' => AutomationTask::where('status', AutomationTask::STATUS_FAILED)->count(),
@@ -35,7 +36,7 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $recentBacklinks = Backlink::with('campaign:id,name')
+        $recentBacklinks = BacklinkOpportunity::with(['campaign:id,name', 'backlink:id,url'])
             ->latest()
             ->limit(10)
             ->get();

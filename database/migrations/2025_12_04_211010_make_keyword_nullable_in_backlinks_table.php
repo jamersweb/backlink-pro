@@ -21,7 +21,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Make it NOT NULL again (this might fail if there are NULL values)
+        // First, update any NULL values to empty string
+        DB::statement("UPDATE `backlinks` SET `keyword` = '' WHERE `keyword` IS NULL");
+        
+        // Then make it NOT NULL
         DB::statement('ALTER TABLE `backlinks` MODIFY `keyword` VARCHAR(255) NOT NULL');
     }
 };

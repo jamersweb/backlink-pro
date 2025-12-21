@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campaign;
-use App\Models\Backlink;
+use App\Models\BacklinkOpportunity;
 use App\Jobs\VerifyBacklinkJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,15 +12,15 @@ use Inertia\Inertia;
 class BacklinkController extends Controller
 {
     /**
-     * Show all user's backlinks with filters
+     * Show all user's backlink opportunities (where their links were added)
      */
     public function all(Request $request)
     {
-        $query = Backlink::whereHas('campaign', function($q) {
-            $q->where('user_id', Auth::id());
-        })
-        ->with(['campaign:id,name,domain_id', 'campaign.domain:id,name', 'siteAccount:id,username'])
-        ->latest();
+        $campaignIds = Campaign::where('user_id', Auth::id())->pluck('id');
+        
+        $query = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+            ->with(['campaign:id,name,domain_id', 'campaign.domain:id,name', 'backlink:id,url,pa,da,site_type', 'siteAccount:id,username'])
+            ->latest();
 
         // Apply filters
         if ($request->has('campaign_id') && $request->campaign_id) {
@@ -50,29 +50,26 @@ class BacklinkController extends Controller
                   ->orWhere('anchor_text', 'like', '%' . $request->search . '%')
                   ->orWhereHas('campaign', function($q) use ($request) {
                       $q->where('name', 'like', '%' . $request->search . '%');
+                  })
+                  ->orWhereHas('backlink', function($q) use ($request) {
+                      $q->where('url', 'like', '%' . $request->search . '%');
                   });
             });
         }
 
-        $backlinks = $query->paginate(25)->withQueryString();
+        $opportunities = $query->paginate(25)->withQueryString();
 
         // Get statistics
         $stats = [
-            'total' => Backlink::whereHas('campaign', function($q) {
-                $q->where('user_id', Auth::id());
-            })->count(),
-            'verified' => Backlink::whereHas('campaign', function($q) {
-                $q->where('user_id', Auth::id());
-            })->where('status', 'verified')->count(),
-            'pending' => Backlink::whereHas('campaign', function($q) {
-                $q->where('user_id', Auth::id());
-            })->where('status', 'pending')->count(),
-            'submitted' => Backlink::whereHas('campaign', function($q) {
-                $q->where('user_id', Auth::id());
-            })->where('status', 'submitted')->count(),
-            'error' => Backlink::whereHas('campaign', function($q) {
-                $q->where('user_id', Auth::id());
-            })->where('status', 'error')->count(),
+            'total' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->count(),
+            'verified' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+                ->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count(),
+            'pending' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+                ->where('status', BacklinkOpportunity::STATUS_PENDING)->count(),
+            'submitted' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+                ->where('status', BacklinkOpportunity::STATUS_SUBMITTED)->count(),
+            'error' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+                ->where('status', BacklinkOpportunity::STATUS_FAILED)->count(),
         ];
 
         // Get user's campaigns for filter dropdown
@@ -82,7 +79,7 @@ class BacklinkController extends Controller
             ->get();
 
         return Inertia::render('Backlinks/Index', [
-            'backlinks' => $backlinks,
+            'backlinks' => $opportunities,
             'stats' => $stats,
             'campaigns' => $campaigns,
             'filters' => $request->only(['campaign_id', 'status', 'type', 'date_from', 'date_to', 'search']),
@@ -90,14 +87,14 @@ class BacklinkController extends Controller
     }
 
     /**
-     * Export backlinks
+     * Export backlink opportunities
      */
     public function export(Request $request)
     {
-        $query = Backlink::whereHas('campaign', function($q) {
-            $q->where('user_id', Auth::id());
-        })
-        ->with(['campaign:id,name', 'campaign.domain:id,name']);
+        $campaignIds = Campaign::where('user_id', Auth::id())->pluck('id');
+        
+        $query = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+            ->with(['campaign:id,name', 'campaign.domain:id,name', 'backlink:id,url,pa,da']);
 
         // Apply same filters as index
         if ($request->has('campaign_id') && $request->campaign_id) {
@@ -116,22 +113,24 @@ class BacklinkController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $backlinks = $query->get();
+        $opportunities = $query->get();
         $format = $request->get('format', 'csv'); // csv or json
 
         if ($format === 'json') {
-            return response()->json($backlinks->map(function($backlink) {
+            return response()->json($opportunities->map(function($opp) {
                 return [
-                    'id' => $backlink->id,
-                    'url' => $backlink->url,
-                    'type' => $backlink->type,
-                    'status' => $backlink->status,
-                    'keyword' => $backlink->keyword,
-                    'anchor_text' => $backlink->anchor_text,
-                    'campaign' => $backlink->campaign->name ?? 'N/A',
-                    'domain' => $backlink->campaign->domain->name ?? 'N/A',
-                    'created_at' => $backlink->created_at->toISOString(),
-                    'verified_at' => $backlink->verified_at ? $backlink->verified_at->toISOString() : null,
+                    'id' => $opp->id,
+                    'url' => $opp->url ?? $opp->backlink->url ?? '',
+                    'type' => $opp->type,
+                    'status' => $opp->status,
+                    'keyword' => $opp->keyword,
+                    'anchor_text' => $opp->anchor_text,
+                    'campaign' => $opp->campaign->name ?? 'N/A',
+                    'domain' => $opp->campaign->domain->name ?? 'N/A',
+                    'pa' => $opp->backlink->pa ?? null,
+                    'da' => $opp->backlink->da ?? null,
+                    'created_at' => $opp->created_at->toISOString(),
+                    'verified_at' => $opp->verified_at ? $opp->verified_at->toISOString() : null,
                 ];
             }), 200, [
                 'Content-Type' => 'application/json',
@@ -146,25 +145,27 @@ class BacklinkController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($backlinks) {
+        $callback = function() use ($opportunities) {
             $file = fopen('php://output', 'w');
             
             // Header row
-            fputcsv($file, ['ID', 'URL', 'Type', 'Status', 'Keyword', 'Anchor Text', 'Campaign', 'Domain', 'Created At', 'Verified At']);
+            fputcsv($file, ['ID', 'URL', 'Type', 'Status', 'Keyword', 'Anchor Text', 'Campaign', 'Domain', 'PA', 'DA', 'Created At', 'Verified At']);
             
             // Data rows
-            foreach ($backlinks as $backlink) {
+            foreach ($opportunities as $opp) {
                 fputcsv($file, [
-                    $backlink->id,
-                    $backlink->url,
-                    $backlink->type,
-                    $backlink->status,
-                    $backlink->keyword,
-                    $backlink->anchor_text,
-                    $backlink->campaign->name ?? 'N/A',
-                    $backlink->campaign->domain->name ?? 'N/A',
-                    $backlink->created_at->toDateTimeString(),
-                    $backlink->verified_at ? $backlink->verified_at->toDateTimeString() : '',
+                    $opp->id,
+                    $opp->url ?? $opp->backlink->url ?? '',
+                    $opp->type,
+                    $opp->status,
+                    $opp->keyword ?? '',
+                    $opp->anchor_text ?? '',
+                    $opp->campaign->name ?? 'N/A',
+                    $opp->campaign->domain->name ?? 'N/A',
+                    $opp->backlink->pa ?? '',
+                    $opp->backlink->da ?? '',
+                    $opp->created_at->toDateTimeString(),
+                    $opp->verified_at ? $opp->verified_at->toDateTimeString() : '',
                 ]);
             }
             
@@ -175,22 +176,23 @@ class BacklinkController extends Controller
     }
 
     /**
-     * Manual re-check backlink
+     * Manual re-check backlink opportunity
      */
     public function recheck($id)
     {
-        $backlink = Backlink::whereHas('campaign', function($q) {
-            $q->where('user_id', Auth::id());
-        })->findOrFail($id);
+        $campaignIds = Campaign::where('user_id', Auth::id())->pluck('id');
+        
+        $opportunity = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+            ->findOrFail($id);
 
-        // Queue verification job
-        VerifyBacklinkJob::dispatch($backlink);
+        // Queue verification job (may need to update VerifyBacklinkJob to accept opportunities)
+        VerifyBacklinkJob::dispatch($opportunity);
 
         return back()->with('success', 'Backlink verification queued. Status will update shortly.');
     }
 
     /**
-     * Show backlinks for a campaign
+     * Show backlink opportunities for a campaign
      */
     public function index(Request $request, $campaignId)
     {
@@ -198,8 +200,8 @@ class BacklinkController extends Controller
             ->with('domain')
             ->findOrFail($campaignId);
 
-        $query = Backlink::where('campaign_id', $campaignId)
-            ->with('siteAccount')
+        $query = BacklinkOpportunity::where('campaign_id', $campaignId)
+            ->with(['backlink:id,url,pa,da,site_type', 'siteAccount'])
             ->latest();
 
         // Apply filters
@@ -215,27 +217,33 @@ class BacklinkController extends Controller
             $query->where(function($q) use ($request) {
                 $q->where('url', 'like', '%' . $request->search . '%')
                   ->orWhere('keyword', 'like', '%' . $request->search . '%')
-                  ->orWhere('anchor_text', 'like', '%' . $request->search . '%');
+                  ->orWhere('anchor_text', 'like', '%' . $request->search . '%')
+                  ->orWhereHas('backlink', function($q) use ($request) {
+                      $q->where('url', 'like', '%' . $request->search . '%');
+                  });
             });
         }
 
-        $backlinks = $query->paginate(20)->withQueryString();
+        $opportunities = $query->paginate(20)->withQueryString();
 
         // Get stats
         $stats = [
-            'total' => Backlink::where('campaign_id', $campaignId)->count(),
-            'verified' => Backlink::where('campaign_id', $campaignId)->where('status', 'verified')->count(),
-            'pending' => Backlink::where('campaign_id', $campaignId)->where('status', 'pending')->count(),
-            'submitted' => Backlink::where('campaign_id', $campaignId)->where('status', 'submitted')->count(),
-            'error' => Backlink::where('campaign_id', $campaignId)->where('status', 'error')->count(),
+            'total' => BacklinkOpportunity::where('campaign_id', $campaignId)->count(),
+            'verified' => BacklinkOpportunity::where('campaign_id', $campaignId)
+                ->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count(),
+            'pending' => BacklinkOpportunity::where('campaign_id', $campaignId)
+                ->where('status', BacklinkOpportunity::STATUS_PENDING)->count(),
+            'submitted' => BacklinkOpportunity::where('campaign_id', $campaignId)
+                ->where('status', BacklinkOpportunity::STATUS_SUBMITTED)->count(),
+            'error' => BacklinkOpportunity::where('campaign_id', $campaignId)
+                ->where('status', BacklinkOpportunity::STATUS_FAILED)->count(),
         ];
 
         return Inertia::render('Campaigns/Backlinks', [
             'campaign' => $campaign,
-            'backlinks' => $backlinks,
+            'backlinks' => $opportunities,
             'stats' => $stats,
             'filters' => $request->only(['status', 'type', 'search']),
         ]);
     }
 }
-

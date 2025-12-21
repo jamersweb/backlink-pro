@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
-use App\Models\Backlink;
+use App\Models\BacklinkOpportunity;
 use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,9 +41,9 @@ class ActivityController extends Controller
         // Get stats
         $campaignIds = Campaign::where('user_id', $user->id)->pluck('id');
         $stats = [
-            'total_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->count(),
-            'verified_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->where('status', 'verified')->count(),
-            'pending_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->where('status', 'pending')->count(),
+            'total_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->count(),
+            'verified_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count(),
+            'pending_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->where('status', BacklinkOpportunity::STATUS_PENDING)->count(),
             'active_campaigns' => Campaign::where('user_id', $user->id)->where('status', 'active')->count(),
             'total_activities' => ActivityLog::where('user_id', $user->id)->count(),
         ];

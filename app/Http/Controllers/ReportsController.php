@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campaign;
-use App\Models\Backlink;
+use App\Models\BacklinkOpportunity;
 use App\Services\ExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,28 +28,28 @@ class ReportsController extends Controller
         $overallStats = [
             'total_campaigns' => Campaign::where('user_id', $user->id)->count(),
             'active_campaigns' => Campaign::where('user_id', $user->id)->where('status', 'active')->count(),
-            'total_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->count(),
-            'verified_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->where('status', 'verified')->count(),
-            'pending_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->where('status', 'pending')->count(),
-            'error_backlinks' => Backlink::whereIn('campaign_id', $campaignIds)->where('status', 'error')->count(),
+            'total_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->count(),
+            'verified_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count(),
+            'pending_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->where('status', BacklinkOpportunity::STATUS_PENDING)->count(),
+            'error_backlinks' => BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->where('status', BacklinkOpportunity::STATUS_FAILED)->count(),
         ];
 
         // Backlinks by type
-        $backlinksByType = Backlink::whereIn('campaign_id', $campaignIds)
+        $backlinksByType = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->select('type', DB::raw('count(*) as count'))
             ->groupBy('type')
             ->get()
             ->pluck('count', 'type');
 
         // Backlinks by status
-        $backlinksByStatus = Backlink::whereIn('campaign_id', $campaignIds)
+        $backlinksByStatus = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->get()
             ->pluck('count', 'status');
 
         // Daily backlinks created (last 30 days)
-        $dailyBacklinks = Backlink::whereIn('campaign_id', $campaignIds)
+        $dailyBacklinks = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
             ->groupBy('date')
@@ -58,8 +58,8 @@ class ReportsController extends Controller
 
         // Campaign performance
         $campaignPerformance = Campaign::where('user_id', $user->id)
-            ->withCount(['backlinks', 'backlinks as verified_backlinks_count' => function($query) {
-                $query->where('status', 'verified');
+            ->withCount(['opportunities', 'opportunities as verified_backlinks_count' => function($query) {
+                $query->where('status', BacklinkOpportunity::STATUS_VERIFIED);
             }])
             ->get()
             ->map(function($campaign) {
@@ -67,14 +67,14 @@ class ReportsController extends Controller
                     'id' => $campaign->id,
                     'name' => $campaign->name,
                     'status' => $campaign->status,
-                    'total_backlinks' => $campaign->backlinks_count,
+                    'total_backlinks' => $campaign->opportunities_count,
                     'verified_backlinks' => $campaign->verified_backlinks_count,
-                    'success_rate' => $campaign->backlinks_count > 0 
-                        ? round(($campaign->verified_backlinks_count / $campaign->backlinks_count) * 100, 2)
+                    'success_rate' => $campaign->opportunities_count > 0 
+                        ? round(($campaign->verified_backlinks_count / $campaign->opportunities_count) * 100, 2)
                         : 0,
                 ];
             })
-            ->sortByDesc('total_backlinks')
+            ->sortByDesc('opportunities_count')
             ->take(10)
             ->values();
 
@@ -105,8 +105,8 @@ class ReportsController extends Controller
 
         // Get campaign performance data
         $campaignPerformance = Campaign::where('user_id', $user->id)
-            ->withCount(['backlinks', 'backlinks as verified_backlinks_count' => function($query) {
-                $query->where('status', 'verified');
+            ->withCount(['opportunities', 'opportunities as verified_backlinks_count' => function($query) {
+                $query->where('status', BacklinkOpportunity::STATUS_VERIFIED);
             }])
             ->get()
             ->map(function($campaign) {
@@ -114,17 +114,17 @@ class ReportsController extends Controller
                     'id' => $campaign->id,
                     'name' => $campaign->name,
                     'status' => $campaign->status,
-                    'total_backlinks' => $campaign->backlinks_count,
+                    'total_backlinks' => $campaign->opportunities_count,
                     'verified_backlinks' => $campaign->verified_backlinks_count,
-                    'success_rate' => $campaign->backlinks_count > 0 
-                        ? round(($campaign->verified_backlinks_count / $campaign->backlinks_count) * 100, 2)
+                    'success_rate' => $campaign->opportunities_count > 0 
+                        ? round(($campaign->verified_backlinks_count / $campaign->opportunities_count) * 100, 2)
                         : 0,
                     'created_at' => $campaign->created_at->toDateTimeString(),
                 ];
             });
 
         // Get daily backlinks
-        $dailyBacklinks = Backlink::whereIn('campaign_id', $campaignIds)
+        $dailyBacklinks = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
             ->groupBy('date')

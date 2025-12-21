@@ -40,10 +40,29 @@ if [ -f "/var/www/html/python/requirements.txt" ]; then
     echo "Ensuring system libraries are installed..."
     apt-get update -qq > /dev/null 2>&1 || true
 
-    # Force install libglib2.0-0 (even if already installed, this ensures it's present)
-    echo "Installing/verifying libglib2.0-0..."
-    if ! apt-get install -y --no-install-recommends libglib2.0-0 libglib2.0-bin 2>&1; then
-        echo "WARNING: Failed to install libglib2.0-0 via apt-get"
+    # Install all browser dependencies using the install script
+    echo "Installing browser dependencies..."
+    if [ -f "/var/www/html/docker/install-browser-deps.sh" ]; then
+        bash /var/www/html/docker/install-browser-deps.sh || {
+            echo "WARNING: Browser dependency installation had issues, but continuing..."
+        }
+    else
+        # Fallback: install critical libraries manually
+        echo "Install script not found, installing critical libraries manually..."
+        apt-get install -y --no-install-recommends \
+            libglib2.0-0 libglib2.0-bin \
+            libnspr4 libnss3 \
+            libdrm2 libxshmfence1 libxcomposite1 libxdamage1 \
+            libxfixes3 libxrandr2 libgbm1 libvulkan1 \
+            libasound2 libatk1.0-0 libatk-bridge2.0-0 libatspi2.0-0 \
+            libcups2 libdbus-1-3 libxkbcommon0 libxss1 libxtst6 \
+            libgtk-3-0 libgdk-pixbuf2.0-0 libpango-1.0-0 libpangocairo-1.0-0 \
+            libcairo2 libfontconfig1 libfreetype6 \
+            libx11-6 libx11-xcb1 libxcb1 libxcb-dri3-0 libxcb-shm0 \
+            libxcb-xfixes0 libxext6 libxrender1 \
+            fonts-liberation libu2f-udev 2>&1 || {
+            echo "WARNING: Failed to install some browser dependencies"
+        }
     fi
 
     # Update library cache - this is critical for dynamic linking

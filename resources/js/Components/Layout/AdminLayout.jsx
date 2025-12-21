@@ -4,12 +4,18 @@ import { useState, useEffect } from 'react';
 export default function AdminLayout({ children, header }) {
     const { auth } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [leadsDropdownOpen, setLeadsDropdownOpen] = useState(false);
-    const [systemDropdownOpen, setSystemDropdownOpen] = useState(false);
-    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-
     const currentUrl = window.location.pathname;
     const isLeadsActive = currentUrl.startsWith('/admin/leads');
+    const isSystemActive = currentUrl.startsWith('/admin/proxies') ||
+                          currentUrl.startsWith('/admin/captcha') ||
+                          currentUrl.startsWith('/admin/system-health') ||
+                          currentUrl.startsWith('/admin/blocked-sites') ||
+                          currentUrl.startsWith('/admin/ml-training');
+    
+    // Auto-expand System dropdown if on a System page
+    const [leadsDropdownOpen, setLeadsDropdownOpen] = useState(isLeadsActive);
+    const [systemDropdownOpen, setSystemDropdownOpen] = useState(isSystemActive);
+    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -109,12 +115,14 @@ export default function AdminLayout({ children, header }) {
             active: currentUrl.startsWith('/admin/proxies') ||
                     currentUrl.startsWith('/admin/captcha') ||
                     currentUrl.startsWith('/admin/system-health') ||
-                    currentUrl.startsWith('/admin/blocked-sites'),
+                    currentUrl.startsWith('/admin/blocked-sites') ||
+                    currentUrl.startsWith('/admin/ml-training'),
             children: [
                 { name: 'Proxies', href: '/admin/proxies', icon: 'bi-router' },
                 { name: 'Captcha Logs', href: '/admin/captcha-logs', icon: 'bi-shield-check' },
                 { name: 'System Health', href: '/admin/system-health', icon: 'bi-heart-pulse' },
                 { name: 'Blocked Sites', href: '/admin/blocked-sites', icon: 'bi-ban' },
+                { name: 'ML Training', href: '/admin/ml-training', icon: 'bi-cpu' },
             ],
         },
         {

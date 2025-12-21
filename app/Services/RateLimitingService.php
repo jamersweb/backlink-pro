@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Backlink;
+use App\Models\BacklinkOpportunity;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -19,12 +19,12 @@ class RateLimitingService
             return false;
         }
 
-        // Check if we've created a backlink for this domain today for this campaign
-        $todayBacklinks = Backlink::where('campaign_id', $campaignId)
+        // Check if we've created a backlink opportunity for this domain today for this campaign
+        $todayBacklinks = BacklinkOpportunity::where('campaign_id', $campaignId)
             ->whereDate('created_at', today())
             ->get()
-            ->filter(function($backlink) use ($domain) {
-                $backlinkDomain = self::extractDomain($backlink->url);
+            ->filter(function($opportunity) use ($domain) {
+                $backlinkDomain = self::extractDomain($opportunity->url);
                 return $backlinkDomain === $domain;
             })
             ->count();

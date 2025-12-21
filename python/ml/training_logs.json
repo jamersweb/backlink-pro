@@ -1,0 +1,212 @@
+[
+    {
+        "timestamp": "2025-12-19T13:39:16.556903Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 22, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 132\r\n    logger.info(f\"Collected {len(new_records)} new records from automation logs\")\r\n    ^^^^^^\r\nSyntaxError: expected 'except' or 'finally' block\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-19T13:41:11.718179Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 22, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 7, in <module>\r\n    import pandas as pd\r\nModuleNotFoundError: No module named 'pandas'\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-19T13:48:32.752198Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 22, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 7, in <module>\r\n    import pandas as pd\r\nModuleNotFoundError: No module named 'pandas'\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-19T13:51:10.480009Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 22, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 7, in <module>\r\n    import pandas as pd\r\nModuleNotFoundError: No module named 'pandas'\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-19T13:53:47.515205Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 43, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 37, in <module>\r\n    import pandas as pd\r\nModuleNotFoundError: No module named 'pandas'\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T08:20:00.424703Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 43, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 37, in <module>\r\n    import pandas as pd\r\nModuleNotFoundError: No module named 'pandas'\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T08:21:54.519409Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 43, in <module>\r\n    from ml.feedback_collector import FeedbackCollector\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\feedback_collector.py\", line 37, in <module>\r\n    import pandas as pd\r\nModuleNotFoundError: No module named 'pandas'\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T09:01:13.739199Z",
+        "success": false,
+        "error": "Traceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 82, in <module>\r\n    from ml.prepare_dataset import DatasetPreparator\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\prepare_dataset.py\", line 19, in <module>\r\n    from sklearn.model_selection import train_test_split\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\sklearn\\__init__.py\", line 70, in <module>\r\n    from sklearn.base import clone  # noqa: E402\r\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\sklearn\\base.py\", line 19, in <module>\r\n    from sklearn.utils._metadata_requests import _MetadataRequester, _routing_enabled\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\sklearn\\utils\\__init__.py\", line 9, in <module>\r\n    from sklearn.utils._chunking import gen_batches, gen_even_slices\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\sklearn\\utils\\_chunking.py\", line 11, in <module>\r\n    from sklearn.utils._param_validation import Interval, validate_params\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\sklearn\\utils\\_param_validation.py\", line 17, in <module>\r\n    from sklearn.utils.validation import _is_arraylike_not_scalar\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\sklearn\\utils\\validation.py\", line 14, in <module>\r\n    import joblib\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\joblib\\__init__.py\", line 120, in <module>\r\n    from .memory import MemorizedResult, Memory, expires_after, register_store_backend\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\joblib\\memory.py\", line 11, in <module>\r\n    import asyncio\r\n  File \"C:\\Python312\\Lib\\asyncio\\__init__.py\", line 43, in <module>\r\n    from .windows_events import *\r\n  File \"C:\\Python312\\Lib\\asyncio\\windows_events.py\", line 8, in <module>\r\n    import _overlapped\r\nOSError: [WinError 10106] The requested service provider could not be loaded or initialized\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T09:08:13.453299Z",
+        "success": false,
+        "error": "2025-12-20 14:08:13,081 - INFO - XGBoost available\r\nTraceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 114, in <module>\r\n    from ml.train_action_model import ActionModelTrainer\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\train_action_model.py\", line 39, in <module>\r\n    import lightgbm as lgb\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\__init__.py\", line 11, in <module>\r\n    from .basic import Booster, Dataset, Sequence, register_logger\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\basic.py\", line 29, in <module>\r\n    from .compat import (\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\compat.py\", line 191, in <module>\r\n    import matplotlib  # noqa: F401\r\n    ^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 1010, in <module>\r\n    rcParams._update_raw(_rc_params_in_file(matplotlib_fname()))\r\n                                            ^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 636, in matplotlib_fname\r\n    for fname in gen_candidates():\r\n                 ^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 633, in gen_candidates\r\n    yield os.path.join(get_configdir(), 'matplotlibrc')\r\n                       ^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 340, in wrapper\r\n    ret = func(**kwargs)\r\n          ^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 579, in get_configdir\r\n    return _get_config_or_cache_dir(_get_xdg_config_dir)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 531, in _get_config_or_cache_dir\r\n    configdir = Path.home() \/ \".matplotlib\"\r\n                ^^^^^^^^^^^\r\n  File \"C:\\Python312\\Lib\\pathlib.py\", line 1202, in home\r\n    return cls(\"~\").expanduser()\r\n           ^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Python312\\Lib\\pathlib.py\", line 1406, in expanduser\r\n    raise RuntimeError(\"Could not determine home directory.\")\r\nRuntimeError: Could not determine home directory.\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T09:08:32.761658Z",
+        "success": false,
+        "error": "2025-12-20 14:08:32,383 - INFO - XGBoost available\r\nTraceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 114, in <module>\r\n    from ml.train_action_model import ActionModelTrainer\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\train_action_model.py\", line 39, in <module>\r\n    import lightgbm as lgb\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\__init__.py\", line 11, in <module>\r\n    from .basic import Booster, Dataset, Sequence, register_logger\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\basic.py\", line 29, in <module>\r\n    from .compat import (\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\compat.py\", line 191, in <module>\r\n    import matplotlib  # noqa: F401\r\n    ^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 1010, in <module>\r\n    rcParams._update_raw(_rc_params_in_file(matplotlib_fname()))\r\n                                            ^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 636, in matplotlib_fname\r\n    for fname in gen_candidates():\r\n                 ^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 633, in gen_candidates\r\n    yield os.path.join(get_configdir(), 'matplotlibrc')\r\n                       ^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 340, in wrapper\r\n    ret = func(**kwargs)\r\n          ^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 579, in get_configdir\r\n    return _get_config_or_cache_dir(_get_xdg_config_dir)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 531, in _get_config_or_cache_dir\r\n    configdir = Path.home() \/ \".matplotlib\"\r\n                ^^^^^^^^^^^\r\n  File \"C:\\Python312\\Lib\\pathlib.py\", line 1202, in home\r\n    return cls(\"~\").expanduser()\r\n           ^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Python312\\Lib\\pathlib.py\", line 1406, in expanduser\r\n    raise RuntimeError(\"Could not determine home directory.\")\r\nRuntimeError: Could not determine home directory.\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T09:22:27.602813Z",
+        "success": false,
+        "error": "2025-12-20 14:22:27,199 - INFO - XGBoost available\r\nTraceback (most recent call last):\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\/ml\/retrain_model.py\", line 114, in <module>\r\n    from ml.train_action_model import ActionModelTrainer\r\n  File \"D:\\XAMPP\\htdocs\\backlink-pro\\python\\ml\\train_action_model.py\", line 39, in <module>\r\n    import lightgbm as lgb\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\__init__.py\", line 11, in <module>\r\n    from .basic import Booster, Dataset, Sequence, register_logger\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\basic.py\", line 29, in <module>\r\n    from .compat import (\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\lightgbm\\compat.py\", line 191, in <module>\r\n    import matplotlib  # noqa: F401\r\n    ^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 1010, in <module>\r\n    rcParams._update_raw(_rc_params_in_file(matplotlib_fname()))\r\n                                            ^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 636, in matplotlib_fname\r\n    for fname in gen_candidates():\r\n                 ^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 633, in gen_candidates\r\n    yield os.path.join(get_configdir(), 'matplotlibrc')\r\n                       ^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 340, in wrapper\r\n    ret = func(**kwargs)\r\n          ^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 579, in get_configdir\r\n    return _get_config_or_cache_dir(_get_xdg_config_dir)\r\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Users\\Hp\\AppData\\Roaming\\Python\\Python312\\site-packages\\matplotlib\\__init__.py\", line 531, in _get_config_or_cache_dir\r\n    configdir = Path.home() \/ \".matplotlib\"\r\n                ^^^^^^^^^^^\r\n  File \"C:\\Python312\\Lib\\pathlib.py\", line 1202, in home\r\n    return cls(\"~\").expanduser()\r\n           ^^^^^^^^^^^^^^^^^^^^^\r\n  File \"C:\\Python312\\Lib\\pathlib.py\", line 1406, in expanduser\r\n    raise RuntimeError(\"Could not determine home directory.\")\r\nRuntimeError: Could not determine home directory.\r\n",
+        "exit_code": 1,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T09:50:53.468370Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T09:54:19.261398Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T10:10:44.930293Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T10:16:54.773060Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T10:17:59.637762Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T11:26:06.156568Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T11:34:35.125458Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T13:35:00.141769Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:14:08.866814Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:16:51.812517Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:20:11.686496Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:22:08.837795Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:24:24.402260Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:30:04.036578Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T14:31:29.145656Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T15:46:45.895772Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T15:54:35.626063Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T15:56:18.377305Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    },
+    {
+        "timestamp": "2025-12-20T15:57:32.868664Z",
+        "success": true,
+        "error": null,
+        "exit_code": 0,
+        "triggered_by": "admin_panel"
+    }
+]

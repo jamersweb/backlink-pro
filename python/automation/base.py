@@ -11,6 +11,8 @@ import time
 import os
 import asyncio
 import glob
+import sys
+import platform
 
 # Skip Playwright's host requirement validation
 # This allows browsers to launch even if dependency validation fails
@@ -35,6 +37,12 @@ try:
 except ImportError:
     OpportunitySelector = None
 
+# Import iframe router
+try:
+    from core.iframe_router import IframeRouter
+except ImportError:
+    IframeRouter = None
+
 
 class BaseAutomation(ABC):
     """Base class for all automation tasks"""
@@ -48,64 +56,118 @@ class BaseAutomation(ABC):
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.captcha_solver = CaptchaSolver(api_client) if CaptchaSolver else None
-        self.opportunity_selector = OpportunitySelector(api_client) if OpportunitySelector else None
+        
+        # Initialize OpportunitySelector with shadow mode if enabled
+        shadow_mode = os.getenv('SHADOW_MODE', 'false').lower() in ('true', '1', 'yes')
+        self.opportunity_selector = OpportunitySelector(api_client, shadow_mode=shadow_mode) if OpportunitySelector else None
+        self.last_opportunity = None  # Store for shadow mode logging
 
     def setup_browser(self):
         """Setup browser with proxy and stealth settings"""
-        # Ensure libglib and other libraries are available
-        # Force install and verify libglib2.0-0 before browser launch
-        import subprocess
-        libglib_available = False
+        # Skip Linux library checks on Windows - Playwright handles Windows dependencies differently
+        is_windows = platform.system() == 'Windows' or sys.platform == 'win32'
+        
+        if is_windows:
+            logger.info("Running on Windows - skipping Linux library checks")
+            libglib_available = True  # Skip check on Windows
+        else:
+            # Ensure libglib and other libraries are available (Linux/Docker only)
+            # Force install and verify libglib2.0-0 before browser launch
+            import subprocess
+            libglib_available = False
 
-        try:
-            # First check if library is in cache
-            result = subprocess.run(
-                ['ldconfig', '-p'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if 'libglib-2.0.so.0' in result.stdout:
-                libglib_available = True
-                logger.debug("libglib-2.0.so.0 found in library cache")
-            else:
-                # Check if file exists directly
-                find_result = subprocess.run(
-                    ['find', '/usr/lib*', '/lib*', '-name', 'libglib-2.0.so.0', '2>/dev/null'],
-                    shell=True,
+            try:
+                # First check if library is in cache
+                result = subprocess.run(
+                    ['ldconfig', '-p'],
                     capture_output=True,
                     text=True,
                     timeout=5
                 )
-                if find_result.stdout.strip():
+                if 'libglib-2.0.so.0' in result.stdout:
                     libglib_available = True
-                    logger.debug(f"libglib-2.0.so.0 found at: {find_result.stdout.strip().split(chr(10))[0]}")
-        except Exception as e:
-            logger.debug(f"Error checking libglib: {e}")
+                    logger.debug("libglib-2.0.so.0 found in library cache")
+                else:
+                    # Check if file exists directly
+                    find_result = subprocess.run(
+                        ['find', '/usr/lib*', '/lib*', '-name', 'libglib-2.0.so.0', '2>/dev/null'],
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    if find_result.stdout.strip():
+                        libglib_available = True
+                        logger.debug(f"libglib-2.0.so.0 found at: {find_result.stdout.strip().split(chr(10))[0]}")
+            except Exception as e:
+                logger.debug(f"Error checking libglib: {e}")
 
-        if not libglib_available:
-            logger.warning("libglib-2.0.so.0 not found. Attempting to install...")
+            if not libglib_available:
+                logger.warning("libglib-2.0.so.0 not found. Attempting to install...")
+                try:
+                    # Update package list
+                    update_result = subprocess.run(
+                        ['apt-get', 'update', '-qq'],
+                        capture_output=True,
+                        timeout=30
+                    )
+
+                    # Install libglib2.0-0 and libglib2.0-bin
+                    install_result = subprocess.run(
+                        ['apt-get', 'install', '-y', '--no-install-recommends', 'libglib2.0-0', 'libglib2.0-bin'],
+                        capture_output=True,
+                        text=True,
+                        timeout=120
+                    )
+
+                    if install_result.returncode == 0:
+                        logger.info("libglib2.0-0 installed successfully")
+                        # Update library cache
+                        ldconfig_result = subprocess.run(
+                            ['ldconfig'],
+                            capture_output=True,
+                            timeout=10
+                        )
+                        if ldconfig_result.returncode != 0:
+                            logger.warning(f"ldconfig had issues: {ldconfig_result.stderr.decode()[:200] if ldconfig_result.stderr else 'Unknown error'}")
+
+                        # Verify installation
+                        verify_result = subprocess.run(
+                            ['ldconfig', '-p'],
+                            capture_output=True,
+                            text=True,
+                            timeout=5
+                        )
+                        if 'libglib-2.0.so.0' in verify_result.stdout:
+                            logger.info("libglib-2.0.so.0 verified in library cache")
+                            libglib_available = True
+                        else:
+                            logger.error("libglib-2.0.so.0 still not found after installation!")
+                    else:
+                        error_output = install_result.stderr if install_result.stderr else install_result.stdout
+                        logger.error(f"Failed to install libglib2.0-0: {error_output[-500:]}")
+                except subprocess.TimeoutExpired:
+                    logger.error("Timeout installing libglib2.0-0")
+                except Exception as e:
+                    logger.error(f"Exception installing libglib2.0-0: {e}")
+
+        if not libglib_available and not is_windows:
+            raise RuntimeError(
+                "libglib-2.0.so.0 is not available. Browser cannot launch without this library. "
+                "Please ensure libglib2.0-0 is installed in the Docker container."
+            )
+
+        # Set LD_LIBRARY_PATH to help dynamic linker find libraries (Linux only)
+        # Skip on Windows - Playwright handles Windows dependencies automatically
+        if not is_windows:
+            import subprocess
+            # This is critical for finding libglib-2.0.so.0
+            # First, check if it's already set from environment (docker-compose.yml)
+            existing_ld_path = os.environ.get('LD_LIBRARY_PATH', '')
+
             try:
-                # Update package list
-                update_result = subprocess.run(
-                    ['apt-get', 'update', '-qq'],
-                    capture_output=True,
-                    timeout=30,
-                    stderr=subprocess.PIPE
-                )
-
-                # Install libglib2.0-0 and libglib2.0-bin
-                install_result = subprocess.run(
-                    ['apt-get', 'install', '-y', '--no-install-recommends', 'libglib2.0-0', 'libglib2.0-bin'],
-                    capture_output=True,
-                    text=True,
-                    timeout=120,
-                    stderr=subprocess.PIPE
-                )
-
-                if install_result.returncode == 0:
-                    logger.info("libglib2.0-0 installed successfully")
-                    # Update library cache
+                # First, ensure ldconfig is run to update library cache
+                try:
                     ldconfig_result = subprocess.run(
                         ['ldconfig'],
                         capture_output=True,
@@ -113,140 +175,97 @@ class BaseAutomation(ABC):
                         stderr=subprocess.PIPE
                     )
                     if ldconfig_result.returncode != 0:
-                        logger.warning(f"ldconfig had issues: {ldconfig_result.stderr.decode()[:200]}")
+                        logger.debug(f"ldconfig warning: {ldconfig_result.stderr.decode()[:200]}")
+                except Exception as e:
+                    logger.debug(f"Could not run ldconfig: {e}")
 
-                    # Verify installation
-                    verify_result = subprocess.run(
-                        ['ldconfig', '-p'],
-                        capture_output=True,
-                        text=True,
-                        timeout=5
-                    )
-                    if 'libglib-2.0.so.0' in verify_result.stdout:
-                        logger.info("libglib-2.0.so.0 verified in library cache")
-                        libglib_available = True
-                    else:
-                        logger.error("libglib-2.0.so.0 still not found after installation!")
-                else:
-                    error_output = install_result.stderr if install_result.stderr else install_result.stdout
-                    logger.error(f"Failed to install libglib2.0-0: {error_output[-500:]}")
-            except subprocess.TimeoutExpired:
-                logger.error("Timeout installing libglib2.0-0")
-            except Exception as e:
-                logger.error(f"Exception installing libglib2.0-0: {e}")
+                # Try to find common library paths
+                lib_paths = []
+                # Start with standard library paths
+                for path in ['/usr/lib/x86_64-linux-gnu', '/usr/lib', '/lib/x86_64-linux-gnu', '/lib', '/usr/local/lib']:
+                    if os.path.exists(path):
+                        lib_paths.append(path)
 
-        if not libglib_available:
-            raise RuntimeError(
-                "libglib-2.0.so.0 is not available. Browser cannot launch without this library. "
-                "Please ensure libglib2.0-0 is installed in the Docker container."
-            )
-
-        # Set LD_LIBRARY_PATH to help dynamic linker find libraries
-        # This is critical for finding libglib-2.0.so.0
-        # First, check if it's already set from environment (docker-compose.yml)
-        existing_ld_path = os.environ.get('LD_LIBRARY_PATH', '')
-
-        try:
-            # First, ensure ldconfig is run to update library cache
-            try:
-                ldconfig_result = subprocess.run(
-                    ['ldconfig'],
-                    capture_output=True,
-                    timeout=10,
-                    stderr=subprocess.PIPE
-                )
-                if ldconfig_result.returncode != 0:
-                    logger.debug(f"ldconfig warning: {ldconfig_result.stderr.decode()[:200]}")
-            except Exception as e:
-                logger.debug(f"Could not run ldconfig: {e}")
-
-            # Try to find common library paths
-            lib_paths = []
-            # Start with standard library paths
-            for path in ['/usr/lib/x86_64-linux-gnu', '/usr/lib', '/lib/x86_64-linux-gnu', '/lib', '/usr/local/lib']:
-                if os.path.exists(path):
-                    lib_paths.append(path)
-
-            # If LD_LIBRARY_PATH was set from environment, include those paths too
-            if existing_ld_path:
-                env_paths = [p for p in existing_ld_path.split(':') if p and os.path.exists(p)]
-                for env_path in env_paths:
-                    if env_path not in lib_paths:
-                        lib_paths.insert(0, env_path)  # Environment paths get priority
-                logger.debug(f"Found LD_LIBRARY_PATH in environment: {existing_ld_path}")
-
-            # Also try to find where libglib-2.0.so.0 actually is
-            libglib_path = None
-            try:
-                find_result = subprocess.run(
-                    ['find', '/usr/lib*', '/lib*', '/usr/local/lib*', '-name', 'libglib-2.0.so.0', '2>/dev/null'],
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                if find_result.stdout.strip():
-                    lib_file = find_result.stdout.strip().split('\n')[0]
-                    lib_dir = os.path.dirname(lib_file)
-                    libglib_path = lib_dir
-                    if lib_dir not in lib_paths:
-                        lib_paths.insert(0, lib_dir)  # Add to front for priority
-                        logger.info(f"Found libglib-2.0.so.0 at {lib_file}, added {lib_dir} to library path")
-            except Exception as e:
-                logger.debug(f"Could not find libglib path: {e}")
-
-            # Also check dpkg for installed package location
-            if not libglib_path:
-                try:
-                    dpkg_result = subprocess.run(
-                        ['dpkg', '-L', 'libglib2.0-0'],
-                        capture_output=True,
-                        text=True,
-                        timeout=5
-                    )
-                    if dpkg_result.returncode == 0:
-                        for line in dpkg_result.stdout.split('\n'):
-                            if 'libglib-2.0.so.0' in line and os.path.exists(line):
-                                lib_dir = os.path.dirname(line)
-                                if lib_dir not in lib_paths:
-                                    lib_paths.insert(0, lib_dir)
-                                    logger.info(f"Found libglib-2.0.so.0 via dpkg at {line}, added {lib_dir} to library path")
-                                break
-                except Exception:
-                    pass
-
-            if lib_paths:
-                # Merge paths, avoiding duplicates, preserving order (new paths first, then existing)
-                final_paths = []
-                seen = set()
-                # Add discovered paths first (priority)
-                for path in lib_paths:
-                    if path not in seen:
-                        final_paths.append(path)
-                        seen.add(path)
-                # Add any existing paths that weren't already included
+                # If LD_LIBRARY_PATH was set from environment, include those paths too
                 if existing_ld_path:
-                    for path in existing_ld_path.split(':'):
-                        if path and path not in seen:
+                    env_paths = [p for p in existing_ld_path.split(':') if p and os.path.exists(p)]
+                    for env_path in env_paths:
+                        if env_path not in lib_paths:
+                            lib_paths.insert(0, env_path)  # Environment paths get priority
+                    logger.debug(f"Found LD_LIBRARY_PATH in environment: {existing_ld_path}")
+
+                # Also try to find where libglib-2.0.so.0 actually is
+                libglib_path = None
+                try:
+                    find_result = subprocess.run(
+                        ['find', '/usr/lib*', '/lib*', '/usr/local/lib*', '-name', 'libglib-2.0.so.0', '2>/dev/null'],
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if find_result.stdout.strip():
+                        lib_file = find_result.stdout.strip().split('\n')[0]
+                        lib_dir = os.path.dirname(lib_file)
+                        libglib_path = lib_dir
+                        if lib_dir not in lib_paths:
+                            lib_paths.insert(0, lib_dir)  # Add to front for priority
+                            logger.info(f"Found libglib-2.0.so.0 at {lib_file}, added {lib_dir} to library path")
+                except Exception as e:
+                    logger.debug(f"Could not find libglib path: {e}")
+
+                # Also check dpkg for installed package location
+                if not libglib_path:
+                    try:
+                        dpkg_result = subprocess.run(
+                            ['dpkg', '-L', 'libglib2.0-0'],
+                            capture_output=True,
+                            text=True,
+                            timeout=5
+                        )
+                        if dpkg_result.returncode == 0:
+                            for line in dpkg_result.stdout.split('\n'):
+                                if 'libglib-2.0.so.0' in line and os.path.exists(line):
+                                    lib_dir = os.path.dirname(line)
+                                    if lib_dir not in lib_paths:
+                                        lib_paths.insert(0, lib_dir)
+                                        logger.info(f"Found libglib-2.0.so.0 via dpkg at {line}, added {lib_dir} to library path")
+                                    break
+                    except Exception:
+                        pass
+
+                if lib_paths:
+                    # Merge paths, avoiding duplicates, preserving order (new paths first, then existing)
+                    final_paths = []
+                    seen = set()
+                    # Add discovered paths first (priority)
+                    for path in lib_paths:
+                        if path not in seen:
                             final_paths.append(path)
                             seen.add(path)
+                    # Add any existing paths that weren't already included
+                    if existing_ld_path:
+                        for path in existing_ld_path.split(':'):
+                            if path and path not in seen:
+                                final_paths.append(path)
+                                seen.add(path)
 
-                new_ld_path = ':'.join(final_paths)
-                # Remove any empty paths (leading/trailing colons)
-                new_ld_path = ':'.join([p for p in new_ld_path.split(':') if p])
-                os.environ['LD_LIBRARY_PATH'] = new_ld_path
-                logger.info(f"Set LD_LIBRARY_PATH to: {new_ld_path}")
-            else:
-                # If no paths found but environment had it set, keep the environment value
-                if existing_ld_path:
-                    # Clean up any empty paths (leading/trailing colons)
-                    cleaned_path = ':'.join([p for p in existing_ld_path.split(':') if p])
-                    os.environ['LD_LIBRARY_PATH'] = cleaned_path
-                    logger.info(f"Using LD_LIBRARY_PATH from environment: {cleaned_path}")
+                    # Filter out empty strings and ensure no leading/trailing colons
+                    filtered_paths = [p for p in final_paths if p and p.strip()]
+                    new_ld_path = ':'.join(filtered_paths)
+                    os.environ['LD_LIBRARY_PATH'] = new_ld_path
+                    logger.info(f"Set LD_LIBRARY_PATH to: {new_ld_path}")
                 else:
-                    logger.warning("No library paths found for LD_LIBRARY_PATH")
-        except Exception as e:
-            logger.warning(f"Could not set LD_LIBRARY_PATH: {e}")
+                    # If no paths found but environment had it set, keep the environment value
+                    if existing_ld_path:
+                        # Clean up any empty paths (leading/trailing colons)
+                        cleaned_path = ':'.join([p for p in existing_ld_path.split(':') if p and p.strip()])
+                        os.environ['LD_LIBRARY_PATH'] = cleaned_path
+                        logger.info(f"Using LD_LIBRARY_PATH from environment: {cleaned_path}")
+                    else:
+                        logger.warning("No library paths found for LD_LIBRARY_PATH")
+            except Exception as e:
+                logger.warning(f"Could not set LD_LIBRARY_PATH: {e}")
 
         # Ensure we're not in an asyncio event loop when using sync_playwright
         # Playwright Sync API cannot be used inside an asyncio event loop
@@ -364,142 +383,158 @@ class BaseAutomation(ABC):
                 'password': self.proxy.get('password'),
             }
 
-        # Final verification: Ensure library cache is updated and library is accessible
-        libglib_verified = False
-        try:
-            # Run ldconfig one more time right before launch
-            ldconfig_result = subprocess.run(['ldconfig'], capture_output=True, timeout=10, stderr=subprocess.PIPE)
-            if ldconfig_result.returncode != 0:
-                logger.warning(f"ldconfig had issues: {ldconfig_result.stderr.decode()[:200]}")
+        # Final verification: Ensure library cache is updated and library is accessible (Linux only)
+        libglib_verified = True if is_windows else False
+        if not is_windows:
+            import subprocess
+            try:
+                # Run ldconfig one more time right before launch
+                ldconfig_result = subprocess.run(['ldconfig'], capture_output=True, timeout=10, text=True)
+                if ldconfig_result.returncode != 0:
+                    logger.warning(f"ldconfig had issues: {ldconfig_result.stderr[:200] if ldconfig_result.stderr else 'Unknown error'}")
 
-            # Verify libglib is accessible
-            verify_result = subprocess.run(
-                ['ldconfig', '-p'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if 'libglib-2.0.so.0' in verify_result.stdout:
-                libglib_verified = True
-                logger.info("libglib-2.0.so.0 found in library cache")
-            else:
-                logger.warning("libglib-2.0.so.0 not in library cache, searching filesystem...")
-                # Try to find it directly
-                find_result = subprocess.run(
-                    ['find', '/usr/lib*', '/lib*', '-name', 'libglib-2.0.so.0', '2>/dev/null'],
-                    shell=True,
+                # Verify libglib is accessible
+                verify_result = subprocess.run(
+                    ['ldconfig', '-p'],
                     capture_output=True,
                     text=True,
-                    timeout=10
+                    timeout=5
                 )
-                if find_result.stdout.strip():
-                    lib_file = find_result.stdout.strip().split('\n')[0]
-                    logger.info(f"Found libglib-2.0.so.0 at {lib_file}")
-                    # Try to actually load the library to verify it's accessible
-                    try:
-                        test_result = subprocess.run(
-                            ['ldd', lib_file],
-                            capture_output=True,
-                            text=True,
-                            timeout=5
-                        )
-                        if test_result.returncode == 0:
-                            libglib_verified = True
-                            logger.info(f"Library file is valid and loadable: {lib_file}")
-                        else:
-                            logger.warning(f"Library file found but may have dependency issues: {test_result.stderr}")
-                    except Exception as e:
-                        logger.debug(f"Could not test library loading: {e}")
+                if 'libglib-2.0.so.0' in verify_result.stdout:
+                    libglib_verified = True
+                    logger.info("libglib-2.0.so.0 found in library cache")
                 else:
-                    logger.error("libglib-2.0.so.0 not found anywhere on filesystem!")
-
-            # If still not verified, try to install it
-            if not libglib_verified:
-                logger.warning("libglib-2.0.so.0 not verified. Attempting emergency installation...")
-                try:
-                    install_result = subprocess.run(
-                        ['apt-get', 'update', '-qq'],
-                        capture_output=True,
-                        timeout=30,
-                        stderr=subprocess.PIPE
-                    )
-                    install_result = subprocess.run(
-                        ['apt-get', 'install', '-y', '--no-install-recommends', 'libglib2.0-0', 'libglib2.0-bin'],
-                        capture_output=True,
-                        text=True,
-                        timeout=120,
-                        stderr=subprocess.PIPE
-                    )
-                    if install_result.returncode == 0:
-                        subprocess.run(['ldconfig'], capture_output=True, timeout=10)
-                        logger.info("Emergency libglib installation completed")
-                        libglib_verified = True
-                    else:
-                        logger.error(f"Emergency installation failed: {install_result.stderr[:500]}")
-                except Exception as e:
-                    logger.error(f"Emergency installation exception: {e}")
-
-        except Exception as e:
-            logger.warning(f"Library verification warning: {e}")
-
-        if not libglib_verified:
-            logger.error("WARNING: libglib-2.0.so.0 verification failed. Browser launch may fail.")
-
-        # Try to launch browser - if it fails due to dependencies, try to install them
-        try:
-            ld_path = os.environ.get('LD_LIBRARY_PATH', 'not set')
-            logger.info(f"Launching browser with LD_LIBRARY_PATH={ld_path}")
-            logger.info(f"libglib verified: {libglib_verified}")
-
-            # Test if browser executable can actually run (check dependencies)
-            try:
-                import glob
-                playwright_cache = os.path.expanduser('~/.cache/ms-playwright')
-                chromium_paths = glob.glob(f"{playwright_cache}/chromium-*/chrome-linux/chrome")
-                if chromium_paths:
-                    chrome_path = chromium_paths[0]
-                    logger.info(f"Testing browser executable dependencies: {chrome_path}")
-                    # Try to check what libraries it needs
-                    ldd_result = subprocess.run(
-                        ['ldd', chrome_path],
+                    logger.warning("libglib-2.0.so.0 not in library cache, searching filesystem...")
+                    # Try to find it directly
+                    find_result = subprocess.run(
+                        ['find', '/usr/lib*', '/lib*', '-name', 'libglib-2.0.so.0', '2>/dev/null'],
+                        shell=True,
                         capture_output=True,
                         text=True,
                         timeout=10
                     )
-                    if ldd_result.returncode == 0:
-                        # Check for missing libraries
-                        missing_libs = []
-                        for line in ldd_result.stdout.split('\n'):
-                            if 'not found' in line.lower():
-                                missing_libs.append(line.strip())
-                        if missing_libs:
-                            logger.error(f"Browser executable has MISSING dependencies:")
-                            for lib in missing_libs[:5]:  # Show first 5
-                                logger.error(f"  - {lib}")
-                            logger.error("This will cause browser launch to fail!")
-                            logger.error("Try: apt-get update && apt-get install -y <missing-package>")
-                        else:
-                            logger.info("✓ Browser executable dependencies OK (all libraries found)")
+                    if find_result.stdout.strip():
+                        lib_file = find_result.stdout.strip().split('\n')[0]
+                        logger.info(f"Found libglib-2.0.so.0 at {lib_file}")
+                        # Try to actually load the library to verify it's accessible
+                        try:
+                            test_result = subprocess.run(
+                                ['ldd', lib_file],
+                                capture_output=True,
+                                text=True,
+                                timeout=5
+                            )
+                            if test_result.returncode == 0:
+                                libglib_verified = True
+                                logger.info(f"Library file is valid and loadable: {lib_file}")
+                            else:
+                                logger.warning(f"Library file found but may have dependency issues: {test_result.stderr}")
+                        except Exception as e:
+                            logger.debug(f"Could not test library loading: {e}")
                     else:
-                        logger.warning(f"Could not check browser dependencies: {ldd_result.stderr}")
+                        logger.error("libglib-2.0.so.0 not found anywhere on filesystem!")
 
-                    # Also try to run the browser with --version to see if it can start
+                # If still not verified, try to install it
+                if not libglib_verified:
+                    logger.warning("libglib-2.0.so.0 not verified. Attempting emergency installation...")
                     try:
-                        version_result = subprocess.run(
-                            [chrome_path, '--version'],
+                        install_result = subprocess.run(
+                            ['apt-get', 'update', '-qq'],
+                            capture_output=True,
+                            timeout=30
+                        )
+                        install_result = subprocess.run(
+                            ['apt-get', 'install', '-y', '--no-install-recommends', 'libglib2.0-0', 'libglib2.0-bin'],
                             capture_output=True,
                             text=True,
-                            timeout=5,
-                            env=dict(os.environ, LD_LIBRARY_PATH=os.environ.get('LD_LIBRARY_PATH', ''))
+                            timeout=120
                         )
-                        if version_result.returncode == 0:
-                            logger.info(f"✓ Browser executable can run: {version_result.stdout.strip()}")
+                        if install_result.returncode == 0:
+                            subprocess.run(['ldconfig'], capture_output=True, timeout=10)
+                            logger.info("Emergency libglib installation completed")
+                            libglib_verified = True
                         else:
-                            logger.warning(f"Browser --version failed: {version_result.stderr}")
+                            logger.error(f"Emergency installation failed: {install_result.stderr[:500]}")
                     except Exception as e:
-                        logger.warning(f"Could not test browser --version: {e}")
+                        logger.error(f"Emergency installation exception: {e}")
+
             except Exception as e:
-                logger.warning(f"Could not test browser executable: {e}")
+                logger.warning(f"Library verification warning: {e}")
+
+            if not libglib_verified:
+                logger.error("WARNING: libglib-2.0.so.0 verification failed. Browser launch may fail.")
+
+        # Try to launch browser - if it fails due to dependencies, try to install them
+        try:
+            # Ensure LD_LIBRARY_PATH doesn't have leading/trailing colons (Linux only)
+            if not is_windows:
+                ld_path = os.environ.get('LD_LIBRARY_PATH', '')
+                if ld_path:
+                    # Clean up any empty paths
+                    cleaned_paths = [p for p in ld_path.split(':') if p and p.strip()]
+                    cleaned_ld_path = ':'.join(cleaned_paths)
+                    if cleaned_ld_path != ld_path:
+                        os.environ['LD_LIBRARY_PATH'] = cleaned_ld_path
+                        ld_path = cleaned_ld_path
+                        logger.info(f"Cleaned LD_LIBRARY_PATH to: {ld_path}")
+                else:
+                    ld_path = 'not set'
+                logger.info(f"Launching browser with LD_LIBRARY_PATH={ld_path}")
+                logger.info(f"libglib verified: {libglib_verified}")
+            else:
+                logger.info("Launching browser on Windows (no LD_LIBRARY_PATH needed)")
+
+            # Test if browser executable can actually run (check dependencies) - Linux only
+            if not is_windows:
+                import subprocess
+                try:
+                    import glob
+                    playwright_cache = os.path.expanduser('~/.cache/ms-playwright')
+                    chromium_paths = glob.glob(f"{playwright_cache}/chromium-*/chrome-linux/chrome")
+                    if chromium_paths:
+                        chrome_path = chromium_paths[0]
+                        logger.info(f"Testing browser executable dependencies: {chrome_path}")
+                        # Try to check what libraries it needs
+                        ldd_result = subprocess.run(
+                            ['ldd', chrome_path],
+                            capture_output=True,
+                            text=True,
+                            timeout=10
+                        )
+                        if ldd_result.returncode == 0:
+                            # Check for missing libraries
+                            missing_libs = []
+                            for line in ldd_result.stdout.split('\n'):
+                                if 'not found' in line.lower():
+                                    missing_libs.append(line.strip())
+                            if missing_libs:
+                                logger.error(f"Browser executable has MISSING dependencies:")
+                                for lib in missing_libs[:5]:  # Show first 5
+                                    logger.error(f"  - {lib}")
+                                logger.error("This will cause browser launch to fail!")
+                                logger.error("Try: apt-get update && apt-get install -y <missing-package>")
+                            else:
+                                logger.info("✓ Browser executable dependencies OK (all libraries found)")
+                        else:
+                            logger.warning(f"Could not check browser dependencies: {ldd_result.stderr}")
+
+                        # Also try to run the browser with --version to see if it can start
+                        try:
+                            version_result = subprocess.run(
+                                [chrome_path, '--version'],
+                                capture_output=True,
+                                text=True,
+                                timeout=5,
+                                env=dict(os.environ, LD_LIBRARY_PATH=os.environ.get('LD_LIBRARY_PATH', ''))
+                            )
+                            if version_result.returncode == 0:
+                                logger.info(f"✓ Browser executable can run: {version_result.stdout.strip()}")
+                            else:
+                                logger.warning(f"Browser --version failed: {version_result.stderr}")
+                        except Exception as e:
+                            logger.warning(f"Could not test browser --version: {e}")
+                except Exception as e:
+                    logger.warning(f"Could not test browser executable: {e}")
 
             # Additional browser launch args for better compatibility
             launch_options['args'].extend([
@@ -519,9 +554,12 @@ class BaseAutomation(ABC):
                 '--enable-automation',
                 '--password-store=basic',
                 '--use-mock-keychain',
-                # Additional stability flags
-                '--single-process',  # Run in single process mode (helps with some dependency issues)
+                # Windows-specific stability: DO NOT use --single-process on Windows (causes crashes)
+                # '--single-process',  # Removed - causes crashes on Windows
                 '--disable-software-rasterizer',
+                # Additional Windows stability flags
+                '--disable-web-security',  # Helps with some site compatibility
+                '--disable-features=IsolateOrigins,site-per-process',  # Reduce process isolation issues
             ])
 
             self.browser = self.playwright.chromium.launch(**launch_options)
@@ -531,64 +569,72 @@ class BaseAutomation(ABC):
 
             # Check for common error types and provide helpful messages
             if "target closed" in error_msg or "browser has been closed" in error_msg or "process was closed" in error_msg:
-                # Try to get more diagnostic information
+                # Try to get more diagnostic information (Linux only)
                 diagnostics = []
-                try:
-                    # Check library cache
-                    ldconfig_result = subprocess.run(['ldconfig', '-p'], capture_output=True, text=True, timeout=5)
-                    if 'libglib-2.0.so.0' not in ldconfig_result.stdout:
-                        diagnostics.append("libglib-2.0.so.0 NOT found in library cache")
-                    else:
-                        diagnostics.append("libglib-2.0.so.0 found in library cache")
-                except Exception:
-                    pass
+                if not is_windows:
+                    import subprocess
+                    try:
+                        # Check library cache
+                        ldconfig_result = subprocess.run(['ldconfig', '-p'], capture_output=True, text=True, timeout=5)
+                        if 'libglib-2.0.so.0' not in ldconfig_result.stdout:
+                            diagnostics.append("libglib-2.0.so.0 NOT found in library cache")
+                        else:
+                            diagnostics.append("libglib-2.0.so.0 found in library cache")
+                    except Exception:
+                        pass
 
-                try:
-                    # Check LD_LIBRARY_PATH
-                    ld_path = os.environ.get('LD_LIBRARY_PATH', 'not set')
-                    diagnostics.append(f"LD_LIBRARY_PATH={ld_path}")
-                except Exception:
-                    pass
+                    try:
+                        # Check LD_LIBRARY_PATH
+                        ld_path = os.environ.get('LD_LIBRARY_PATH', 'not set')
+                        diagnostics.append(f"LD_LIBRARY_PATH={ld_path}")
+                    except Exception:
+                        pass
 
-                try:
-                    # Check if browser executable exists
-                    playwright_cache = os.path.expanduser('~/.cache/ms-playwright')
-                    chromium_paths = [
-                        f"{playwright_cache}/chromium-*/chrome-linux/chrome",
-                        f"{playwright_cache}/chromium-*/chrome-linux/chrome-wrapper",
-                    ]
-                    browser_found = False
-                    for pattern in chromium_paths:
-                        matches = glob.glob(pattern)
-                        if matches:
-                            browser_found = True
-                            diagnostics.append(f"Browser executable found at: {matches[0]}")
-                            break
-                    if not browser_found:
-                        diagnostics.append("Browser executable NOT found in Playwright cache")
-                except Exception:
-                    pass
+                    try:
+                        # Check if browser executable exists
+                        playwright_cache = os.path.expanduser('~/.cache/ms-playwright')
+                        chromium_paths = [
+                            f"{playwright_cache}/chromium-*/chrome-linux/chrome",
+                            f"{playwright_cache}/chromium-*/chrome-linux/chrome-wrapper",
+                        ]
+                        browser_found = False
+                        for pattern in chromium_paths:
+                            matches = glob.glob(pattern)
+                            if matches:
+                                browser_found = True
+                                diagnostics.append(f"Browser executable found at: {matches[0]}")
+                                break
+                        if not browser_found:
+                            diagnostics.append("Browser executable NOT found in Playwright cache")
+                    except Exception:
+                        pass
 
-                error_details = "\n".join(diagnostics) if diagnostics else "No diagnostics available"
-                raise RuntimeError(
-                    "Browser failed to launch - the browser process was closed immediately. "
-                    "This usually indicates missing system dependencies (like libglib-2.0.so.0). "
-                    "Check that all Playwright dependencies are installed.\n\n"
-                    f"Diagnostics:\n{error_details}\n\n"
-                    "Try rebuilding the Docker container or running: "
-                    "apt-get update && apt-get install -y libglib2.0-0 libglib2.0-bin && ldconfig"
-                ) from e
+                    error_details = "\n".join(diagnostics) if diagnostics else "No diagnostics available"
+                    raise RuntimeError(
+                        "Browser failed to launch - the browser process was closed immediately. "
+                        "This usually indicates missing system dependencies (like libglib-2.0.so.0). "
+                        "Check that all Playwright dependencies are installed.\n\n"
+                        f"Diagnostics:\n{error_details}\n\n"
+                        "Try rebuilding the Docker container or running: "
+                        "apt-get update && apt-get install -y libglib2.0-0 libglib2.0-bin && ldconfig"
+                    ) from e
+                else:
+                    # Windows error handling
+                    raise RuntimeError(
+                        f"Browser failed to launch on Windows: {str(e)}\n"
+                        "Make sure Playwright browsers are installed: python -m playwright install chromium"
+                    ) from e
 
             if "executable doesn't exist" in error_msg or "browser executable" in error_msg:
                 raise RuntimeError(
                     "Browser executable not found. Please run: python3 -m playwright install chromium"
                 ) from e
 
-            if "missing dependencies" in error_msg or "install-deps" in error_msg or "libglib" in error_msg:
+            if ("missing dependencies" in error_msg or "install-deps" in error_msg or "libglib" in error_msg) and not is_windows:
                 logger.warning("Playwright detected missing dependencies. Attempting to install...")
                 import subprocess
                 try:
-                    # Try to install dependencies
+                    # Try to install dependencies (Linux only)
                     result = subprocess.run(
                         ['python3', '-m', 'playwright', 'install-deps', 'chromium'],
                         capture_output=True,
@@ -662,7 +708,12 @@ class BaseAutomation(ABC):
 
         # Create page
         try:
+            # Add a small delay after context creation
+            time.sleep(0.3)
             self.page = self.context.new_page()
+            # Set page timeout
+            self.page.set_default_timeout(30000)  # 30 second timeout
+            self.page.set_default_navigation_timeout(30000)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to create browser page: {str(e)}. "
@@ -685,9 +736,84 @@ class BaseAutomation(ABC):
         delay = random.uniform(min_seconds, max_seconds)
         time.sleep(delay)
 
-    def human_type(self, page: Page, selector: str, text: str):
-        """Type text with human-like delays"""
-        element = page.locator(selector)
+    def find_with_iframe_fallback(self, selector: str, description: str = "element") -> Tuple[Optional[Locator], Optional[Frame], str]:
+        """
+        Find element with iframe fallback
+        
+        Args:
+            selector: CSS selector
+            description: Description for logging
+        
+        Returns:
+            Tuple of (locator, frame_context, source)
+        """
+        if not self.page or not IframeRouter:
+            # Fallback to regular locator
+            return self.page.locator(selector) if self.page else None, None, "main"
+        
+        task_id = getattr(self, '_current_task_id', None)
+        
+        def locator_builder(context):
+            if isinstance(context, Page):
+                return context.locator(selector)
+            else:  # FrameLocator
+                return context.locator(selector)
+        
+        return IframeRouter.find_in_main_or_frames(
+            self.page,
+            locator_builder,
+            task_id=task_id,
+            description=description
+        )
+    
+    def find_with_locator_engine(
+        self,
+        target_role: str,
+        keywords: List[str],
+        context: Optional[Dict] = None
+    ) -> Tuple[Optional[Locator], Optional[Any], List[Any]]:
+        """
+        Find element using self-healing locator engine
+        
+        Args:
+            target_role: Target role (button, input, form, textarea, etc.)
+            keywords: List of keywords to match
+            context: Optional context
+        
+        Returns:
+            Tuple of (locator, winning_candidate, all_candidates)
+        """
+        try:
+            from core.locator_engine import LocatorEngine
+        except ImportError:
+            LocatorEngine = None
+        
+        if not self.page or not LocatorEngine:
+            return None, None, []
+        
+        task_id = getattr(self, '_current_task_id', None)
+        
+        return LocatorEngine.find(
+            self.page,
+            target_role,
+            keywords,
+            context,
+            task_id=task_id
+        )
+    
+    def human_type(self, page_or_frame, selector_or_element, text: str):
+        """Type text with human-like delays
+        Args:
+            page_or_frame: Can be a Page or Frame object
+            selector_or_element: Can be a selector string or a Locator element
+            text: Text to type
+        """
+        # Handle both selector strings and Locator elements
+        if isinstance(selector_or_element, str):
+            element = page_or_frame.locator(selector_or_element)
+        else:
+            element = selector_or_element
+        
         element.click()
         self.random_delay(0.5, 1.0)
 
@@ -715,6 +841,107 @@ class BaseAutomation(ABC):
             logger.warning(f"Captcha solving failed: {e}")
             return False
 
+    def _is_browser_valid(self) -> bool:
+        """Check if browser, context, and page are still valid"""
+        try:
+            if not self.browser:
+                return False
+            
+            # Check if browser is connected
+            if hasattr(self.browser, 'is_connected'):
+                if not self.browser.is_connected():
+                    logger.warning("Browser is not connected")
+                    return False
+            
+            if not self.context:
+                return False
+            
+            # Check if context is still valid
+            try:
+                # Try to access context pages - this will fail if context is closed
+                _ = self.context.pages
+            except Exception as e:
+                error_msg = str(e).lower()
+                if 'closed' in error_msg or 'target' in error_msg:
+                    logger.warning(f"Browser context is closed: {e}")
+                    return False
+                raise
+            
+            if not self.page:
+                return False
+            
+            # Check if page is closed
+            try:
+                if self.page.is_closed():
+                    logger.warning("Page is closed")
+                    return False
+            except Exception as e:
+                error_msg = str(e).lower()
+                if 'closed' in error_msg or 'target' in error_msg:
+                    logger.warning(f"Page is closed: {e}")
+                    return False
+                raise
+            
+            return True
+        except Exception as e:
+            logger.warning(f"Error checking browser validity: {e}")
+            return False
+
+    def _safe_navigate(self, url: str, wait_until: str = 'domcontentloaded', timeout: int = 30000, retries: int = 2) -> bool:
+        """
+        Safely navigate to URL with retry logic and browser validation
+        
+        Returns:
+            True if navigation succeeded, False if browser crashed
+        """
+        for attempt in range(retries + 1):
+            try:
+                # Check browser validity before navigation
+                if not self._is_browser_valid():
+                    logger.warning(f"Browser invalid before navigation attempt {attempt + 1}, attempting to recreate...")
+                    if attempt < retries:
+                        try:
+                            self.cleanup()
+                            self.setup_browser()
+                            logger.info("Browser recreated successfully")
+                        except Exception as recreate_error:
+                            logger.error(f"Failed to recreate browser: {recreate_error}")
+                            return False
+                    else:
+                        logger.error("Browser invalid and max retries reached")
+                        return False
+                
+                # Attempt navigation
+                self.page.goto(url, wait_until=wait_until, timeout=timeout)
+                return True
+                
+            except Exception as nav_error:
+                error_msg = str(nav_error)
+                error_lower = error_msg.lower()
+                
+                # Check if browser crashed
+                if any(phrase in error_lower for phrase in ['target closed', 'browser has been closed', 'context has been closed', 'target page']):
+                    logger.error(f"Browser crashed during navigation (attempt {attempt + 1}/{retries + 1}): {error_msg}")
+                    
+                    if attempt < retries:
+                        logger.info("Attempting to recreate browser and retry...")
+                        try:
+                            self.cleanup()
+                            self.setup_browser()
+                            logger.info("Browser recreated, retrying navigation...")
+                            continue
+                        except Exception as recreate_error:
+                            logger.error(f"Failed to recreate browser: {recreate_error}")
+                            return False
+                    else:
+                        logger.error("Browser crashed and max retries reached")
+                        return False
+                else:
+                    # Different error, re-raise it
+                    raise
+        
+        return False
+
     def cleanup(self):
         """Cleanup browser resources - ensures all resources are properly closed"""
         cleanup_errors = []
@@ -725,8 +952,11 @@ class BaseAutomation(ABC):
                 if not self.page.is_closed():
                     self.page.close()
             except Exception as e:
-                cleanup_errors.append(f"page: {e}")
-                logger.warning(f"Error closing page: {e}")
+                error_msg = str(e).lower()
+                # Ignore errors if browser/context is already closed
+                if 'target closed' not in error_msg and 'browser closed' not in error_msg and 'context closed' not in error_msg:
+                    cleanup_errors.append(f"page: {e}")
+                    logger.warning(f"Error closing page: {e}")
             finally:
                 self.page = None
 
@@ -741,8 +971,10 @@ class BaseAutomation(ABC):
                         try:
                             if not page.is_closed():
                                 page.close()
-                        except:
-                            pass
+                        except Exception as e:
+                            error_msg = str(e).lower()
+                            if 'target closed' not in error_msg and 'browser closed' not in error_msg:
+                                logger.debug(f"Error closing page during cleanup: {e}")
                     self.context.close()
             except Exception as e:
                 cleanup_errors.append(f"context: {e}")
@@ -757,12 +989,16 @@ class BaseAutomation(ABC):
                 try:
                     self.browser.close()
                 except Exception as e:
-                    # Browser might already be closed
-                    if "Target closed" not in str(e).lower() and "Browser closed" not in str(e).lower():
-                        raise
+                    error_msg = str(e).lower()
+                    # Browser might already be closed - ignore these errors
+                    if 'target closed' not in error_msg and 'browser closed' not in error_msg and 'context closed' not in error_msg:
+                        cleanup_errors.append(f"browser: {e}")
+                        logger.warning(f"Error closing browser: {e}")
             except Exception as e:
-                cleanup_errors.append(f"browser: {e}")
-                logger.warning(f"Error closing browser: {e}")
+                error_msg = str(e).lower()
+                if 'target closed' not in error_msg and 'browser closed' not in error_msg:
+                    cleanup_errors.append(f"browser: {e}")
+                    logger.warning(f"Error closing browser: {e}")
             finally:
                 self.browser = None
 

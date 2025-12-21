@@ -175,4 +175,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
 //user routes end
 
+// Simple public test comment page for automation validation
+Route::get('/test-comment', function () {
+    return view('test-comment');
+});
+
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php

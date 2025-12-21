@@ -4,109 +4,108 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Backlink extends Model
 {
     use HasFactory;
+    
     protected $fillable = [
-        'campaign_id',
-        'backlink_opportunity_id',
         'url',
-        'type',
-        'keyword',
-        'anchor_text',
         'pa',
         'da',
+        'site_type',
         'status',
-        'verified_at',
-        'error_message',
-        'site_account_id',
+        'daily_site_limit',
+        'metadata',
     ];
 
     protected $casts = [
-        'verified_at' => 'datetime',
+        'pa' => 'integer',
+        'da' => 'integer',
+        'daily_site_limit' => 'integer',
+        'metadata' => 'array',
     ];
 
     /**
-     * Backlink types
+     * Backlink statuses (for the global store)
+     */
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
+    const STATUS_BANNED = 'banned';
+
+    /**
+     * Site types
      */
     const TYPE_COMMENT = 'comment';
     const TYPE_PROFILE = 'profile';
     const TYPE_FORUM = 'forum';
     const TYPE_GUEST = 'guestposting';
+    const TYPE_OTHER = 'other';
 
     /**
-     * Backlink statuses
+     * Get categories for this backlink (many-to-many)
      */
-    const STATUS_PENDING = 'pending';
-    const STATUS_SUBMITTED = 'submitted';
-    const STATUS_VERIFIED = 'verified';
-    const STATUS_FAILED = 'error';
-
-    /**
-     * Get the campaign that owns this backlink
-     */
-    public function campaign(): BelongsTo
+    public function categories(): BelongsToMany
     {
-        return $this->belongsTo(Campaign::class);
+        return $this->belongsToMany(Category::class, 'backlink_category')
+            ->withTimestamps();
     }
 
     /**
-     * Get the site account used for this backlink
+     * Get opportunities that use this backlink (campaign-specific)
      */
-    public function siteAccount(): BelongsTo
+    public function opportunities(): HasMany
     {
-        return $this->belongsTo(SiteAccount::class);
+        return $this->hasMany(BacklinkOpportunity::class, 'backlink_id');
     }
 
     /**
-     * Get the backlink opportunity this was created from
+     * Scope for active backlinks
      */
-    public function opportunity(): BelongsTo
+    public function scopeActive($query)
     {
-        return $this->belongsTo(BacklinkOpportunity::class, 'backlink_opportunity_id');
+        return $query->where('status', self::STATUS_ACTIVE);
     }
 
     /**
-     * Get all logs for this backlink
+     * Scope for inactive backlinks
      */
-    public function logs(): HasMany
+    public function scopeInactive($query)
     {
-        return $this->hasMany(Log::class);
+        return $query->where('status', self::STATUS_INACTIVE);
     }
 
     /**
-     * Check if backlink is verified
+     * Scope for banned backlinks
      */
-    public function isVerified(): bool
+    public function scopeBanned($query)
     {
-        return $this->status === self::STATUS_VERIFIED && $this->verified_at !== null;
+        return $query->where('status', self::STATUS_BANNED);
     }
 
     /**
-     * Scope for verified backlinks
+     * Scope filtered by PA range
      */
-    public function scopeVerified($query)
+    public function scopePaRange($query, $minPa, $maxPa)
     {
-        return $query->where('status', self::STATUS_VERIFIED);
+        return $query->whereBetween('pa', [$minPa, $maxPa]);
     }
 
     /**
-     * Scope for pending backlinks
+     * Scope filtered by DA range
      */
-    public function scopePending($query)
+    public function scopeDaRange($query, $minDa, $maxDa)
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $query->whereBetween('da', [$minDa, $maxDa]);
     }
 
     /**
-     * Scope for failed backlinks
+     * Scope filtered by site type
      */
-    public function scopeFailed($query)
+    public function scopeSiteType($query, $siteType)
     {
-        return $query->where('status', self::STATUS_FAILED);
+        return $query->where('site_type', $siteType);
     }
 }
-

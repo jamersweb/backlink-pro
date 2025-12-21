@@ -47,9 +47,11 @@ class TaskController extends Controller
             ], 401);
         }
 
-        // Check API rate limit (300 requests per hour per worker)
+        // Check API rate limit (per worker). Default to a generous hourly limit to
+        // avoid throttling automation workers; can be tuned via settings.
         $workerId = $request->header('X-Worker-ID', 'unknown');
-        $maxRequests = Setting::get('api_api_rate_limit', 300);
+        // 120 requests/min middleware already applies; align hourly cap accordingly.
+        $maxRequests = Setting::get('api_api_rate_limit', 7200);
 
         if (!RateLimitingService::checkApiRateLimit($workerId, $maxRequests, 60)) {
             // Calculate retry_after: remaining time until rate limit window resets
@@ -124,6 +126,35 @@ class TaskController extends Controller
 
             // Use the model's markFailed method which handles retry logic
             $task->markFailed($errorMessage);
+
+            // If task is permanently failed (exceeded max retries), mark the backlink as inactive
+            if ($task->status === AutomationTask::STATUS_FAILED && $request->has('result')) {
+                $result = $request->result;
+                $backlinkId = $result['backlink_id'] ?? null;
+                
+                if ($backlinkId) {
+                    // Check if this backlink has failed multiple times across all campaigns
+                    $backlinkFailureCount = AutomationTask::where('status', AutomationTask::STATUS_FAILED)
+                        ->where(function($query) use ($backlinkId) {
+                            $query->whereJsonContains('result->backlink_id', $backlinkId)
+                                  ->orWhereJsonContains('payload->backlink_id', $backlinkId);
+                        })
+                        ->count();
+                    
+                    // Mark backlink as inactive after 3 failures (across all campaigns)
+                    if ($backlinkFailureCount >= 3) {
+                        $backlink = \App\Models\Backlink::find($backlinkId);
+                        if ($backlink && $backlink->status === \App\Models\Backlink::STATUS_ACTIVE) {
+                            $backlink->update(['status' => \App\Models\Backlink::STATUS_INACTIVE]);
+                            \Log::warning("Backlink {$backlinkId} marked as inactive after {$backlinkFailureCount} failures", [
+                                'backlink_id' => $backlinkId,
+                                'url' => $backlink->url,
+                                'failure_count' => $backlinkFailureCount,
+                            ]);
+                        }
+                    }
+                }
+            }
 
             // Log the error for debugging
             \Log::warning("Task {$id} failed", [

@@ -1,0 +1,51 @@
+{
+  "feature_names": [
+    "pa",
+    "da",
+    "pa_da_sum",
+    "pa_da_diff",
+    "pa_da_product",
+    "pa_da_ratio",
+    "pa_squared",
+    "da_squared",
+    "pa_da_mean",
+    "pa_da_max",
+    "pa_da_min",
+    "domain_length",
+    "domain_num_dots",
+    "tld_length",
+    "url_length",
+    "url_path_depth",
+    "status_is_live",
+    "status_is_pending",
+    "status_live",
+    "status_pending",
+    "status_status",
+    "status_nan",
+    "tld_encoded"
+  ],
+  "num_features": 23,
+  "train_samples": 392,
+  "val_samples": 84,
+  "test_samples": 84,
+  "train_class_distribution": {
+    "profile": 233,
+    "other": 90,
+    "comment": 58,
+    "forum": 11
+  },
+  "val_class_distribution": {
+    "profile": 50,
+    "other": 19,
+    "comment": 12,
+    "forum": 3
+  },
+  "test_class_distribution": {
+    "profile": 50,
+    "other": 19,
+    "comment": 12,
+    "forum": 3
+  },
+  "target_type": "multiclass",
+  "num_classes": 4
+}

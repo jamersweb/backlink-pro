@@ -14,7 +14,8 @@ class OpportunityController extends Controller
 {
     /**
      * GET /api/opportunities/for-campaign/{campaign_id}
-     * Get opportunities for a campaign based on category, plan limits, and daily limits
+     * Get backlinks from the store for a campaign based on category, plan limits, and daily limits
+     * Returns backlinks that can be used to create opportunities
      */
     public function getForCampaign(Request $request, $campaignId)
     {
@@ -54,9 +55,9 @@ class OpportunityController extends Controller
         $count = $request->get('count', 1);
         $taskType = $request->get('task_type', 'comment'); // comment, profile, forum, guest
         
-        // Build query for opportunities
-        $query = BacklinkOpportunity::query()
-            ->where('status', 'active')
+        // Build query for backlinks from the store
+        $query = Backlink::query()
+            ->where('status', Backlink::STATUS_ACTIVE)
             ->whereBetween('pa', [$minPa, $maxPa])
             ->whereBetween('da', [$minDa, $maxDa])
             ->whereHas('categories', function($q) use ($categoryIds) {
@@ -66,22 +67,34 @@ class OpportunityController extends Controller
         // Filter by site type if needed (optional)
         if ($request->has('site_type')) {
             $query->where('site_type', $request->site_type);
+        } else {
+            // Map task_type to site_type
+            $siteTypeMap = [
+                'comment' => 'comment',
+                'profile' => 'profile',
+                'forum' => 'forum',
+                'guest' => 'guestposting',
+                'guestposting' => 'guestposting',
+            ];
+            if (isset($siteTypeMap[$taskType])) {
+                $query->where('site_type', $siteTypeMap[$taskType]);
+            }
         }
         
         // Get today's date for daily limit checking
         $today = Carbon::today();
         
-        // Get opportunities with daily limit tracking
-        $opportunities = $query->with('categories')
+        // Get backlinks with daily limit tracking
+        $backlinks = $query->with('categories')
             ->orderByDesc(DB::raw('(pa + da)')) // Prioritize higher PA+DA
             ->limit($count * 10) // Get more than needed for filtering
             ->get();
         
-        // Filter by daily limits
-        $filteredOpportunities = [];
-        foreach ($opportunities as $opportunity) {
-            // Check campaign daily limit
-            $campaignTodayCount = Backlink::where('campaign_id', $campaignId)
+        // Filter by daily limits and exclude recently failed backlinks
+        $filteredBacklinks = [];
+        foreach ($backlinks as $backlink) {
+            // Check campaign daily limit (count opportunities created today)
+            $campaignTodayCount = BacklinkOpportunity::where('campaign_id', $campaignId)
                 ->whereDate('created_at', $today)
                 ->count();
             
@@ -89,18 +102,18 @@ class OpportunityController extends Controller
                 continue; // Campaign daily limit reached
             }
             
-            // Check site daily limit
-            $siteTodayCount = Backlink::where('backlink_opportunity_id', $opportunity->id)
+            // Check site daily limit (count opportunities created from this backlink today)
+            $siteTodayCount = BacklinkOpportunity::where('backlink_id', $backlink->id)
                 ->whereDate('created_at', $today)
                 ->count();
             
-            if ($opportunity->daily_site_limit && $siteTodayCount >= $opportunity->daily_site_limit) {
+            if ($backlink->daily_site_limit && $siteTodayCount >= $backlink->daily_site_limit) {
                 continue; // Site daily limit reached
             }
             
-            // Check if this opportunity was already used by this campaign today
-            $campaignSiteTodayCount = Backlink::where('campaign_id', $campaignId)
-                ->where('backlink_opportunity_id', $opportunity->id)
+            // Check if this backlink was already used by this campaign today
+            $campaignSiteTodayCount = BacklinkOpportunity::where('campaign_id', $campaignId)
+                ->where('backlink_id', $backlink->id)
                 ->whereDate('created_at', $today)
                 ->count();
             
@@ -108,34 +121,48 @@ class OpportunityController extends Controller
                 continue; // Already used by this campaign today
             }
             
-            $filteredOpportunities[] = $opportunity;
+            // Check if this backlink has failed multiple times recently (last 2 hours)
+            // Skip backlinks that have failed 3+ times in the last 2 hours
+            $recentFailures = \App\Models\AutomationTask::where('status', \App\Models\AutomationTask::STATUS_FAILED)
+                ->where('created_at', '>', now()->subHours(2))
+                ->where(function($query) use ($backlink) {
+                    $query->whereJsonContains('result->backlink_id', $backlink->id)
+                          ->orWhereJsonContains('payload->backlink_id', $backlink->id);
+                })
+                ->count();
             
-            if (count($filteredOpportunities) >= $count) {
+            if ($recentFailures >= 3) {
+                continue; // Skip backlinks with too many recent failures
+            }
+            
+            $filteredBacklinks[] = $backlink;
+            
+            if (count($filteredBacklinks) >= $count) {
                 break;
             }
         }
         
         // Randomize selection (prioritize higher PA/DA but add randomness)
-        if (count($filteredOpportunities) > $count) {
+        if (count($filteredBacklinks) > $count) {
             // Take top 50% by PA+DA, then randomize
-            $topHalf = array_slice($filteredOpportunities, 0, ceil(count($filteredOpportunities) / 2));
+            $topHalf = array_slice($filteredBacklinks, 0, ceil(count($filteredBacklinks) / 2));
             shuffle($topHalf);
-            $filteredOpportunities = array_slice($topHalf, 0, $count);
+            $filteredBacklinks = array_slice($topHalf, 0, $count);
         }
         
         return response()->json([
             'success' => true,
-            'opportunities' => array_map(function($opp) {
+            'opportunities' => array_map(function($backlink) {
                 return [
-                    'id' => $opp->id,
-                    'url' => $opp->url,
-                    'pa' => $opp->pa,
-                    'da' => $opp->da,
-                    'site_type' => $opp->site_type,
-                    'daily_site_limit' => $opp->daily_site_limit,
-                    'categories' => $opp->categories->pluck('id')->toArray(),
+                    'id' => $backlink->id,
+                    'url' => $backlink->url,
+                    'pa' => $backlink->pa,
+                    'da' => $backlink->da,
+                    'site_type' => $backlink->site_type,
+                    'daily_site_limit' => $backlink->daily_site_limit,
+                    'categories' => $backlink->categories->pluck('id')->toArray(),
                 ];
-            }, $filteredOpportunities),
+            }, $filteredBacklinks),
             'campaign' => [
                 'id' => $campaign->id,
                 'category_id' => $campaign->category_id,
@@ -150,4 +177,3 @@ class OpportunityController extends Controller
         ]);
     }
 }
-

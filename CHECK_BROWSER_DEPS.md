@@ -80,3 +80,10 @@ Run it with:
 docker-compose exec scheduler python3 /var/www/html/python/check_browser_deps.py
 ```
 
+
+
+
+
+
+
+

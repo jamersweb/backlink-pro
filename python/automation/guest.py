@@ -30,6 +30,8 @@ class GuestPostAutomation(BaseAutomation):
                 if opportunity:
                     target_url = opportunity.get('url')
                     logger.info(f"Selected opportunity {opportunity.get('id')} with PA:{opportunity.get('pa')} DA:{opportunity.get('da')}")
+                    # Store opportunity for shadow mode logging
+                    self.last_opportunity = opportunity
             except Exception as e:
                 logger.warning(f"Failed to get opportunity: {e}, falling back to payload URLs")
         
@@ -48,7 +50,12 @@ class GuestPostAutomation(BaseAutomation):
             
             # Navigate to submission page
             submission_url = self._find_submission_url(target_url)
-            self.page.goto(submission_url, wait_until='networkidle')
+            if not self._safe_navigate(submission_url, wait_until='networkidle'):
+                return {
+                    'success': False,
+                    'error': 'Browser crashed during navigation',
+                    'backlink_id': opportunity.get('id') if opportunity else None,
+                }
             self.random_delay(2, 4)
             
             # Generate guest post pitch
@@ -75,7 +82,7 @@ class GuestPostAutomation(BaseAutomation):
                 
                 # Include opportunity ID if available
                 if opportunity:
-                    result['backlink_opportunity_id'] = opportunity.get('id')
+                    result['backlink_id'] = opportunity.get('id')
                 
                 return result
             else:
@@ -104,7 +111,9 @@ class GuestPostAutomation(BaseAutomation):
         for path in submission_paths:
             try:
                 url = f"{base_url.rstrip('/')}{path}"
-                self.page.goto(url, wait_until='networkidle', timeout=5000)
+                if not self._safe_navigate(url, wait_until='networkidle', timeout=5000):
+                    logger.warning(f"Failed to navigate to {url}")
+                    continue
                 if any(keyword in self.page.url.lower() for keyword in ['write', 'guest', 'submit', 'contribute']):
                     return self.page.url
             except:

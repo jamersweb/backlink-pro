@@ -97,6 +97,12 @@ Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 
 Route::put('/settings/{group}', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
 Route::post('/settings/test-connection', [\App\Http\Controllers\Admin\SettingsController::class, 'testConnection'])->name('settings.test-connection');
 
+// ML Training Management
+Route::get('/ml-training', [\App\Http\Controllers\Admin\MLTrainingController::class, 'index'])->name('ml-training.index');
+Route::post('/ml-training/train', [\App\Http\Controllers\Admin\MLTrainingController::class, 'train'])->name('ml-training.train');
+Route::get('/ml-training/status', [\App\Http\Controllers\Admin\MLTrainingController::class, 'status'])->name('ml-training.status');
+Route::get('/ml-training/export', [\App\Http\Controllers\Admin\MLTrainingController::class, 'exportData'])->name('ml-training.export');
+
 // Blocked Sites Management
 Route::get('/blocked-sites', [\App\Http\Controllers\Admin\BlockedSiteController::class, 'index'])->name('blocked-sites.index');
 Route::post('/blocked-sites', [\App\Http\Controllers\Admin\BlockedSiteController::class, 'store'])->name('blocked-sites.store');

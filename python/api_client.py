@@ -22,8 +22,12 @@ class LaravelAPIClient:
             'Accept': 'application/json',
         })
 
-    def _request(self, method: str, endpoint: str, retry_on_rate_limit: bool = True, **kwargs) -> Optional[Dict]:
-        """Make HTTP request to API with rate limit handling"""
+    def _request(self, method: str, endpoint: str, retry_on_rate_limit: bool = False, **kwargs) -> Optional[Dict]:
+        """Make HTTP request to API with rate limit handling
+
+        Note: retry_on_rate_limit defaults to False to avoid making more requests
+        when rate limited. The caller should handle rate limits by waiting.
+        """
         url = urljoin(self.base_url, endpoint)
         max_retries = 3
         retry_delay = 5  # Start with 5 seconds
@@ -32,30 +36,15 @@ class LaravelAPIClient:
             try:
                 response = self.session.request(method, url, **kwargs)
 
-                # Handle rate limiting (429)
+                # Handle rate limiting (429) - don't retry by default
                 if response.status_code == 429:
-                    if not retry_on_rate_limit or attempt >= max_retries - 1:
-                        # Last attempt or retry disabled, raise the error
-                        error_data = {}
-                        try:
-                            error_data = response.json()
-                        except:
-                            pass
-
-                        retry_after = error_data.get('retry_after', 60)  # Default to 60 seconds
-                        error_msg = error_data.get('message', 'Rate limit exceeded')
-
-                        raise requests.exceptions.HTTPError(
-                            f"429 Client Error: Rate limit exceeded. {error_msg} "
-                            f"(Retry after {retry_after} seconds)",
-                            response=response
-                        )
-
                     # Parse retry_after from response
                     retry_after = 60  # Default
+                    error_msg = 'Rate limit exceeded'
                     try:
                         error_data = response.json()
-                        retry_after = error_data.get('retry_after', 60)
+                        retry_after = error_data.get('retry_after', retry_after)
+                        error_msg = error_data.get('message', error_msg)
                     except:
                         # Try to get from Retry-After header
                         retry_after_header = response.headers.get('Retry-After')
@@ -65,15 +54,23 @@ class LaravelAPIClient:
                             except:
                                 pass
 
-                    # Exponential backoff: wait longer on each retry
-                    wait_time = retry_after + (retry_delay * (2 ** attempt))
-                    logger.warning(
-                        f"Rate limit exceeded for {method} {endpoint}. "
-                        f"Waiting {wait_time} seconds before retry {attempt + 1}/{max_retries}"
-                    )
-                    import time
-                    time.sleep(wait_time)
-                    continue  # Retry the request
+                    # Only retry if explicitly enabled AND it's not the last attempt
+                    if retry_on_rate_limit and attempt < max_retries - 1:
+                        # Wait before retrying (don't add exponential backoff for rate limits)
+                        logger.warning(
+                            f"Rate limit exceeded for {method} {endpoint}. "
+                            f"Waiting {retry_after} seconds before retry {attempt + 1}/{max_retries}"
+                        )
+                        import time
+                        time.sleep(retry_after)
+                        continue  # Retry the request
+                    else:
+                        # Don't retry - let the caller handle it
+                        raise requests.exceptions.HTTPError(
+                            f"429 Client Error: Rate limit exceeded. {error_msg} "
+                            f"(Retry after {retry_after} seconds)",
+                            response=response
+                        )
 
                 # For other errors, raise immediately
                 response.raise_for_status()
@@ -98,7 +95,8 @@ class LaravelAPIClient:
         if task_type:
             params['type'] = task_type
 
-        response = self._request('GET', '/api/tasks/pending', params=params)
+        # Don't retry on rate limit - let the worker handle it by waiting
+        response = self._request('GET', '/api/tasks/pending', params=params, retry_on_rate_limit=False)
         return response.get('tasks', []) if response else []
 
     def lock_task(self, task_id: int, worker_id: str) -> Dict:
@@ -157,11 +155,28 @@ class LaravelAPIClient:
     def create_backlink(self, campaign_id: int, url: str, task_type: str,
                        keyword: Optional[str] = None, anchor_text: Optional[str] = None,
                        status: str = 'submitted', site_account_id: Optional[int] = None,
-                       backlink_opportunity_id: Optional[int] = None,
+                       backlink_id: Optional[int] = None,
                        error_message: Optional[str] = None) -> Dict:
-        """Create a backlink"""
+        """
+        Create a backlink opportunity (campaign-specific)
+        
+        Args:
+            campaign_id: Campaign ID
+            url: Actual backlink URL (may differ from store URL)
+            task_type: Type of backlink (comment, profile, forum, guestposting)
+            keyword: Optional keyword
+            anchor_text: Optional anchor text
+            status: Status (pending, submitted, verified, error)
+            site_account_id: Optional site account ID
+            backlink_id: Reference to backlink from the store (required)
+            error_message: Optional error message
+        """
+        if not backlink_id:
+            raise ValueError("backlink_id is required to create an opportunity")
+        
         data = {
             'campaign_id': campaign_id,
+            'backlink_id': backlink_id,
             'url': url,
             'type': task_type,
             'status': status,
@@ -172,24 +187,29 @@ class LaravelAPIClient:
             data['anchor_text'] = anchor_text
         if site_account_id:
             data['site_account_id'] = site_account_id
-        if backlink_opportunity_id:
-            data['backlink_opportunity_id'] = backlink_opportunity_id
         if error_message:
             data['error_message'] = error_message
 
         response = self._request('POST', '/api/backlinks', json=data)
         return response or {}
 
-    def update_backlink(self, backlink_id: int, status: Optional[str] = None,
+    def update_backlink(self, opportunity_id: int, status: Optional[str] = None,
                        error_message: Optional[str] = None) -> Dict:
-        """Update a backlink"""
+        """
+        Update a backlink opportunity
+        
+        Args:
+            opportunity_id: Opportunity ID (not backlink store ID)
+            status: Optional status update
+            error_message: Optional error message
+        """
         data = {}
         if status:
             data['status'] = status
         if error_message:
             data['error_message'] = error_message
 
-        response = self._request('PUT', f'/api/backlinks/{backlink_id}', json=data)
+        response = self._request('PUT', f'/api/backlinks/{opportunity_id}', json=data)
         return response or {}
 
     def get_campaign(self, campaign_id: int) -> Dict:
@@ -272,4 +292,28 @@ class LaravelAPIClient:
         except Exception as e:
             logger.error(f"Failed to solve captcha: {e}")
             return None
+
+    def get_historical_backlink_data(self, limit: int = 1000, min_date: Optional[str] = None) -> List[Dict]:
+        """
+        Get historical backlink data for ML training
+        
+        Args:
+            limit: Maximum number of records to fetch
+            min_date: Optional minimum date filter (ISO format)
+        
+        Returns:
+            List of historical records with success/failure outcomes
+        """
+        params = {'limit': limit}
+        if min_date:
+            params['min_date'] = min_date
+        
+        try:
+            response = self._request('GET', '/api/ml/historical-data', params=params)
+            if response and response.get('success'):
+                return response.get('data', [])
+            return []
+        except Exception as e:
+            logger.error(f"Failed to fetch historical data: {e}")
+            return []
 

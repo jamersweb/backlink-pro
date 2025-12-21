@@ -38,7 +38,9 @@ class EmailConfirmationAutomation(BaseAutomation):
             logger.info(f"Verification link: {verification_link}")
             
             # Navigate to verification link
-            self.page.goto(verification_link, wait_until='networkidle', timeout=30000)
+            if not self._safe_navigate(verification_link, wait_until='networkidle', timeout=30000):
+                logger.error(f"Failed to navigate to verification link")
+                return False
             self.random_delay(2, 4)
             
             # Take screenshot for debugging

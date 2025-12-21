@@ -1,0 +1,851 @@
+{
+  "versions": [
+    {
+      "version": "v1.0.0",
+      "model_path": "ml\\models\\versions\\v1.0.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T14:31:28.750825Z",
+        "model_path": "ml\\models\\versions\\v1.0.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.047619047619047616,
+          "precision_macro": 0.14285714285714285,
+          "recall_macro": 0.03225806451612903,
+          "f1_macro": 0.05263157894736842,
+          "precision_per_class": {
+            "comment": 0.5714285714285714,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.12903225806451613,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.21052631578947367,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              4,
+              0,
+              27,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              3,
+              0,
+              47,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.047619047619047616,
+          "accuracy_improvement": -0.5476190476190477,
+          "relative_improvement_pct": -92.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.9523809523809523,
+          "failure_rate_reduction": -0.5476190476190476,
+          "failure_rate_reduction_pct": -135.2941176470588
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392,
+        "deployed_at": "2025-12-20T14:31:28.753343Z",
+        "deployed_to": "ml\\export_model.pkl"
+      }
+    },
+    {
+      "version": "v1.1.0",
+      "model_path": "ml\\models\\versions\\v1.1.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T15:57:32.558923Z",
+        "model_path": "ml\\models\\versions\\v1.1.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392,
+        "deployed_at": "2025-12-20T15:57:32.562584Z",
+        "deployed_to": "ml\\export_model.pkl"
+      }
+    },
+    {
+      "version": "v1.2.0",
+      "model_path": "ml\\models\\versions\\v1.2.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T16:06:49.568524Z",
+        "model_path": "ml\\models\\versions\\v1.2.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.3.0",
+      "model_path": "ml\\models\\versions\\v1.3.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T16:07:55.545347Z",
+        "model_path": "ml\\models\\versions\\v1.3.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.4.0",
+      "model_path": "ml\\models\\versions\\v1.4.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T16:16:06.915078Z",
+        "model_path": "ml\\models\\versions\\v1.4.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.5.0",
+      "model_path": "ml\\models\\versions\\v1.5.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T16:16:15.399080Z",
+        "model_path": "ml\\models\\versions\\v1.5.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.6.0",
+      "model_path": "ml\\models\\versions\\v1.6.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T16:24:15.609921Z",
+        "model_path": "ml\\models\\versions\\v1.6.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.7.0",
+      "model_path": "ml\\models\\versions\\v1.7.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T16:24:19.492883Z",
+        "model_path": "ml\\models\\versions\\v1.7.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.8.0",
+      "model_path": "ml\\models\\versions\\v1.8.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T19:37:34.640027Z",
+        "model_path": "ml\\models\\versions\\v1.8.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.9.0",
+      "model_path": "ml\\models\\versions\\v1.9.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T19:47:17.535797Z",
+        "model_path": "ml\\models\\versions\\v1.9.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.16666666666666666,
+          "precision_macro": 0.125,
+          "recall_macro": 0.11290322580645161,
+          "f1_macro": 0.11864406779661017,
+          "precision_per_class": {
+            "comment": 0.5,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.45161290322580644,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.4745762711864407,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              14,
+              0,
+              17,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              14,
+              0,
+              36,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.16666666666666666,
+          "accuracy_improvement": -0.4285714285714286,
+          "relative_improvement_pct": -72.00000000000001,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.8333333333333334,
+          "failure_rate_reduction": -0.4285714285714286,
+          "failure_rate_reduction_pct": -105.88235294117648
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    },
+    {
+      "version": "v1.10.0",
+      "model_path": "ml\\models\\versions\\v1.10.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T20:06:57.628305Z",
+        "model_path": "ml\\models\\versions\\v1.10.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.23809523809523808,
+          "precision_macro": 0.13157894736842105,
+          "recall_macro": 0.16129032258064516,
+          "f1_macro": 0.14492753623188406,
+          "precision_per_class": {
+            "comment": 0.5263157894736842,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.6451612903225806,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.5797101449275363,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              20,
+              0,
+              11,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              18,
+              2,
+              30,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.23809523809523808,
+          "accuracy_improvement": -0.35714285714285715,
+          "relative_improvement_pct": -60.0,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.7619047619047619,
+          "failure_rate_reduction": -0.3571428571428571,
+          "failure_rate_reduction_pct": -88.23529411764704
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392,
+        "deployed_at": "2025-12-20T20:06:57.648088Z",
+        "deployed_to": "ml\\export_model.pkl"
+      }
+    },
+    {
+      "version": "v1.11.0",
+      "model_path": "ml\\models\\versions\\v1.11.0\\model.pkl",
+      "metadata": {
+        "created_at": "2025-12-20T21:03:16.269057Z",
+        "model_path": "ml\\models\\versions\\v1.11.0\\model.pkl",
+        "training_stats": {
+          "accuracy": 0.23809523809523808,
+          "precision_macro": 0.13157894736842105,
+          "recall_macro": 0.16129032258064516,
+          "f1_macro": 0.14492753623188406,
+          "precision_per_class": {
+            "comment": 0.5263157894736842,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "recall_per_class": {
+            "comment": 0.6451612903225806,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "f1_per_class": {
+            "comment": 0.5797101449275363,
+            "profile": 0.0,
+            "forum": 0.0,
+            "guest": 0.0
+          },
+          "confusion_matrix": [
+            [
+              20,
+              0,
+              11,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              18,
+              2,
+              30,
+              0
+            ]
+          ]
+        },
+        "failure_rate_reduction": {
+          "baseline_accuracy": 0.5952380952380952,
+          "model_accuracy": 0.23809523809523808,
+          "accuracy_improvement": -0.35714285714285715,
+          "relative_improvement_pct": -60.0,
+          "baseline_error_rate": 0.40476190476190477,
+          "model_error_rate": 0.7619047619047619,
+          "failure_rate_reduction": -0.3571428571428571,
+          "failure_rate_reduction_pct": -88.23529411764704
+        },
+        "created_by": "retraining_job",
+        "dataset_size": 392
+      }
+    }
+  ],
+  "last_updated": "2025-12-20T21:03:16.269057Z"
+}

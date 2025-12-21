@@ -463,11 +463,14 @@ public function export(Request $request)
                 continue;
             }
 
+            // Map 'guestposting' to 'guest' (task type enum uses 'guest')
+            $taskType = $type === 'guestposting' ? 'guest' : $type;
+
             // Create initial batch of tasks
             for ($i = 0; $i < $tasksPerType; $i++) {
                 AutomationTask::create([
                     'campaign_id' => $campaign->id,
-                    'type' => $type,
+                    'type' => $taskType,
                     'status' => AutomationTask::STATUS_PENDING,
                     'payload' => [
                         'campaign_id' => $campaign->id,

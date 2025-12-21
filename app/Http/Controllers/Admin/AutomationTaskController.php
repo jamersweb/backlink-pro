@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AutomationTask;
 use App\Models\Campaign;
 use App\Models\User;
-use App\Models\Backlink;
+use App\Models\BacklinkOpportunity;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -128,8 +128,8 @@ class AutomationTaskController extends Controller
             'campaign.subcategory:id,name',
         ]);
 
-        // Get related backlinks created by this task
-        $backlinks = Backlink::where('campaign_id', $task->campaign_id)
+        // Get related backlink opportunities created by this task
+        $backlinks = BacklinkOpportunity::where('campaign_id', $task->campaign_id)
             ->where('type', $task->type)
             ->whereDate('created_at', $task->created_at->toDateString())
             ->latest()

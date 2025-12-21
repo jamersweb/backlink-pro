@@ -102,9 +102,21 @@ class Campaign extends Model
         return $this->belongsTo(ConnectedAccount::class, 'gmail_account_id');
     }
 
+    /**
+     * Get opportunities (where user's links were added)
+     */
+    public function opportunities(): HasMany
+    {
+        return $this->hasMany(BacklinkOpportunity::class);
+    }
+
+    /**
+     * Legacy alias for backlinks - now returns opportunities
+     * @deprecated Use opportunities() instead
+     */
     public function backlinks(): HasMany
     {
-        return $this->hasMany(Backlink::class);
+        return $this->opportunities();
     }
 
     public function siteAccounts(): HasMany
@@ -118,11 +130,11 @@ class Campaign extends Model
     }
 
     /**
-     * Get backlinks count for today
+     * Get opportunities count for today
      */
     public function getTodayBacklinksCountAttribute(): int
     {
-        return $this->backlinks()
+        return $this->opportunities()
             ->whereDate('created_at', today())
             ->count();
     }

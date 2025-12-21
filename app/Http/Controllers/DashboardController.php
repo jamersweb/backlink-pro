@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\Campaign;
-use App\Models\Backlink;
+use App\Models\BacklinkOpportunity;
 use Stripe\Stripe;
 
 class DashboardController extends Controller
@@ -16,32 +16,32 @@ class DashboardController extends Controller
         $user = Auth::user()->load('plan');
         $campaignIds = Campaign::where('user_id', $user->id)->pluck('id');
         
-        // Get stats
-        $totalBacklinks = Backlink::whereIn('campaign_id', $campaignIds)->count();
+        // Get stats from opportunities (where user's links were added)
+        $totalOpportunities = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->count();
         
-        $linksToday = Backlink::whereIn('campaign_id', $campaignIds)
+        $linksToday = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->whereDate('created_at', today())->count();
         
         $activeCampaigns = Campaign::where('user_id', $user->id)
             ->where('status', Campaign::STATUS_ACTIVE)
             ->count();
         
-        $verifiedLinks = Backlink::whereIn('campaign_id', $campaignIds)
-            ->where('status', Backlink::STATUS_VERIFIED)->count();
+        $verifiedLinks = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+            ->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count();
         
         // Get daily limit from user's plan
         $dailyLimit = $user->plan?->daily_backlink_limit ?? 0;
         
-        // Get recent backlinks
-        $recentBacklinks = Backlink::whereIn('campaign_id', $campaignIds)
-            ->with('campaign:id,name')
+        // Get recent opportunities (where links were added)
+        $recentOpportunities = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
+            ->with(['campaign:id,name', 'backlink:id,url,pa,da'])
             ->latest()
             ->limit(10)
             ->get();
         
         // Get recent campaigns
         $recentCampaigns = Campaign::where('user_id', $user->id)
-            ->withCount('backlinks')
+            ->withCount('opportunities')
             ->latest()
             ->limit(5)
             ->get();
@@ -57,16 +57,16 @@ class DashboardController extends Controller
             }
         }
         
-        // Get analytics preview (last 30 days for flexibility)
-        $dailyBacklinks = Backlink::whereIn('campaign_id', $campaignIds)
+        // Get analytics preview (last 30 days)
+        $dailyBacklinks = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->whereBetween('created_at', [now()->subDays(30), now()])
             ->selectRaw('DATE(created_at) as date, count(*) as count')
             ->groupBy('date')
             ->orderBy('date')
             ->get();
         
-        // Get backlinks by type
-        $backlinksByType = Backlink::whereIn('campaign_id', $campaignIds)
+        // Get opportunities by type
+        $backlinksByType = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->selectRaw('type, count(*) as count')
             ->groupBy('type')
             ->get()
@@ -79,17 +79,16 @@ class DashboardController extends Controller
                 'current_period_end' => $subscription->current_period_end,
             ] : null,
             'stats' => [
-                'total_backlinks' => $totalBacklinks,
+                'total_backlinks' => $totalOpportunities,
                 'links_today' => $linksToday,
                 'daily_limit' => $dailyLimit,
                 'active_campaigns' => $activeCampaigns,
                 'verified_links' => $verifiedLinks,
             ],
-            'recentBacklinks' => $recentBacklinks,
+            'recentBacklinks' => $recentOpportunities,
             'recentCampaigns' => $recentCampaigns,
             'dailyBacklinks' => $dailyBacklinks,
             'backlinksByType' => $backlinksByType,
         ]);
     }
 }
-
