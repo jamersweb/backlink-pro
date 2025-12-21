@@ -24,3 +24,14 @@ Homestead.yaml
 Thumbs.db
 .env.example
 backlink__pro.sql
+# Python virtualenvs
+.venv/
+python/.venv/
+
+# Python junk (recommended)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
