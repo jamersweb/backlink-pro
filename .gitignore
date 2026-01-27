@@ -30,6 +30,7 @@ python/.venv/
 venv/
 env/
 ENV/
+*.md
 
 # Python junk (recommended)
 __pycache__/
