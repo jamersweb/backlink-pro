@@ -18,19 +18,15 @@
             </div>
             <div class="flex items-center gap-4">
                 <template v-if="auth?.user">
-                    <Link href="/dashboard" class="btn-ghost hidden sm:inline-block">Dashboard</Link>
-                    <Link 
-                        :href="route('logout')" 
-                        method="post" 
-                        as="button"
-                        class="btn-primary"
-                    >
-                        Log Out
-                    </Link>
+                    <a href="/dashboard" class="btn-ghost hidden sm:inline-block">Dashboard</a>
+                    <form method="POST" action="/logout" class="inline">
+                        <input type="hidden" name="_token" :value="csrfToken">
+                        <button type="submit" class="btn-primary">Log Out</button>
+                    </form>
                 </template>
                 <template v-else>
-                    <Link href="/login" class="btn-ghost hidden sm:inline-block">Log In</Link>
-                    <Link href="/register" class="btn-primary">Get Started</Link>
+                    <a href="/login" class="btn-ghost hidden sm:inline-block">Log In</a>
+                    <a href="/register" class="btn-primary">Get Started</a>
                 </template>
                 <button
                     @click="toggleMobileMenu"
@@ -79,38 +75,35 @@
                     </Link>
                     <!-- Auth buttons for mobile -->
                     <template v-if="auth?.user">
-                        <Link
+                        <a
                             href="/dashboard"
                             class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
-                            @click="closeMobileMenu"
                         >
                             Dashboard
-                        </Link>
-                        <Link 
-                            :href="route('logout')" 
-                            method="post" 
-                            as="button"
-                            class="block w-full text-left px-4 py-2 text-red-400 hover:text-red-300 hover:bg-surface transition-colors rounded"
-                            @click="closeMobileMenu"
-                        >
-                            Log Out
-                        </Link>
+                        </a>
+                        <form method="POST" action="/logout" class="block">
+                            <input type="hidden" name="_token" :value="csrfToken">
+                            <button 
+                                type="submit"
+                                class="block w-full text-left px-4 py-2 text-red-400 hover:text-red-300 hover:bg-surface transition-colors rounded"
+                            >
+                                Log Out
+                            </button>
+                        </form>
                     </template>
                     <template v-else>
-                        <Link
+                        <a
                             href="/login"
                             class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
-                            @click="closeMobileMenu"
                         >
                             Log In
-                        </Link>
-                        <Link
+                        </a>
+                        <a
                             href="/register"
                             class="block px-4 py-2 text-primary hover:text-primary-light hover:bg-surface transition-colors rounded"
-                            @click="closeMobileMenu"
                         >
                             Get Started
-                        </Link>
+                        </a>
                     </template>
                 </div>
             </nav>
@@ -126,16 +119,8 @@ const page = usePage();
 const site = page.props.site;
 const auth = computed(() => page.props.auth);
 
-// Route helper function
-const route = (name, params = {}) => {
-    const routes = {
-        'logout': '/logout',
-        'login': '/login',
-        'register': '/register',
-        'dashboard': '/dashboard',
-    };
-    return routes[name] || `/${name}`;
-};
+// CSRF token for forms
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
 const isScrolled = ref(false);
 const headerRef = ref(null);
