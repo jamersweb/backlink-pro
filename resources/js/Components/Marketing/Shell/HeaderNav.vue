@@ -18,15 +18,15 @@
             </div>
             <div class="flex items-center gap-4">
                 <template v-if="auth?.user">
-                    <a href="/dashboard" class="btn-ghost hidden sm:inline-block">Dashboard</a>
+                    <a href="/dashboard" class="btn-ghost hidden sm:inline-block" @click.prevent="navigateTo('/dashboard')">Dashboard</a>
                     <form method="POST" action="/logout" class="inline">
                         <input type="hidden" name="_token" :value="csrfToken">
                         <button type="submit" class="btn-primary">Log Out</button>
                     </form>
                 </template>
                 <template v-else>
-                    <a href="/login" class="btn-ghost hidden sm:inline-block">Log In</a>
-                    <a href="/register" class="btn-primary">Get Started</a>
+                    <a href="/login" class="btn-ghost hidden sm:inline-block" @click.prevent="navigateTo('/login')">Log In</a>
+                    <a href="/register" class="btn-primary" @click.prevent="navigateTo('/register')">Get Started</a>
                 </template>
                 <button
                     @click="toggleMobileMenu"
@@ -78,6 +78,7 @@
                         <a
                             href="/dashboard"
                             class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
+                            @click.prevent="navigateTo('/dashboard')"
                         >
                             Dashboard
                         </a>
@@ -95,12 +96,14 @@
                         <a
                             href="/login"
                             class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
+                            @click.prevent="navigateTo('/login')"
                         >
                             Log In
                         </a>
                         <a
                             href="/register"
                             class="block px-4 py-2 text-primary hover:text-primary-light hover:bg-surface transition-colors rounded"
+                            @click.prevent="navigateTo('/register')"
                         >
                             Get Started
                         </a>
@@ -121,6 +124,11 @@ const auth = computed(() => page.props.auth);
 
 // CSRF token for forms
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+// Force full page navigation (to switch from Vue to React app)
+const navigateTo = (url) => {
+    window.location.href = url;
+};
 
 const isScrolled = ref(false);
 const headerRef = ref(null);
