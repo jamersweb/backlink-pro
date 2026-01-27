@@ -19,12 +19,25 @@ class HandleInertiaRequests extends Middleware
      */
     public function rootView(Request $request): string
     {
-        // Use marketing template for marketing routes
-        if ($request->routeIs('marketing.*')) {
+        // Use marketing template ONLY for marketing-named routes and blog routes
+        if ($request->routeIs('marketing.*') || $request->routeIs('blog.*')) {
             return 'app-marketing';
         }
         
-        // Use marketing template for public/error pages that aren't admin/dashboard/api
+        // Auth routes (login, register, password reset, etc.) should use the React app template
+        // These routes are NOT marketing pages
+        if ($request->routeIs('login') || 
+            $request->routeIs('register') || 
+            $request->routeIs('password.*') ||
+            $request->routeIs('verification.*') ||
+            $request->is('login') ||
+            $request->is('register') ||
+            $request->is('forgot-password') ||
+            $request->is('reset-password/*')) {
+            return parent::rootView($request);
+        }
+        
+        // For other unauthenticated public pages that aren't admin/dashboard/api, use marketing
         // This covers 404/500 error pages rendered via exception handlers
         if (!$request->is('admin/*') && !$request->is('dashboard/*') && !$request->is('api/*') && !$request->user()) {
             return 'app-marketing';
