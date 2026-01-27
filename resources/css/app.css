@@ -1,7 +1,5 @@
 @import 'tailwindcss';
-@import "bootstrap/dist/css/bootstrap.min.css";
 @import "bootstrap-icons/font/bootstrap-icons.css";
-
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -13,6 +11,40 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* ============================================
+   DARK ADMIN THEME - Matching Marketing Frontend
+   ============================================ */
+
+:root {
+    /* Core Colors */
+    --admin-bg: #0B0F14;
+    --admin-surface: #111827;
+    --admin-surface-2: #1F2937;
+    --admin-surface-3: #374151;
+    --admin-text: #E5E7EB;
+    --admin-text-muted: #9CA3AF;
+    --admin-text-dim: #6B7280;
+    --admin-border: rgba(255, 255, 255, 0.10);
+    --admin-border-light: rgba(255, 255, 255, 0.05);
+    
+    /* Brand Colors */
+    --admin-primary: #2F6BFF;
+    --admin-primary-hover: #2457D6;
+    --admin-primary-light: #5B8AFF;
+    --admin-lime: #B6F400;
+    --admin-lime-hover: #A3DB00;
+    
+    /* Status Colors */
+    --admin-success: #12B76A;
+    --admin-success-light: #D1FAE5;
+    --admin-warning: #F79009;
+    --admin-warning-light: #FEF3C7;
+    --admin-danger: #F04438;
+    --admin-danger-light: #FEE2E2;
+    --admin-info: #0EA5E9;
+    --admin-info-light: #E0F2FE;
+}
+
 /* Apply Google Fonts globally */
 * {
     font-family: 'Inter', 'Poppins', sans-serif;
@@ -22,58 +54,351 @@ body {
     font-family: 'Inter', 'Poppins', sans-serif;
 }
 
-/* Global link styles - black instead of blue */
-a {
-    color: #111827; /* gray-900 */
+/* ============================================
+   ADMIN LAYOUT CLASSES
+   ============================================ */
+
+.admin-dark {
+    background-color: var(--admin-bg);
+    color: var(--admin-text);
 }
 
-a:hover {
-    color: #374151; /* gray-700 */
+.admin-sidebar {
+    background-color: var(--admin-surface);
+    border-color: var(--admin-border);
 }
 
-/* Override common blue link classes */
-.text-blue-600,
-a.text-blue-600 {
-    color: #111827; /* gray-900 */
+.admin-header {
+    background-color: var(--admin-surface);
+    border-color: var(--admin-border);
 }
 
-.hover\:text-blue-900:hover,
-a:hover.text-blue-900 {
-    color: #374151; /* gray-700 */
+.admin-card {
+    background-color: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 1rem;
 }
 
-/* Button styles */
-.bg-blue-600 {
-    background-color: #111827; /* gray-900 */
+.admin-card-hover:hover {
+    border-color: var(--admin-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.hover\:bg-blue-700:hover {
-    background-color: #1f2937; /* gray-800 */
+/* ============================================
+   ADMIN BUTTONS
+   ============================================ */
+
+.admin-btn-primary {
+    background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-hover));
+    color: white;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
 }
 
-/* Focus ring */
-.focus\:ring-blue-500:focus {
-    --tw-ring-color: #111827; /* gray-900 */
+.admin-btn-primary:hover {
+    background: linear-gradient(135deg, var(--admin-primary-hover), #1E4BB8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(47, 107, 255, 0.3);
 }
 
-/* Active states in admin */
-.bg-blue-50 {
-    background-color: #111827; /* gray-900 */
+.admin-btn-secondary {
+    background-color: var(--admin-surface-2);
+    color: var(--admin-text);
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: 1px solid var(--admin-border);
+    cursor: pointer;
 }
 
-.text-blue-700 {
-    color: #ffffff; /* white */
+.admin-btn-secondary:hover {
+    background-color: var(--admin-surface-3);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
-.text-blue-800 {
-    color: #ffffff; /* white */
+.admin-btn-lime {
+    background: linear-gradient(135deg, var(--admin-lime), var(--admin-lime-hover));
+    color: #0B0F14;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
 }
 
-.border-blue-200 {
-    border-color: #111827; /* gray-900 */
+.admin-btn-lime:hover {
+    box-shadow: 0 4px 12px rgba(182, 244, 0, 0.3);
 }
 
-/* Hero Section Animations */
+.admin-btn-danger {
+    background-color: var(--admin-danger);
+    color: white;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.admin-btn-danger:hover {
+    background-color: #DC2626;
+}
+
+.admin-btn-ghost {
+    background-color: transparent;
+    color: var(--admin-text);
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.admin-btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--admin-border);
+}
+
+/* ============================================
+   ADMIN FORM INPUTS
+   ============================================ */
+
+.admin-input {
+    background-color: var(--admin-bg);
+    border: 1px solid var(--admin-border);
+    border-radius: 0.5rem;
+    color: var(--admin-text);
+    padding: 0.75rem 1rem;
+    transition: all 0.2s;
+}
+
+.admin-input:focus {
+    outline: none;
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 3px rgba(47, 107, 255, 0.2);
+}
+
+.admin-input::placeholder {
+    color: var(--admin-text-dim);
+}
+
+.admin-select {
+    background-color: var(--admin-bg);
+    border: 1px solid var(--admin-border);
+    border-radius: 0.5rem;
+    color: var(--admin-text);
+    padding: 0.75rem 1rem;
+}
+
+.admin-select:focus {
+    outline: none;
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 3px rgba(47, 107, 255, 0.2);
+}
+
+/* ============================================
+   ADMIN TABLES
+   ============================================ */
+
+.admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.admin-table thead {
+    background-color: var(--admin-surface-2);
+}
+
+.admin-table th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--admin-text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--admin-border-light);
+    color: var(--admin-text);
+}
+
+.admin-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.admin-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* ============================================
+   ADMIN BADGES / STATUS
+   ============================================ */
+
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.admin-badge-success {
+    background-color: rgba(18, 183, 106, 0.15);
+    color: var(--admin-success);
+    border: 1px solid rgba(18, 183, 106, 0.3);
+}
+
+.admin-badge-warning {
+    background-color: rgba(247, 144, 9, 0.15);
+    color: var(--admin-warning);
+    border: 1px solid rgba(247, 144, 9, 0.3);
+}
+
+.admin-badge-danger {
+    background-color: rgba(240, 68, 56, 0.15);
+    color: var(--admin-danger);
+    border: 1px solid rgba(240, 68, 56, 0.3);
+}
+
+.admin-badge-info {
+    background-color: rgba(14, 165, 233, 0.15);
+    color: var(--admin-info);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.admin-badge-primary {
+    background-color: rgba(47, 107, 255, 0.15);
+    color: var(--admin-primary-light);
+    border: 1px solid rgba(47, 107, 255, 0.3);
+}
+
+.admin-badge-lime {
+    background-color: rgba(182, 244, 0, 0.15);
+    color: var(--admin-lime);
+    border: 1px solid rgba(182, 244, 0, 0.3);
+}
+
+.admin-badge-neutral {
+    background-color: rgba(156, 163, 175, 0.15);
+    color: var(--admin-text-muted);
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+/* ============================================
+   ADMIN STATS CARDS
+   ============================================ */
+
+.admin-stat-card {
+    background: linear-gradient(135deg, var(--admin-surface) 0%, var(--admin-surface-2) 100%);
+    border: 1px solid var(--admin-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-stat-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.admin-stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-stat-icon-primary {
+    background: rgba(47, 107, 255, 0.15);
+    color: var(--admin-primary-light);
+}
+
+.admin-stat-icon-success {
+    background: rgba(18, 183, 106, 0.15);
+    color: var(--admin-success);
+}
+
+.admin-stat-icon-warning {
+    background: rgba(247, 144, 9, 0.15);
+    color: var(--admin-warning);
+}
+
+.admin-stat-icon-lime {
+    background: rgba(182, 244, 0, 0.15);
+    color: var(--admin-lime);
+}
+
+/* ============================================
+   ADMIN SIDEBAR NAV
+   ============================================ */
+
+.admin-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.5rem;
+    color: var(--admin-text-muted);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.admin-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--admin-text);
+}
+
+.admin-nav-item-active {
+    background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-primary-hover) 100%);
+    color: white;
+}
+
+.admin-nav-item-active:hover {
+    background: linear-gradient(135deg, var(--admin-primary-hover) 0%, #1E4BB8 100%);
+}
+
+/* ============================================
+   ADMIN DROPDOWN
+   ============================================ */
+
+.admin-dropdown {
+    background-color: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.admin-dropdown-item {
+    display: block;
+    padding: 0.625rem 1rem;
+    color: var(--admin-text);
+    transition: all 0.2s;
+}
+
+.admin-dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
 @keyframes blob {
     0% {
         transform: translate(0px, 0px) scale(1);
@@ -99,4 +424,112 @@ a:hover.text-blue-900 {
 
 .animation-delay-4000 {
     animation-delay: 4s;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+.admin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track {
+    background: var(--admin-bg);
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--admin-surface-3);
+    border-radius: 3px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--admin-text-dim);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.admin-text-primary {
+    color: var(--admin-primary-light);
+}
+
+.admin-text-success {
+    color: var(--admin-success);
+}
+
+.admin-text-warning {
+    color: var(--admin-warning);
+}
+
+.admin-text-danger {
+    color: var(--admin-danger);
+}
+
+.admin-text-lime {
+    color: var(--admin-lime);
+}
+
+.admin-text-muted {
+    color: var(--admin-text-muted);
+}
+
+.admin-bg-surface {
+    background-color: var(--admin-surface);
+}
+
+.admin-bg-surface-2 {
+    background-color: var(--admin-surface-2);
+}
+
+.admin-border {
+    border-color: var(--admin-border);
+}
+
+/* ============================================
+   ADMIN CHART / GRAPH PLACEHOLDERS
+   ============================================ */
+
+.admin-chart-container {
+    background: linear-gradient(135deg, var(--admin-surface) 0%, var(--admin-surface-2) 100%);
+    border: 1px solid var(--admin-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+/* ============================================
+   ADMIN LOADING STATES
+   ============================================ */
+
+.admin-skeleton {
+    background: linear-gradient(90deg, var(--admin-surface-2) 25%, var(--admin-surface-3) 50%, var(--admin-surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 0.5rem;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }

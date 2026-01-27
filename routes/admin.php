@@ -30,10 +30,13 @@ Route::post('/users/{id}/reset-password', [UsersController::class, 'resetPasswor
 Route::get('/plans', [PlansController::class, 'index'])->name('plans.index');
 Route::get('/plans/create', [PlansController::class, 'create'])->name('plans.create');
 Route::post('/plans', [PlansController::class, 'store'])->name('plans.store');
+Route::post('/plans/reorder', [PlansController::class, 'reorder'])->name('plans.reorder');
 Route::get('/plans/{id}', [PlansController::class, 'show'])->name('plans.show');
 Route::get('/plans/{id}/edit', [PlansController::class, 'edit'])->name('plans.edit');
 Route::put('/plans/{id}', [PlansController::class, 'update'])->name('plans.update');
 Route::delete('/plans/{id}', [PlansController::class, 'destroy'])->name('plans.destroy');
+Route::post('/plans/{id}/toggle-active', [PlansController::class, 'toggleActive'])->name('plans.toggle-active');
+Route::post('/plans/{id}/toggle-public', [PlansController::class, 'togglePublic'])->name('plans.toggle-public');
 
 // Subscriptions Management
 Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');

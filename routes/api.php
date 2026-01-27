@@ -28,6 +28,10 @@ use App\Http\Controllers\Api\PlanController;
 // PUBLIC API Routes (no authentication required)
 // ============================================================================
 Route::middleware(['api', 'throttle:30,1'])->group(function () {
+    // Plans - public access for pricing page
+    Route::get('/plans', [PlanController::class, 'index'])->name('api.plans.index');
+    Route::get('/plans/{code}', [PlanController::class, 'show'])->name('api.plans.show');
+    
     // Marketing/Lead capture endpoints
     Route::post('/plan/preview', [PlanController::class, 'preview'])->name('api.plan.preview');
     Route::post('/plan/lead', [PlanController::class, 'lead'])->name('api.plan.lead');

@@ -165,49 +165,61 @@ export default function AdminLayout({ children, header }) {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex relative">
+        <div className="min-h-screen bg-[#0B0F14] flex relative">
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
 
             {/* Sidebar */}
-            <aside className={`fixed lg:static inset-y-0 left-0 bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 ${
+            <aside className={`fixed lg:static inset-y-0 left-0 bg-[#111827] border-r border-white/10 transition-all duration-300 ease-in-out z-50 ${
                 sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'
-            } flex flex-col shadow-xl lg:shadow-none`}>
+            } flex flex-col`}>
                 {/* Sidebar Header */}
-                <div className={`h-14 flex items-center border-b border-gray-200 ${
+                <div className={`h-16 flex items-center border-b border-white/10 ${
                     sidebarOpen ? 'justify-between px-4' : 'justify-center px-2'
                 }`}>
                     {sidebarOpen ? (
                         <>
-                            <Link href="/admin/dashboard" className="flex items-center space-x-2">
-                                <span className="text-2xl">⚡</span>
-                                <span className="text-lg font-bold text-gray-900">Admin</span>
+                            <Link href="/admin/dashboard" className="flex items-center space-x-3 group">
+                                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px] group-hover:shadow-lg group-hover:shadow-[#2F6BFF]/25 transition-all duration-300">
+                                    <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-[#2F6BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <span className="text-lg font-bold text-[#E5E7EB] group-hover:text-white transition-colors">Admin</span>
                             </Link>
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                                className="p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white"
                             >
-                                <i className="bi bi-chevron-left text-gray-600"></i>
+                                <i className="bi bi-chevron-left"></i>
                             </button>
                         </>
                     ) : (
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors w-full flex justify-center"
+                            className="p-2 rounded-lg hover:bg-white/5 transition-colors w-full flex justify-center"
                         >
-                            <span className="text-2xl">⚡</span>
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px]">
+                                <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-[#2F6BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    </svg>
+                                </div>
+                            </div>
                         </button>
                     )}
                 </div>
 
                 {/* Sidebar Navigation */}
-                <nav className="flex-1 overflow-y-auto py-4">
-                    <ul className="space-y-1 px-2">
+                <nav className="flex-1 overflow-y-auto py-4 admin-scrollbar">
+                    <ul className="space-y-1 px-3">
                         {menuItems.map((item, index) => (
                             <li key={index}>
                                 {item.children ? (
@@ -219,23 +231,23 @@ export default function AdminLayout({ children, header }) {
                                                 if (item.name === 'Content') setContentDropdownOpen(!contentDropdownOpen);
                                                 if (item.name === 'Access Control') setAccessDropdownOpen(!accessDropdownOpen);
                                             }}
-                                            className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                                            className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                                                 item.active
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                    ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] text-white shadow-lg shadow-[#2F6BFF]/20'
+                                                    : 'text-[#9CA3AF] hover:bg-white/5 hover:text-white'
                                             }`}
                                         >
                                             <i className={`bi ${item.icon} text-lg ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}></i>
                                             {sidebarOpen && (
                                                 <>
-                                                    <span className="flex-1 text-left font-medium">{item.name}</span>
+                                                    <span className="flex-1 text-left font-medium text-sm">{item.name}</span>
                                                     <i className={`bi ${
                                                         (item.name === 'Leads' && leadsDropdownOpen) || 
                                                         (item.name === 'System' && systemDropdownOpen) ||
                                                         (item.name === 'Content' && contentDropdownOpen) ||
                                                         (item.name === 'Access Control' && accessDropdownOpen)
                                                             ? 'bi-chevron-up' : 'bi-chevron-down'
-                                                    } text-xs`}></i>
+                                                    } text-xs opacity-60`}></i>
                                                 </>
                                             )}
                                         </button>
@@ -245,15 +257,15 @@ export default function AdminLayout({ children, header }) {
                                             (item.name === 'Content' && contentDropdownOpen) ||
                                             (item.name === 'Access Control' && accessDropdownOpen)
                                         ) && (
-                                            <ul className="mt-1 ml-4 space-y-1">
+                                            <ul className="mt-1 ml-3 space-y-1 border-l border-white/10 pl-3">
                                                 {item.children.map((child, childIndex) => (
                                                     <li key={childIndex}>
                                                         <Link
                                                             href={child.href}
-                                                            className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                                                            className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                                                                 currentUrl === child.href || currentUrl.startsWith(child.href + '/')
-                                                                    ? 'bg-gray-900 text-white'
-                                                                    : 'text-gray-600 hover:bg-gray-100'
+                                                                    ? 'bg-[#2F6BFF]/20 text-[#5B8AFF] font-medium'
+                                                                    : 'text-[#6B7280] hover:bg-white/5 hover:text-[#E5E7EB]'
                                                             }`}
                                                         >
                                                             <i className={`bi ${child.icon} text-sm mr-3`}></i>
@@ -267,15 +279,15 @@ export default function AdminLayout({ children, header }) {
                                 ) : (
                                     <Link
                                         href={item.href}
-                                        className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
+                                        className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                                             item.active
-                                                ? 'bg-gray-900 text-white'
-                                                : 'text-gray-700 hover:bg-gray-100'
+                                                ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] text-white shadow-lg shadow-[#2F6BFF]/20'
+                                                : 'text-[#9CA3AF] hover:bg-white/5 hover:text-white'
                                         }`}
                                         title={!sidebarOpen ? item.name : ''}
                                     >
                                         <i className={`bi ${item.icon} text-lg ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}></i>
-                                        {sidebarOpen && <span className="font-medium">{item.name}</span>}
+                                        {sidebarOpen && <span className="font-medium text-sm">{item.name}</span>}
                                     </Link>
                                 )}
                             </li>
@@ -284,40 +296,50 @@ export default function AdminLayout({ children, header }) {
                 </nav>
 
                 {/* Sidebar Footer */}
-                <div className="border-t border-gray-200 p-4">
+                <div className="border-t border-white/10 p-4">
                     <div className="relative">
                         <button
                             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                            className={`w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                            className={`w-full flex items-center px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 ${
                                 sidebarOpen ? 'justify-start' : 'justify-center'
                             }`}
                         >
-                            <div className="h-8 w-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm">
-                                {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px]">
+                                <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center text-white font-bold text-sm">
+                                    {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                                </div>
                             </div>
                             {sidebarOpen && (
                                 <div className="ml-3 flex-1 text-left">
-                                    <p className="text-sm font-medium text-gray-900">{auth?.user?.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{auth?.user?.email}</p>
+                                    <p className="text-sm font-medium text-[#E5E7EB]">{auth?.user?.name}</p>
+                                    <p className="text-xs text-[#6B7280] truncate">{auth?.user?.email}</p>
                                 </div>
                             )}
                         </button>
                         {profileDropdownOpen && (
-                            <div className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                            <div className="absolute bottom-full left-0 mb-2 w-full bg-[#1F2937] rounded-xl border border-white/10 py-2 z-50 shadow-xl shadow-black/40 animate-fadeIn">
                                 <Link
-                                    href="/profile"
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    href="/"
+                                    className="flex items-center px-4 py-2.5 text-sm text-[#E5E7EB] hover:bg-white/5 transition-colors"
                                     onClick={() => setProfileDropdownOpen(false)}
                                 >
-                                    <i className="bi bi-person mr-2"></i>View Profile
+                                    <i className="bi bi-house mr-3 text-[#9CA3AF]"></i>View Site
                                 </Link>
+                                <Link
+                                    href="/profile"
+                                    className="flex items-center px-4 py-2.5 text-sm text-[#E5E7EB] hover:bg-white/5 transition-colors"
+                                    onClick={() => setProfileDropdownOpen(false)}
+                                >
+                                    <i className="bi bi-person mr-3 text-[#9CA3AF]"></i>Profile
+                                </Link>
+                                <div className="border-t border-white/10 my-2"></div>
                                 <Link
                                     href="/logout"
                                     method="post"
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    className="flex items-center px-4 py-2.5 text-sm text-[#F04438] hover:bg-[#F04438]/10 transition-colors"
                                     onClick={() => setProfileDropdownOpen(false)}
                                 >
-                                    <i className="bi bi-box-arrow-right mr-2"></i>Logout
+                                    <i className="bi bi-box-arrow-right mr-3"></i>Logout
                                 </Link>
                             </div>
                         )}
@@ -327,29 +349,38 @@ export default function AdminLayout({ children, header }) {
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-                {/* Top Header - Small */}
-                <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm sticky top-0 z-30">
+                {/* Top Header */}
+                <header className="h-16 bg-[#111827]/80 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-30">
                     <div className="flex items-center space-x-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white"
                         >
-                            <i className="bi bi-list text-xl text-gray-600"></i>
+                            <i className="bi bi-list text-xl"></i>
                         </button>
                         {header && (
-                            <h1 className="text-lg font-semibold text-gray-900">{header}</h1>
+                            <h1 className="text-xl font-bold text-white">{header}</h1>
                         )}
                     </div>
                     <div className="flex items-center space-x-4">
-                        {/* Notifications or other header items can go here */}
-                        <div className="h-8 w-8 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm lg:hidden">
-                            {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                        {/* Quick Actions */}
+                        <button className="p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white relative">
+                            <i className="bi bi-bell text-lg"></i>
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-[#F04438] rounded-full"></span>
+                        </button>
+                        <button className="p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white">
+                            <i className="bi bi-gear text-lg"></i>
+                        </button>
+                        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px] lg:hidden">
+                            <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center text-white font-bold text-sm">
+                                {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                            </div>
                         </div>
                     </div>
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto bg-gray-50">
+                <main className="flex-1 overflow-y-auto bg-[#0B0F14] admin-scrollbar">
                     <div className="p-6">
                         {children}
                     </div>

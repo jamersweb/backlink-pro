@@ -4,11 +4,45 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\BacklinkPlanLead;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PlanController extends Controller
 {
+    /**
+     * Get all active public plans for pricing page.
+     */
+    public function index()
+    {
+        $plans = Plan::active()->public()->ordered()->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $plans->map(fn($plan) => $plan->toMarketingArray()),
+        ]);
+    }
+
+    /**
+     * Get a specific plan by code.
+     */
+    public function show(string $code)
+    {
+        $plan = Plan::where('code', $code)->active()->first();
+
+        if (!$plan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Plan not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $plan->toMarketingArray(),
+        ]);
+    }
+
     public function preview(Request $request)
     {
         $validator = Validator::make($request->all(), [

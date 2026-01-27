@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Plan;
 use App\Services\PageMetaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -853,6 +854,33 @@ class MarketingController extends Controller
 
     public function pricing()
     {
+        // Fetch plans from database
+        $dbPlans = Plan::active()->public()->ordered()->get();
+        
+        // Convert plans to marketing format
+        $plans = $dbPlans->map(fn($plan) => $plan->toMarketingArray())->values()->toArray();
+        
+        // Build feature matrix from database plans
+        $matrix = [];
+        foreach ($dbPlans as $plan) {
+            $matrix[$plan->code] = [
+                'projects' => true,
+                'guardrails' => true,
+                'approvals' => $plan->features_json['approvals'] ?? true,
+                'evidence' => $plan->features_json['evidence_logs'] ?? true,
+                'comment' => $plan->features_json['comment_workflow'] ?? false,
+                'profile' => $plan->features_json['profile_workflow'] ?? false,
+                'forum' => $plan->features_json['forum_workflow'] ?? false,
+                'guest' => $plan->features_json['guest_workflow'] ?? false,
+                'monitoring' => $plan->features_json['monitoring'] ?? false,
+                'exports' => $plan->features_json['exports'] ?? false,
+                'weekly' => $plan->features_json['weekly_summaries'] ?? false,
+                'seats' => (string) ($plan->limits_json['team_seats'] ?? '1'),
+                'roles' => $plan->features_json['roles_permissions'] ?? false,
+                'audit' => $plan->features_json['audit_trail'] ?? false,
+            ];
+        }
+        
         return Inertia::render('Marketing/Pricing', [
             'meta' => [
                 'title' => 'Pricing — BacklinkPro',
@@ -864,9 +892,9 @@ class MarketingController extends Controller
                 ],
             ],
             'billingCycles' => config('marketing_pricing.billing_cycles'),
-            'plans' => config('marketing_pricing.plans'),
+            'plans' => $plans,
             'featureGroups' => config('marketing_pricing.feature_groups'),
-            'matrix' => config('marketing_pricing.matrix'),
+            'matrix' => $matrix,
             'addOns' => config('marketing_pricing.add_ons'),
             'faqs' => config('marketing_pricing.faqs'),
             'disclosures' => config('marketing_pricing.disclosures'),
