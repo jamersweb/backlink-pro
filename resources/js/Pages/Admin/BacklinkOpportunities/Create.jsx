@@ -1,7 +1,7 @@
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
-import Input from '../../../Components/Shared/Input';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
+import Input from '@/Components/Shared/Input';
 import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 

@@ -1,9 +1,22 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
+import Input from '../../Components/Shared/Input';
 
-export default function DomainsIndex({ domains, stats }) {
+export default function DomainsIndex({ domains, stats, filters }) {
+    const { data, setData, get } = useForm({
+        q: filters?.q || '',
+    });
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        get('/domains', {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this domain?')) {
             router.delete(`/domains/${id}`);
@@ -15,6 +28,37 @@ export default function DomainsIndex({ domains, stats }) {
             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                 status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
             }`}>
+                {status}
+            </span>
+        );
+    };
+
+    const getPlatformBadge = (platform) => {
+        if (!platform) return null;
+        const colors = {
+            wordpress: 'bg-blue-100 text-blue-800',
+            shopify: 'bg-green-100 text-green-800',
+            custom: 'bg-gray-100 text-gray-800',
+            webflow: 'bg-purple-100 text-purple-800',
+            wix: 'bg-pink-100 text-pink-800',
+            squarespace: 'bg-indigo-100 text-indigo-800',
+            other: 'bg-yellow-100 text-yellow-800',
+        };
+        return (
+            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${colors[platform] || colors.other}`}>
+                {platform}
+            </span>
+        );
+    };
+
+    const getVerificationBadge = (status) => {
+        const colors = {
+            verified: 'bg-green-100 text-green-800',
+            pending: 'bg-yellow-100 text-yellow-800',
+            unverified: 'bg-gray-100 text-gray-800',
+        };
+        return (
+            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${colors[status] || colors.unverified}`}>
                 {status}
             </span>
         );
@@ -38,7 +82,7 @@ export default function DomainsIndex({ domains, stats }) {
                     </div>
                 )}
 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Your Domains</h1>
                     <Link href="/domains/create">
                         <Button variant="primary" disabled={stats && !stats.can_add_more}>
@@ -46,6 +90,37 @@ export default function DomainsIndex({ domains, stats }) {
                         </Button>
                     </Link>
                 </div>
+
+                {/* Search Bar */}
+                <Card>
+                    <form onSubmit={handleSearch} className="flex gap-2">
+                        <div className="flex-1">
+                            <Input
+                                type="text"
+                                name="q"
+                                value={data.q}
+                                onChange={(e) => setData('q', e.target.value)}
+                                placeholder="Search by domain name or host..."
+                                className="mb-0"
+                            />
+                        </div>
+                        <Button type="submit" variant="primary">
+                            Search
+                        </Button>
+                        {filters?.q && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setData('q', '');
+                                    router.get('/domains', {}, { preserveState: true });
+                                }}
+                            >
+                                Clear
+                            </Button>
+                        )}
+                    </form>
+                </Card>
 
                 {stats && !stats.can_add_more && (
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -55,37 +130,70 @@ export default function DomainsIndex({ domains, stats }) {
                     </div>
                 )}
 
-                {domains && domains.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
-                        {domains.map((domain) => (
-                            <Card key={domain.id}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="text-lg font-semibold text-gray-900">{domain.name}</h3>
-                                            {getStatusBadge(domain.status)}
+                {domains && domains.data && domains.data.length > 0 ? (
+                    <>
+                        <div className="grid grid-cols-1 gap-6">
+                            {domains.data.map((domain) => (
+                                <Card key={domain.id}>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div className="flex-1 w-full">
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                <Link href={`/domains/${domain.id}`} className="hover:underline">
+                                                    <h3 className="text-lg font-semibold text-gray-900">{domain.name}</h3>
+                                                </Link>
+                                                {getStatusBadge(domain.status)}
+                                                {getPlatformBadge(domain.platform)}
+                                                {getVerificationBadge(domain.verification_status)}
+                                            </div>
+                                            {domain.host && (
+                                                <p className="text-sm text-gray-500 mb-2">{domain.host}</p>
+                                            )}
+                                            <div className="text-sm text-gray-600 space-y-1">
+                                                <p><strong>Campaigns:</strong> {domain.campaigns_count || 0}</p>
+                                                <p><strong>Total Backlinks:</strong> {domain.total_backlinks || 0}</p>
+                                                <p><strong>Created:</strong> {new Date(domain.created_at).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
-                                        <div className="text-sm text-gray-600 space-y-1">
-                                            <p><strong>Campaigns:</strong> {domain.campaigns_count || 0}</p>
-                                            <p><strong>Total Backlinks:</strong> {domain.total_backlinks || 0}</p>
-                                            <p><strong>Created:</strong> {new Date(domain.created_at).toLocaleDateString()}</p>
+                                        <div className="flex gap-2 w-full sm:w-auto">
+                                            <Link href={`/domains/${domain.id}`} className="flex-1 sm:flex-none">
+                                                <Button variant="primary" className="w-full sm:w-auto">View</Button>
+                                            </Link>
+                                            <Link href={`/domains/${domain.id}/edit`} className="flex-1 sm:flex-none">
+                                                <Button variant="outline" className="w-full sm:w-auto">Edit</Button>
+                                            </Link>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => handleDelete(domain.id)}
+                                                className="flex-1 sm:flex-none"
+                                            >
+                                                Delete
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Link href={`/domains/${domain.id}/edit`}>
-                                            <Button variant="outline">Edit</Button>
-                                        </Link>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => handleDelete(domain.id)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {domains.links && domains.links.length > 3 && (
+                            <div className="flex items-center justify-center gap-2 mt-6">
+                                {domains.links.map((link, index) => (
+                                    <Link
+                                        key={index}
+                                        href={link.url || '#'}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                                            link.active
+                                                ? 'bg-gray-900 text-white'
+                                                : link.url
+                                                ? 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        }`}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <Card>
                         <div className="text-center py-12">

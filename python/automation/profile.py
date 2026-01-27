@@ -441,42 +441,6 @@ class ProfileAutomation(BaseAutomation):
                             break
                 except:
                     continue
-            
-            # Fill website field
-            if 'website' in field_mappings:
-                website_field, confidence = field_mappings['website']
-                logger.info(f"Found website field via role matcher (confidence: {confidence:.2f})")
-                if website_field.is_visible():
-                    campaign = self.api_client.get_campaign(task['campaign_id'])
-                    website_url = campaign.get('web_url', '')
-                    if website_url:
-                        self.human_type(self.page, website_field, website_url)
-            else:
-                # Fallback to hardcoded selectors
-                website_selectors = [
-            'input[name*="url"]',
-            'input[name*="website"]',
-            'input[name*="site"]',
-            'input[id*="url"]',
-            'input[id*="website"]',
-        ]
-        for selector in website_selectors:
-            try:
-                website_field = self.page.locator(selector).first
-                if website_field.count() > 0 and website_field.is_visible():
-                    campaign = self.api_client.get_campaign(task['campaign_id'])
-                    website_url = campaign.get('web_url', '')
-                    if website_url:
-                        self.human_type(self.page, selector, website_url)
-                        logger.debug(f"Filled website field with selector: {selector}")
-                        break
-                except:
-                    continue
-        except ImportError:
-            # Fallback if field role matcher not available
-            logger.debug("FieldRoleMatcher not available, using hardcoded selectors")
-            # Use original hardcoded logic (code would go here, but keeping existing for now)
-            pass
         
         self.random_delay(1, 2)
         logger.info("Form filling completed")

@@ -18,12 +18,30 @@ class HealthController extends Controller
      */
     public function check(): JsonResponse
     {
+        // In production, restrict access to health endpoint
+        if (config('app.env') === 'production') {
+            // Allow only from localhost or specific IPs
+            $allowedIps = config('app.health_check_allowed_ips', ['127.0.0.1', '::1']);
+            $clientIp = request()->ip();
+            
+            if (!in_array($clientIp, $allowedIps)) {
+                return response()->json([
+                    'status' => 'unauthorized',
+                    'message' => 'Health endpoint restricted in production',
+                ], 403);
+            }
+        }
+        
         $status = [
             'status' => 'ok',
             'timestamp' => now()->toIso8601String(),
             'version' => config('app.name') . ' v1.0',
-            'environment' => config('app.env'),
         ];
+        
+        // Only expose environment in non-production
+        if (config('app.env') !== 'production') {
+            $status['environment'] = config('app.env');
+        }
         
         $hasErrors = false;
         
@@ -51,9 +69,12 @@ class HealthController extends Controller
                 Redis::ping();
                 $status['redis'] = [
                     'status' => 'connected',
-                    'host' => config('database.redis.default.host'),
-                    'port' => config('database.redis.default.port'),
                 ];
+                // Only expose host/port in non-production
+                if (config('app.env') !== 'production') {
+                    $status['redis']['host'] = config('database.redis.default.host');
+                    $status['redis']['port'] = config('database.redis.default.port');
+                }
             } catch (\Exception $e) {
                 $status['redis'] = [
                     'status' => 'disconnected',

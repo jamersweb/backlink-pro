@@ -226,3 +226,4 @@ def analyze_feature_importance(model, feature_names: list, top_n: int = 20) -> p
         logger.warning(f"Could not extract feature importance: {e}")
         return pd.DataFrame()
 
+

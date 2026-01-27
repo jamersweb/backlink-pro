@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
-import Input from '../../../Components/Shared/Input';
-import Modal from '../../../Components/Shared/Modal';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
+import Input from '@/Components/Shared/Input';
+import Modal from '@/Components/Shared/Modal';
 import { router, usePage } from '@inertiajs/react';
 
 export default function AdminProxiesIndex({ proxies, stats, countries, filters = {} }) {

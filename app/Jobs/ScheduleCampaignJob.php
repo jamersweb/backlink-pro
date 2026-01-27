@@ -11,6 +11,7 @@ use App\Models\Campaign;
 use App\Models\AutomationTask;
 use App\Models\Backlink;
 use App\Services\BlocklistService;
+use App\Services\RateLimitingService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -64,7 +65,7 @@ class ScheduleCampaignJob implements ShouldQueue
         }
 
         // Check daily limit (-1 means unlimited)
-        $planDailyLimit = $plan->daily_backlink_limit ?? 10;
+        $planDailyLimit = $plan->getLimit('daily_backlink_limit') ?? 10;
         $todayBacklinks = 0;
         
         if ($planDailyLimit !== -1) {
@@ -207,14 +208,59 @@ class ScheduleCampaignJob implements ShouldQueue
                 continue;
             }
 
+            // Get unique URLs from backlinks for this task type
+            $backlinks = \App\Models\Backlink::where('status', \App\Models\Backlink::STATUS_ACTIVE)
+                ->where(function($query) use ($type) {
+                    $siteTypeMap = [
+                        'comment' => 'comment',
+                        'profile' => 'profile',
+                        'forum' => 'forum',
+                        'guest' => 'guestposting',
+                    ];
+                    if (isset($siteTypeMap[$type])) {
+                        $query->where('site_type', $siteTypeMap[$type])
+                              ->orWhereNull('site_type');
+                    } else {
+                        $query->whereNull('site_type');
+                    }
+                })
+                ->select('id', 'url')
+                ->distinct('url')
+                ->limit($tasksToCreate * 2) // Get more than needed
+                ->get()
+                ->unique('url')
+                ->values();
+
+            // If we have backlinks, use them; otherwise use filtered URLs
+            $urlsToUse = $backlinks->isNotEmpty() 
+                ? $backlinks->pluck('url')->toArray() 
+                : $filteredUrls;
+
             for ($i = 0; $i < $tasksToCreate; $i++) {
+                // Assign different URL to each task
+                $taskUrl = null;
+                $backlinkId = null;
+                
+                if (!empty($urlsToUse)) {
+                    // Cycle through URLs to ensure different ones
+                    $urlIndex = $i % count($urlsToUse);
+                    $taskUrl = $urlsToUse[$urlIndex];
+                    
+                    // Find backlink ID if using backlinks
+                    if ($backlinks->isNotEmpty()) {
+                        $backlink = $backlinks->where('url', $taskUrl)->first();
+                        $backlinkId = $backlink->id ?? null;
+                    }
+                }
+
                 AutomationTask::create([
                     'campaign_id' => $campaign->id,
                     'type' => $type,
                     'status' => AutomationTask::STATUS_PENDING,
                     'payload' => [
                         'campaign_id' => $campaign->id,
-                        'target_urls' => $filteredUrls, // Use filtered URLs
+                        'target_urls' => $taskUrl ? [$taskUrl] : [],
+                        'backlink_id' => $backlinkId,
                         'keywords' => $campaign->web_keyword ?? '',
                         'anchor_text_strategy' => $settings['anchor_text_strategy'] ?? 'variation',
                         'content_tone' => $settings['content_tone'] ?? 'professional',

@@ -40,3 +40,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 
+# Markdown files
+*.md
+
+# Text files
+*.txt
+CHECK_BROWSER_DEPS.md
+QUICK_CHECK.md

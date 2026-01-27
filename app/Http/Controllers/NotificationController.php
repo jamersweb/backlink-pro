@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserNotification;
+use App\Models\Notification;
+use App\Models\Domain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -10,78 +11,141 @@ use Inertia\Inertia;
 class NotificationController extends Controller
 {
     /**
-     * Show notifications page
+     * Show notifications inbox
      */
     public function index(Request $request)
     {
         $user = Auth::user();
-        
-        $query = UserNotification::where('user_id', $user->id)
-            ->latest();
 
-        // Filter by read/unread
-        if ($request->has('filter') && $request->filter === 'unread') {
-            $query->unread();
-        } elseif ($request->has('filter') && $request->filter === 'read') {
-            $query->read();
+        $query = Notification::where('user_id', $user->id)
+            ->with('domain');
+
+        // Filters
+        if ($request->has('domain_id') && $request->domain_id) {
+            $query->where('domain_id', $request->domain_id);
         }
-
-        // Filter by type
         if ($request->has('type') && $request->type) {
-            $query->type($request->type);
+            $query->where('type', $request->type);
+        }
+        if ($request->has('severity') && $request->severity) {
+            $query->where('severity', $request->severity);
+        }
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        } else {
+            $query->where('status', '!=', Notification::STATUS_ARCHIVED);
         }
 
-        $notifications = $query->paginate(50)->withQueryString();
+        // Filter out snoozed
+        $query->where(function($q) {
+            $q->whereNull('snoozed_until')
+              ->orWhere('snoozed_until', '<', now());
+        });
+
+        $notifications = $query->orderBy('created_at', 'desc')->paginate(50);
 
         // Get unread count
-        $unreadCount = UserNotification::where('user_id', $user->id)->unread()->count();
+        $unreadCount = Notification::where('user_id', $user->id)
+            ->where('status', Notification::STATUS_UNREAD)
+            ->where(function($q) {
+                $q->whereNull('snoozed_until')
+                  ->orWhere('snoozed_until', '<', now());
+            })
+            ->count();
 
         return Inertia::render('Notifications/Index', [
             'notifications' => $notifications,
             'unreadCount' => $unreadCount,
-            'filters' => $request->only(['filter', 'type']),
+            'filters' => $request->only(['domain_id', 'type', 'severity', 'status']),
         ]);
     }
 
     /**
      * Mark notification as read
      */
-    public function markAsRead($id)
+    public function markRead(Notification $notification)
     {
-        $notification = UserNotification::where('user_id', Auth::id())
-            ->findOrFail($id);
-        
-        $notification->markAsRead();
+        if ($notification->user_id !== Auth::id()) {
+            abort(403);
+        }
 
-        return back()->with('success', 'Notification marked as read.');
+        $notification->update(['status' => Notification::STATUS_READ]);
+
+        return back();
     }
 
     /**
-     * Mark all notifications as read
+     * Archive notification
      */
-    public function markAllAsRead()
+    public function archive(Notification $notification)
     {
-        UserNotification::where('user_id', Auth::id())
-            ->unread()
-            ->update([
-                'read' => true,
-                'read_at' => now(),
-            ]);
+        if ($notification->user_id !== Auth::id()) {
+            abort(403);
+        }
 
-        return back()->with('success', 'All notifications marked as read.');
+        $notification->update(['status' => Notification::STATUS_ARCHIVED]);
+
+        return back();
     }
 
     /**
-     * Delete notification
+     * Snooze notification
      */
-    public function destroy($id)
+    public function snooze(Notification $notification, Request $request)
     {
-        $notification = UserNotification::where('user_id', Auth::id())
-            ->findOrFail($id);
-        
-        $notification->delete();
+        if ($notification->user_id !== Auth::id()) {
+            abort(403);
+        }
 
-        return back()->with('success', 'Notification deleted.');
+        $validated = $request->validate([
+            'hours' => 'required|integer|min:1|max:168', // Max 7 days
+        ]);
+
+        $notification->update([
+            'snoozed_until' => now()->addHours($validated['hours']),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Mute notifications by type or domain
+     */
+    public function mute(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => 'nullable|string',
+            'domain_id' => 'nullable|exists:domains,id',
+        ]);
+
+        $query = Notification::where('user_id', Auth::id());
+
+        if ($validated['type']) {
+            $query->where('type', $validated['type']);
+        }
+        if ($validated['domain_id']) {
+            $query->where('domain_id', $validated['domain_id']);
+        }
+
+        $query->update(['muted' => true]);
+
+        return back()->with('success', 'Notifications muted');
+    }
+
+    /**
+     * Get unread count (for badge)
+     */
+    public function unreadCount()
+    {
+        $count = Notification::where('user_id', Auth::id())
+            ->where('status', Notification::STATUS_UNREAD)
+            ->where('muted', false)
+            ->where(function($q) {
+                $q->whereNull('snoozed_until')
+                  ->orWhere('snoozed_until', '<', now());
+            })
+            ->count();
+
+        return response()->json(['count' => $count]);
     }
 }
-

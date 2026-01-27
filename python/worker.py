@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration (defaults can be overridden via CLI flags)
 # Read environment variables after load_dotenv() to ensure Process env vars take precedence
-LARAVEL_API_URL = os.getenv('LARAVEL_API_URL', 'http://nginx')
+LARAVEL_API_URL = os.getenv('LARAVEL_API_URL', 'http://localhost:8000')
 # Try LARAVEL_API_TOKEN first, then APP_API_TOKEN as fallback
 LARAVEL_API_TOKEN = os.getenv('LARAVEL_API_TOKEN') or os.getenv('APP_API_TOKEN') or ''
 # Default poll interval: 60 seconds (to avoid hitting rate limits)
@@ -281,7 +281,9 @@ def process_task(api_client: LaravelAPIClient, task: dict):
         # Execute automation with proper error handling
         log_step(task_id, 'starting_automation_execution')
         try:
-            with automation_class(api_client, proxy=proxy, headless=True) as automation:
+            # Use headless mode in production, allow override via env var for debugging
+            headless_mode = os.getenv('BROWSER_HEADLESS', 'true').lower() in ('true', '1', 'yes')
+            with automation_class(api_client, proxy=proxy, headless=headless_mode) as automation:
                 log_step(task_id, 'automation_context_entered')
                 
                 # Try to save initial snapshot if page is available
@@ -291,84 +293,89 @@ def process_task(api_client: LaravelAPIClient, task: dict):
                 except Exception as snap_error:
                     logger.debug(f"Could not save initial snapshot: {snap_error}")
                 
-                # Detect page state and clear popups before automation
-                try:
-                    if hasattr(automation, 'page') and automation.page:
-                        log_step(task_id, 'page_state_detection_start')
-                        page_state = StateDetector.analyze(automation.page)
-                        log_step(task_id, 'page_state_detected', page_state.to_dict())
-                        
-                        # Clear popups if needed
-                        popup_result = PopupController.clear_if_needed(
-                            automation.page, 
-                            task_id, 
-                            state=page_state
-                        )
-                        log_step(task_id, 'popup_clear_complete', popup_result)
-                except Exception as state_error:
-                    logger.warning(f"Error in page state detection/popup clearing: {state_error}")
-                    log_step(task_id, 'page_state_detection_error', {'error': str(state_error)})
+                # FIRST: Navigate to target URL using automation.execute (which handles navigation)
+                # This must happen before the agent tries to find forms
+                logger.info("Navigating to target URL...")
+                result = automation.execute(task)
                 
-                # Use RuntimeAgent to run the flow
-                agent = RuntimeAgent(
-                    task_id=task_id,
-                    page=automation.page,
-                    domain=domain or 'unknown',
-                    goal=task_type
-                )
-                
-                agent_result = agent.execute()
-                log_step(task_id, 'agent_execution_completed', {
-                    'success': agent_result.get('success', False),
-                    'subgoal': agent_result.get('subgoal')
-                })
-                
-                # If agent succeeded in preparing the flow, delegate to automation module
-                if agent_result.get('success'):
-                    # Agent has prepared the page (cleared popups, found forms, etc.)
-                    # Now delegate to automation module for actual form filling
-                    result = automation.execute(task)
-                    log_step(task_id, 'automation_execution_completed', {'success': result.get('success', False)})
-                    
-                    # Record success/failure in domain memory
-                    if domain:
-                        if result.get('success'):
-                            domain_memory.increment_stat(domain, 'successes', 1)
-                        else:
-                            failure_reason = result.get('failure_reason', FailureReason.UNKNOWN.value)
-                            domain_memory.record_failure(domain, failure_reason)
-                            
-                            # Try healing if possible
-                            healer = RuntimeHealer(task_id, automation.page, domain)
-                            heal_result = healer.heal(
-                                failure_reason,
-                                context=result.get('context', {})
-                            )
-                            
-                            if heal_result.get('success'):
-                                log_step(task_id, 'healer_success', {
-                                    'recovery_action': heal_result.get('recovery_action')
-                                })
-                                # Retry with healed context
-                                result = automation.execute(task)
-                                log_step(task_id, 'automation_retry_completed', {'success': result.get('success', False)})
+                # If navigation/execution succeeded, we're done
+                if result.get('success'):
+                    log_step(task_id, 'automation_execution_completed', {'success': True})
                 else:
-                    # Agent failed, use agent result
-                    result = {
-                        'success': False,
-                        'failure_reason': agent_result.get('failure_reason', FailureReason.UNKNOWN.value),
-                        'error': agent_result.get('error', 'Agent execution failed'),
+                    # If automation failed, try using agent for recovery
+                    logger.info("Automation failed, trying agent-based recovery...")
+                    
+                    # Detect page state and clear popups
+                    try:
+                        if hasattr(automation, 'page') and automation.page:
+                            log_step(task_id, 'page_state_detection_start')
+                            page_state = StateDetector.analyze(automation.page)
+                            log_step(task_id, 'page_state_detected', page_state.to_dict())
+                            
+                            # Clear popups if needed
+                            popup_result = PopupController.clear_if_needed(
+                                automation.page, 
+                                task_id, 
+                                state=page_state
+                            )
+                            log_step(task_id, 'popup_clear_complete', popup_result)
+                    except Exception as state_error:
+                        logger.warning(f"Error in page state detection/popup clearing: {state_error}")
+                        log_step(task_id, 'page_state_detection_error', {'error': str(state_error)})
+                    
+                    # Use RuntimeAgent to try recovery
+                    agent = RuntimeAgent(
+                        task_id=task_id,
+                        page=automation.page,
+                        domain=domain or 'unknown',
+                        goal=task_type
+                    )
+                    
+                    agent_result = agent.execute()
+                    log_step(task_id, 'agent_execution_completed', {
+                        'success': agent_result.get('success', False),
                         'subgoal': agent_result.get('subgoal')
-                    }
-                    
-                    # Record failure in domain memory
-                    if domain:
-                        domain_memory.record_failure(domain, result['failure_reason'])
-                    
-                    log_step(task_id, 'agent_execution_failed', {
-                        'failure_reason': result['failure_reason'],
-                        'error': result['error']
                     })
+                    
+                    # If agent succeeded, use agent result
+                    if agent_result.get('success'):
+                        result = {
+                            'success': True,
+                            'agent_recovery': True,
+                            'subgoal': agent_result.get('subgoal')
+                        }
+                    else:
+                        # Both automation and agent failed
+                        result = {
+                            'success': False,
+                            'failure_reason': agent_result.get('failure_reason', result.get('failure_reason', FailureReason.UNKNOWN.value)),
+                            'error': agent_result.get('error', result.get('error', 'Both automation and agent failed')),
+                            'subgoal': agent_result.get('subgoal')
+                        }
+                log_step(task_id, 'automation_execution_completed', {'success': result.get('success', False)})
+                
+                # Record success/failure in domain memory
+                if domain:
+                    if result.get('success'):
+                        domain_memory.increment_stat(domain, 'successes', 1)
+                    else:
+                        failure_reason = result.get('failure_reason', FailureReason.UNKNOWN.value)
+                        domain_memory.record_failure(domain, failure_reason)
+                        
+                        # Try healing if possible
+                        healer = RuntimeHealer(task_id, automation.page, domain)
+                        heal_result = healer.heal(
+                            failure_reason,
+                            context=result.get('context', {})
+                        )
+                        
+                        if heal_result.get('success'):
+                            log_step(task_id, 'healer_success', {
+                                'recovery_action': heal_result.get('recovery_action')
+                            })
+                            # Retry with healed context
+                            result = automation.execute(task)
+                            log_step(task_id, 'automation_retry_completed', {'success': result.get('success', False)})
                 
                 # Save final snapshot if page is available
                 try:
@@ -742,6 +749,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Automation worker")
     parser.add_argument("--once", action="store_true", help="Process pending tasks once and exit")
     parser.add_argument("--limit", type=int, default=5, help="Max tasks to pull per poll")
+    parser.add_argument("--task-id", type=int, help="Process a specific task by ID")
     parser.add_argument(
         "--poll-interval",
         type=int,
@@ -762,10 +770,20 @@ def run_worker(run_once: bool, limit: int, poll_interval: int):
     # Try LARAVEL_API_TOKEN first, then APP_API_TOKEN as fallback
     api_token = os.getenv('LARAVEL_API_TOKEN') or os.getenv('APP_API_TOKEN') or LARAVEL_API_TOKEN
 
-    # Ensure we're not using the old app:8000 URL
-    if 'app:8000' in api_url or 'localhost:8000' in api_url:
-        api_url = 'http://nginx'
-        logger.warning(f"Detected invalid API URL, using default: {api_url}")
+    # For local development (non-Docker), use localhost:8000
+    # For Docker, use http://nginx
+    # Only override if explicitly set to nginx but we're not in Docker
+    if api_url == 'http://nginx':
+        # Check if we can reach nginx (Docker environment)
+        try:
+            import socket
+            socket.create_connection(('nginx', 80), timeout=1)
+            # nginx is accessible, keep it
+            logger.info("Using Docker nginx URL")
+        except (socket.gaierror, OSError, socket.timeout):
+            # nginx not accessible, use localhost for local development
+            api_url = 'http://localhost:8000'
+            logger.info(f"nginx not accessible, using localhost: {api_url}")
 
     logger.info("Starting Auto Backlink Pro Python Worker")
     logger.info(f"Laravel API URL: {api_url}")
@@ -868,5 +886,39 @@ def run_worker(run_once: bool, limit: int, poll_interval: int):
 
 if __name__ == "__main__":
     args = parse_args()
-    run_worker(run_once=args.once, limit=args.limit, poll_interval=args.poll_interval)
+    
+    # If specific task ID provided, process only that task
+    if args.task_id:
+        api_url = os.getenv('LARAVEL_API_URL', LARAVEL_API_URL)
+        api_token = os.getenv('LARAVEL_API_TOKEN') or os.getenv('APP_API_TOKEN') or LARAVEL_API_TOKEN
+        
+        if not api_token:
+            logger.error("LARAVEL_API_TOKEN not set! Worker cannot authenticate.")
+            logger.error("Please set APP_API_TOKEN or LARAVEL_API_TOKEN environment variable.")
+            sys.exit(1)
+        
+        api_client = LaravelAPIClient(api_url, api_token)
+        
+        # Try to get the task - first check if it's in pending tasks
+        tasks = api_client.get_pending_tasks(limit=1000)
+        task = next((t for t in tasks if t.get('id') == args.task_id), None)
+        
+        if not task:
+            logger.warning(f"Task {args.task_id} not found in pending tasks. Trying to get it directly...")
+            # Try to get task directly (if API supports it)
+            try:
+                task = api_client.get_task(args.task_id)
+            except Exception as e:
+                logger.error(f"Could not fetch task {args.task_id}: {e}")
+                logger.info("Make sure the task exists and is in 'pending' status")
+                sys.exit(1)
+        
+        if not task:
+            logger.error(f"Task {args.task_id} not found")
+            sys.exit(1)
+        
+        logger.info(f"Processing specific task {args.task_id} (type: {task.get('type', 'unknown')})")
+        process_task(api_client, task)
+    else:
+        run_worker(run_once=args.once, limit=args.limit, poll_interval=args.poll_interval)
 

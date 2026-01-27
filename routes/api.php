@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\LLMController;
 use App\Http\Controllers\Api\CaptchaController;
 use App\Http\Controllers\Api\OpportunityController;
 use App\Http\Controllers\Api\MLController;
+use App\Http\Controllers\Api\PlanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,12 @@ use App\Http\Controllers\Api\MLController;
 | is assigned the "api" middleware group and the "/api" prefix.
 |
 */
+
+// Marketing API routes (public, rate limited)
+Route::middleware(['api', 'throttle:30,1'])->group(function () {
+    Route::post('/plan/preview', [PlanController::class, 'preview'])->name('api.plan.preview');
+    Route::post('/plan/lead', [PlanController::class, 'lead'])->name('api.plan.lead');
+});
 
 // Task endpoints (for Python workers) - OUTSIDE outer throttle to allow higher limits
 // Rate limit: 1000 requests per minute (handled per-worker in controller)

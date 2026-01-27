@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Plan;
+use Illuminate\Database\Seeder;
 
 class PlanSeeder extends Seeder
 {
@@ -14,101 +14,80 @@ class PlanSeeder extends Seeder
     {
         $plans = [
             [
-                'name' => 'Free',
-                'slug' => 'free',
-                'description' => 'Perfect for getting started',
-                'price' => 0,
-                'billing_interval' => 'monthly',
-                'max_domains' => 1,
-                'max_campaigns' => 1,
-                'daily_backlink_limit' => 10,
-                'backlink_types' => ['comment', 'profile'],
-                'features' => [
-                    '1 Domain',
-                    '1 Campaign',
-                    '10 Daily Backlinks',
-                    'Comment & Profile Backlinks',
-                    'Basic Analytics',
-                    'Email Support',
-                ],
-                'is_active' => true,
-                'sort_order' => 1,
-            ],
-            [
                 'name' => 'Starter',
-                'slug' => 'starter',
-                'description' => 'For small businesses',
-                'price' => 29,
-                'billing_interval' => 'monthly',
-                'max_domains' => 5,
-                'max_campaigns' => 5,
-                'daily_backlink_limit' => 50,
-                'backlink_types' => ['comment', 'profile', 'forum'],
-                'features' => [
-                    '5 Domains',
-                    '5 Campaigns',
-                    '50 Daily Backlinks',
-                    'Comment, Profile & Forum Backlinks',
-                    'Advanced Analytics',
-                    'Priority Email Support',
-                    'Gmail Integration',
+                'code' => 'starter',
+                'price_monthly' => null, // Free tier
+                'limits_json' => [
+                    'domains.max_active' => 3,
+                    'audits.runs_per_month' => 10,
+                    'audits.pages_per_month' => 1000,
+                    'backlinks.runs_per_month' => 5,
+                    'backlinks.links_fetched_per_month' => 10000,
+                    'google.sync_now_per_day' => 3,
+                    'meta.publish_per_month' => 50,
+                    'insights.runs_per_day' => 5,
+                ],
+                'features_json' => [
+                    'website_analyzer' => true,
+                    'google_integrations' => true,
+                    'backlinks_checker' => true,
+                    'meta_editor' => true,
+                    'insights' => true,
                 ],
                 'is_active' => true,
-                'sort_order' => 2,
             ],
             [
                 'name' => 'Pro',
-                'slug' => 'pro',
-                'description' => 'For growing businesses',
-                'price' => 79,
-                'billing_interval' => 'monthly',
-                'max_domains' => 20,
-                'max_campaigns' => 20,
-                'daily_backlink_limit' => 200,
-                'backlink_types' => ['comment', 'profile', 'forum', 'guestposting'],
-                'features' => [
-                    '20 Domains',
-                    '20 Campaigns',
-                    '200 Daily Backlinks',
-                    'All Backlink Types',
-                    'Advanced Analytics & Reports',
-                    'Priority Support',
-                    'Gmail Integration',
-                    'API Access',
+                'code' => 'pro',
+                'price_monthly' => 9900, // $99.00
+                'limits_json' => [
+                    'domains.max_active' => 20,
+                    'audits.runs_per_month' => 100,
+                    'audits.pages_per_month' => 50000,
+                    'backlinks.runs_per_month' => 50,
+                    'backlinks.links_fetched_per_month' => 500000,
+                    'google.sync_now_per_day' => 20,
+                    'meta.publish_per_month' => 1000,
+                    'insights.runs_per_day' => 20,
+                ],
+                'features_json' => [
+                    'website_analyzer' => true,
+                    'google_integrations' => true,
+                    'backlinks_checker' => true,
+                    'meta_editor' => true,
+                    'insights' => true,
                 ],
                 'is_active' => true,
-                'sort_order' => 3,
             ],
             [
                 'name' => 'Agency',
-                'slug' => 'agency',
-                'description' => 'For agencies and large teams',
-                'price' => 199,
-                'billing_interval' => 'monthly',
-                'max_domains' => -1, // Unlimited
-                'max_campaigns' => -1, // Unlimited
-                'daily_backlink_limit' => -1, // Unlimited
-                'backlink_types' => ['comment', 'profile', 'forum', 'guestposting'],
-                'features' => [
-                    'Unlimited Domains',
-                    'Unlimited Campaigns',
-                    'Unlimited Daily Backlinks',
-                    'All Backlink Types',
-                    'White-label Reports',
-                    'Dedicated Support',
-                    'Gmail Integration',
-                    'API Access',
-                    'Custom Integrations',
+                'code' => 'agency',
+                'price_monthly' => 29900, // $299.00
+                'limits_json' => [
+                    'domains.max_active' => 100,
+                    'audits.runs_per_month' => 500,
+                    'audits.pages_per_month' => 500000,
+                    'backlinks.runs_per_month' => 200,
+                    'backlinks.links_fetched_per_month' => 2000000,
+                    'google.sync_now_per_day' => 100,
+                    'meta.publish_per_month' => 10000,
+                    'insights.runs_per_day' => 100,
+                ],
+                'features_json' => [
+                    'website_analyzer' => true,
+                    'google_integrations' => true,
+                    'backlinks_checker' => true,
+                    'meta_editor' => true,
+                    'insights' => true,
                 ],
                 'is_active' => true,
-                'sort_order' => 4,
             ],
         ];
 
-        foreach ($plans as $plan) {
+        foreach ($plans as $planData) {
             Plan::updateOrCreate(
-                ['slug' => $plan['slug']],
-                $plan
+                ['code' => $planData['code']],
+                $planData
             );
         }
     }

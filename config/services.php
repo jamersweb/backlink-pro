@@ -41,6 +41,10 @@ return [
         'redirect_uri' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/gmail/oauth/callback'),
     ],
 
+    'google_seo' => [
+        'redirect_uri' => env('GOOGLE_SEO_REDIRECT_URI', env('APP_URL') . '/seo/google/callback'),
+    ],
+
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
@@ -64,6 +68,17 @@ return [
         'anticaptcha' => [
             'api_key' => env('ANTICAPTCHA_API_KEY'),
             'api_url' => env('ANTICAPTCHA_API_URL', 'https://api.anti-captcha.com'),
+        ],
+    ],
+
+    'backlinks' => [
+        'provider' => env('BACKLINK_PROVIDER', 'dataforseo'),
+        'dataforseo' => [
+            'login' => env('DATAFORSEO_LOGIN'),
+            'password' => env('DATAFORSEO_PASSWORD'),
+        ],
+        'suspicious_tlds' => [
+            '.xyz', '.top', '.click', '.download', '.online', '.site', '.website',
         ],
     ],
 

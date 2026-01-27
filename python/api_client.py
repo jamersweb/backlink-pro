@@ -98,6 +98,16 @@ class LaravelAPIClient:
         # Don't retry on rate limit - let the worker handle it by waiting
         response = self._request('GET', '/api/tasks/pending', params=params, retry_on_rate_limit=False)
         return response.get('tasks', []) if response else []
+    
+    def get_task(self, task_id: int) -> Optional[Dict]:
+        """Get a specific task by ID from Laravel"""
+        try:
+            response = self._request('GET', f'/api/tasks/{task_id}', retry_on_rate_limit=False)
+            return response
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 404:
+                return None
+            raise
 
     def lock_task(self, task_id: int, worker_id: str) -> Dict:
         """Lock a task for processing"""

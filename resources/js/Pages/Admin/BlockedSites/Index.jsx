@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { router, usePage, useForm } from '@inertiajs/react';
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
-import Input from '../../../Components/Shared/Input';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
+import Input from '@/Components/Shared/Input';
 
 export default function AdminBlockedSitesIndex({ blockedSites, stats, filters }) {
     const { flash } = usePage().props;

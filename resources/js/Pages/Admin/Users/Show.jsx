@@ -1,6 +1,6 @@
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
 import { Link } from '@inertiajs/react';
 
 export default function AdminUsersShow({ user, stats, recentBacklinks }) {

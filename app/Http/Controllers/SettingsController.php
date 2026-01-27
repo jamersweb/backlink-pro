@@ -30,11 +30,11 @@ class SettingsController extends Controller
             'plan' => $plan ? [
                 'id' => $plan->id,
                 'name' => $plan->name,
-                'price' => $plan->price,
-                'billing_interval' => $plan->billing_interval,
-                'max_domains' => $plan->max_domains,
-                'max_campaigns' => $plan->max_campaigns,
-                'daily_backlink_limit' => $plan->daily_backlink_limit,
+                'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
+                'billing_interval' => 'monthly',
+                'max_domains' => $plan->getLimit('max_domains'),
+                'max_campaigns' => $plan->getLimit('max_campaigns'),
+                'daily_backlink_limit' => $plan->getLimit('daily_backlink_limit'),
             ] : null,
             'connectedAccounts' => $connectedAccounts,
         ]);

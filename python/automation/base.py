@@ -2,8 +2,8 @@
 Base automation class for all backlink types
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, List
-from playwright.sync_api import Page, BrowserContext, Browser
+from typing import Dict, Optional, List, Tuple, Any
+from playwright.sync_api import Page, BrowserContext, Browser, Locator, Frame
 from playwright.sync_api import sync_playwright
 import logging
 import random
@@ -1040,6 +1040,45 @@ class BaseAutomation(ABC):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit - always cleanup, even if there was an exception"""
+        # Keep browser open for debugging if KEEP_BROWSER_OPEN env var is set
+        # Only in non-production environments to prevent hanging workers
+        keep_open = (
+            os.getenv('KEEP_BROWSER_OPEN', 'false').lower() in ('true', '1', 'yes') and
+            os.getenv('APP_ENV', 'production').lower() != 'production'
+        )
+        
+        if keep_open:
+            logger.info("KEEP_BROWSER_OPEN is set - keeping browser open for debugging")
+            logger.info("Press Ctrl+C to close the browser")
+            logger.warning("Browser will auto-close after 60 seconds to prevent hanging")
+            try:
+                # Wait with timeout to prevent infinite hanging
+                import time
+                import signal
+                
+                def timeout_handler(signum, frame):
+                    logger.info("Timeout reached, closing browser...")
+                    raise TimeoutError("Browser keep-open timeout")
+                
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(60)  # 60 second timeout
+                
+                try:
+                    while True:
+                        time.sleep(1)
+                except (KeyboardInterrupt, TimeoutError):
+                    logger.info("Closing browser...")
+                finally:
+                    signal.alarm(0)  # Cancel alarm
+            except (AttributeError, OSError):
+                # Windows doesn't support SIGALRM, use simple timeout instead
+                import time
+                timeout = 60
+                start_time = time.time()
+                while time.time() - start_time < timeout:
+                    time.sleep(1)
+                logger.info("Timeout reached, closing browser...")
+        
         try:
             self.cleanup()
         except Exception as cleanup_error:

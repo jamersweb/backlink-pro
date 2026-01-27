@@ -1,5 +1,5 @@
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
 import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 

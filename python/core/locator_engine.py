@@ -165,18 +165,18 @@ class LocatorEngine:
                 if candidate.locator.count() > 0:
                     try:
                         first = candidate.locator.first
-                            if first.is_visible(timeout=2000):
-                                if task_id:
-                                    log_step(task_id, f'{log_prefix}_found', {
-                                        'strategy': candidate.strategy,
-                                        'confidence': candidate.confidence,
-                                        'why': candidate.why,
-                                        'attempt': idx + 1
-                                    })
-                                
-                                # Record successful strategy in domain memory
-                                if domain:
-                                    domain_memory.record_locator_strategy(
+                        if first.is_visible(timeout=2000):
+                            if task_id:
+                                log_step(task_id, f'{log_prefix}_found', {
+                                    'strategy': candidate.strategy,
+                                    'confidence': candidate.confidence,
+                                    'why': candidate.why,
+                                    'attempt': idx + 1
+                                })
+                            
+                            # Record successful strategy in domain memory
+                            if domain:
+                                domain_memory.record_locator_strategy(
                                         domain,
                                         target_role,
                                         candidate.strategy,

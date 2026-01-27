@@ -35,6 +35,28 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Handle 404 errors with marketing-styled page
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, \Illuminate\Http\Request $request) {
+            if (!$request->expectsJson() && !$request->is('admin/*') && !$request->is('dashboard/*') && !$request->is('api/*')) {
+                return \Inertia\Inertia::render('Errors/NotFound', [
+                    'meta' => [
+                        'title' => '404 — BacklinkPro',
+                        'description' => 'Page not found.',
+                    ],
+                ])->toResponse($request)->setStatusCode(404);
+            }
+        });
+
+        // Handle 500 errors with marketing-styled page (production only)
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if (app()->environment('production') && !$request->expectsJson() && !$request->is('admin/*') && !$request->is('dashboard/*') && !$request->is('api/*')) {
+                return \Inertia\Inertia::render('Errors/ServerError', [
+                    'meta' => [
+                        'title' => '500 — BacklinkPro',
+                        'description' => 'Server error.',
+                    ],
+                ])->toResponse($request)->setStatusCode(500);
+            }
+        });
     })
     ->create();

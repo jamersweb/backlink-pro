@@ -50,7 +50,7 @@ class LeadsController extends Controller
                 $query->whereNotNull('plan_id')
                     ->orWhere('subscription_status', 'active');
             })
-            ->with('plan:id,name,price')
+            ->with('plan:id,name,code,price_monthly')
             ->latest()
             ->paginate(20);
 

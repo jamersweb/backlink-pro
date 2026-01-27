@@ -27,3 +27,4 @@ python -c "import seaborn; print('✅ seaborn:', seaborn.__version__)"
 
 Write-Host "`n✅ All dependencies installed!" -ForegroundColor Green
 
+

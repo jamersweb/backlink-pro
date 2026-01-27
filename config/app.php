@@ -16,6 +16,18 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
     
     'api_token' => env('APP_API_TOKEN', 'your-secure-api-token-change-in-production'),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Health Check Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Allowed IPs for health check endpoint in production
+    |
+    */
+    'health_check_allowed_ips' => env('HEALTH_CHECK_ALLOWED_IPS') 
+        ? explode(',', env('HEALTH_CHECK_ALLOWED_IPS')) 
+        : ['127.0.0.1', '::1'],
 
     /*
     |--------------------------------------------------------------------------

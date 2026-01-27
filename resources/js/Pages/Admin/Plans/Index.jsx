@@ -1,7 +1,7 @@
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
 import { Link } from '@inertiajs/react';
-import Button from '../../../Components/Shared/Button';
+import Button from '@/Components/Shared/Button';
 
 export default function PlansIndex({ plans, total }) {
     return (

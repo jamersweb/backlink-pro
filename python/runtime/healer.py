@@ -100,8 +100,7 @@ class RuntimeHealer:
         result = PopupController.clear_if_needed(
             self.page,
             self.task_id,
-            state=page_state,
-            domain=self.domain
+            state=page_state
         )
         
         if result.get('cleared'):

@@ -62,12 +62,13 @@ class GmailOAuthController extends Controller
             $gmailService->setAccessToken($tokens['access_token']);
             $profile = $gmailService->getUserProfile();
 
-            // Create or update connected account
+            // Create or update connected account (Gmail service)
             $connectedAccount = ConnectedAccount::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
                     'provider' => ConnectedAccount::PROVIDER_GOOGLE,
                     'email' => $profile['email'],
+                    'service' => ConnectedAccount::SERVICE_GMAIL,
                 ],
                 [
                     'provider_user_id' => $profile['id'],
@@ -95,6 +96,7 @@ class GmailOAuthController extends Controller
         try {
             $connectedAccounts = ConnectedAccount::where('user_id', Auth::id())
                 ->where('provider', ConnectedAccount::PROVIDER_GOOGLE)
+                ->where('service', ConnectedAccount::SERVICE_GMAIL)
                 ->withCount('campaigns')
                 ->latest()
                 ->get();

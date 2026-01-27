@@ -38,7 +38,7 @@ class IframeRouter:
             - source: "main" or "iframe_{index}" or "not_found"
         """
         from core.telemetry import log_step
-from core.domain_memory import get_domain_memory
+        from core.domain_memory import get_domain_memory
         
         description = description or "element"
         log_prefix = f"iframe_router_{description}"

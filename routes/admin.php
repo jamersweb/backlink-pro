@@ -88,9 +88,22 @@ Route::post('/proxies/{proxy}/test', [\App\Http\Controllers\Admin\ProxyControlle
 Route::get('/captcha-logs', [\App\Http\Controllers\Admin\CaptchaLogController::class, 'index'])->name('captcha-logs.index');
 
 // System Health
-Route::get('/system-health', [\App\Http\Controllers\Admin\SystemHealthController::class, 'index'])->name('system-health.index');
-Route::post('/system-health/failed-jobs/{id}/retry', [\App\Http\Controllers\Admin\SystemHealthController::class, 'retryFailedJob'])->name('system-health.retry-job');
-Route::post('/system-health/failed-jobs/flush', [\App\Http\Controllers\Admin\SystemHealthController::class, 'flushFailedJobs'])->name('system-health.flush-jobs');
+Route::prefix('system-health')->name('system-health.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\SystemHealthController::class, 'index'])->name('index');
+    Route::get('/activity', [\App\Http\Controllers\Admin\SystemHealthController::class, 'activity'])->name('activity');
+    Route::get('/failures', [\App\Http\Controllers\Admin\SystemHealthController::class, 'failures'])->name('failures');
+    Route::post('/failed-jobs/{id}/retry', [\App\Http\Controllers\Admin\SystemHealthController::class, 'retryFailedJob'])->name('retry-job');
+    Route::post('/failed-jobs/flush', [\App\Http\Controllers\Admin\SystemHealthController::class, 'flushFailedJobs'])->name('flush-jobs');
+});
+
+// Run Retry Routes
+Route::prefix('runs')->name('runs.')->group(function () {
+    Route::post('/audit/{audit}/retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryAudit'])->name('audit.retry');
+    Route::post('/backlinks/{run}/retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryBacklinks'])->name('backlinks.retry');
+    Route::post('/meta/{change}/retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryMeta'])->name('meta.retry');
+    Route::post('/insights/{run}/retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryInsights'])->name('insights.retry');
+    Route::post('/google/{domain}/sync-retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryGoogleSync'])->name('google.sync-retry');
+});
 
 // Settings Management
 Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
@@ -109,6 +122,12 @@ Route::post('/blocked-sites', [\App\Http\Controllers\Admin\BlockedSiteController
 Route::put('/blocked-sites/{id}', [\App\Http\Controllers\Admin\BlockedSiteController::class, 'update'])->name('blocked-sites.update');
 Route::post('/blocked-sites/{id}/toggle', [\App\Http\Controllers\Admin\BlockedSiteController::class, 'toggle'])->name('blocked-sites.toggle');
 Route::delete('/blocked-sites/{id}', [\App\Http\Controllers\Admin\BlockedSiteController::class, 'destroy'])->name('blocked-sites.destroy');
+
+// Marketing Leads
+Route::prefix('marketing-leads')->name('marketing-leads.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\MarketingLeadsController::class, 'index'])->name('index');
+    Route::put('/{type}/{id}/status', [\App\Http\Controllers\Admin\MarketingLeadsController::class, 'updateStatus'])->name('update-status');
+});
 
 // Profile (accessible from admin panel)
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile');

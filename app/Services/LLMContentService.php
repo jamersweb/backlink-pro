@@ -120,6 +120,20 @@ class LLMContentService
                 if ($response->successful()) {
                     $data = $response->json();
                     return $data['choices'][0]['message']['content'] ?? null;
+                } else {
+                    // Log specific error details
+                    $errorData = $response->json();
+                    $errorMessage = $errorData['error']['message'] ?? 'Unknown error';
+                    
+                    Log::error('LLM API request failed', [
+                        'status' => $response->status(),
+                        'provider' => $this->provider,
+                        'error' => $errorMessage,
+                        'response' => $response->body(),
+                    ]);
+                    
+                    // Return null - caller should handle gracefully
+                    return null;
                 }
             }
 

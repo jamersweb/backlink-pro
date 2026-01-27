@@ -28,7 +28,7 @@ class CaptchaService
     /**
      * Solve reCAPTCHA v2
      */
-    public function solveRecaptchaV2(string $siteKey, string $pageUrl, array $options = []): ?string
+    public function solveRecaptchaV2(string $siteKey, string $pageUrl, array $options = [], ?int $campaignId = null, ?string $siteDomain = null): ?string
     {
         if (!$this->apiKey) {
             Log::warning('Captcha API key not configured');
@@ -40,12 +40,12 @@ class CaptchaService
                 return $this->solveWithAntiCaptcha('RecaptchaV2TaskProxyless', [
                     'websiteURL' => $pageUrl,
                     'websiteKey' => $siteKey,
-                ]);
+                ], $campaignId, $siteDomain);
             } else {
                 return $this->solveWith2Captcha('recaptcha', [
                     'googlekey' => $siteKey,
                     'pageurl' => $pageUrl,
-                ]);
+                ], $campaignId, $siteDomain);
             }
         } catch (\Exception $e) {
             Log::error('Captcha solving failed', [
@@ -90,7 +90,7 @@ class CaptchaService
     /**
      * Solve with 2Captcha
      */
-    protected function solveWith2Captcha(string $method, array $params): ?string
+    protected function solveWith2Captcha(string $method, array $params, ?int $campaignId = null, ?string $siteDomain = null): ?string
     {
         // Submit captcha
         $submitResponse = Http::asForm()->post("{$this->apiUrl}/in.php", [
@@ -123,12 +123,12 @@ class CaptchaService
 
             if (str_starts_with($body, 'OK|')) {
                 $token = explode('|', $body)[1];
-                $this->logCaptchaUsage('2captcha', $method, $captchaId, true);
+                $this->logCaptchaUsage('2captcha', $method, $captchaId, true, null, $campaignId, $siteDomain);
                 return $token;
             } elseif ($body === 'CAPCHA_NOT_READY') {
                 continue; // Still processing
             } else {
-                $this->logCaptchaUsage('2captcha', $method, $captchaId, false, $body);
+                $this->logCaptchaUsage('2captcha', $method, $captchaId, false, $body, $campaignId, $siteDomain);
                 throw new \Exception('Captcha solving failed: ' . $body);
             }
         }
@@ -139,7 +139,7 @@ class CaptchaService
     /**
      * Solve with AntiCaptcha
      */
-    protected function solveWithAntiCaptcha(string $taskType, array $taskData): ?string
+    protected function solveWithAntiCaptcha(string $taskType, array $taskData, ?int $campaignId = null, ?string $siteDomain = null): ?string
     {
         // Create task
         $createResponse = Http::post("{$this->apiUrl}/createTask", [
@@ -175,12 +175,12 @@ class CaptchaService
 
             if ($resultData['status'] === 'ready') {
                 $token = $resultData['solution']['gRecaptchaResponse'] ?? $resultData['solution']['token'] ?? null;
-                $this->logCaptchaUsage('anticaptcha', $taskType, $taskId, true);
+                $this->logCaptchaUsage('anticaptcha', $taskType, $taskId, true, null, $campaignId, $siteDomain);
                 return $token;
             } elseif ($resultData['status'] === 'processing') {
                 continue;
             } else {
-                $this->logCaptchaUsage('anticaptcha', $taskType, $taskId, false, $resultData['errorDescription'] ?? 'Unknown error');
+                $this->logCaptchaUsage('anticaptcha', $taskType, $taskId, false, $resultData['errorDescription'] ?? 'Unknown error', $campaignId, $siteDomain);
                 throw new \Exception('Captcha solving failed: ' . ($resultData['errorDescription'] ?? 'Unknown error'));
             }
         }
@@ -191,16 +191,30 @@ class CaptchaService
     /**
      * Log captcha usage
      */
-    protected function logCaptchaUsage(string $provider, string $type, string $taskId, bool $success, ?string $error = null): void
+    protected function logCaptchaUsage(string $provider, string $type, string $taskId, bool $success, ?string $error = null, ?int $campaignId = null, ?string $siteDomain = null): void
     {
         try {
+            // Map provider to service enum value
+            $service = ($provider === '2captcha') ? CaptchaLog::SERVICE_2CAPTCHA : CaptchaLog::SERVICE_ANTICAPTCHA;
+            
+            // Map type to captcha_type enum
+            $captchaType = match($type) {
+                'RecaptchaV2TaskProxyless', 'recaptcha_v2' => CaptchaLog::TYPE_RECAPTCHA_V2,
+                'HCaptchaTaskProxyless', 'hcaptcha' => CaptchaLog::TYPE_HCAPTCHA,
+                'recaptcha_invisible' => CaptchaLog::TYPE_RECAPTCHA_INVISIBLE,
+                default => CaptchaLog::TYPE_IMAGE,
+            };
+            
             CaptchaLog::create([
-                'provider' => $provider,
-                'type' => $type,
-                'task_id' => $taskId,
-                'success' => $success,
-                'error_message' => $error,
-                'cost' => $this->getCost($provider, $type, $success),
+                'campaign_id' => $campaignId,
+                'site_domain' => $siteDomain ?? 'unknown',
+                'captcha_type' => $captchaType,
+                'service' => $service,
+                'order_id' => $taskId,
+                'status' => $success ? CaptchaLog::STATUS_SOLVED : CaptchaLog::STATUS_FAILED,
+                'error' => $error,
+                'estimated_cost' => $this->getCost($provider, $type, $success),
+                'solved_at' => $success ? now() : null,
             ]);
         } catch (\Exception $e) {
             Log::warning('Failed to log captcha usage', ['error' => $e->getMessage()]);

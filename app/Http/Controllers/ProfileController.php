@@ -88,46 +88,46 @@ class ProfileController extends Controller
         // Get available upgrade plans based on current plan
         $upgradePlans = [];
         if ($user->plan) {
-            $currentPlanSlug = $user->plan->slug;
+            $currentPlanCode = $user->plan->code;
             $planOrder = ['free' => 1, 'starter' => 2, 'pro' => 3, 'agency' => 4];
-            $currentOrder = $planOrder[$currentPlanSlug] ?? 0;
+            $currentOrder = $planOrder[$currentPlanCode] ?? 0;
             
             // Get all plans that are higher than current plan
             $upgradePlans = \App\Models\Plan::where('is_active', true)
                 ->where(function($query) use ($planOrder, $currentOrder) {
-                    foreach ($planOrder as $slug => $order) {
+                    foreach ($planOrder as $code => $order) {
                         if ($order > $currentOrder) {
-                            $query->orWhere('slug', $slug);
+                            $query->orWhere('code', $code);
                         }
                     }
                 })
-                ->orderBy('sort_order')
-                ->get(['id', 'name', 'slug', 'price', 'billing_interval', 'description', 'features'])
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'price_monthly', 'features_json'])
                 ->map(function($plan) {
                     return [
                         'id' => $plan->id,
                         'name' => $plan->name,
-                        'slug' => $plan->slug,
-                        'price' => $plan->price,
-                        'billing_interval' => $plan->billing_interval,
-                        'description' => $plan->description,
-                        'features' => $plan->features,
+                        'code' => $plan->code,
+                        'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
+                        'billing_interval' => 'monthly',
+                        'description' => '',
+                        'features' => $plan->features_json ?? [],
                     ];
                 });
         } else {
             // If no plan, show all plans
             $upgradePlans = \App\Models\Plan::where('is_active', true)
-                ->orderBy('sort_order')
-                ->get(['id', 'name', 'slug', 'price', 'billing_interval', 'description', 'features'])
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'price_monthly', 'features_json'])
                 ->map(function($plan) {
                     return [
                         'id' => $plan->id,
                         'name' => $plan->name,
-                        'slug' => $plan->slug,
-                        'price' => $plan->price,
-                        'billing_interval' => $plan->billing_interval,
-                        'description' => $plan->description,
-                        'features' => $plan->features,
+                        'code' => $plan->code,
+                        'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
+                        'billing_interval' => 'monthly',
+                        'description' => '',
+                        'features' => $plan->features_json ?? [],
                     ];
                 });
         }
@@ -146,14 +146,14 @@ class ProfileController extends Controller
             'plan' => $user->plan ? [
                 'id' => $user->plan->id,
                 'name' => $user->plan->name,
-                'slug' => $user->plan->slug,
-                'price' => $user->plan->price,
-                'billing_interval' => $user->plan->billing_interval,
-                'description' => $user->plan->description,
-                'features' => $user->plan->features,
-                'max_domains' => $user->plan->max_domains,
-                'max_campaigns' => $user->plan->max_campaigns,
-                'daily_backlink_limit' => $user->plan->daily_backlink_limit,
+                'code' => $user->plan->code,
+                'price' => $user->plan->price_monthly ? ($user->plan->price_monthly / 100) : 0,
+                'billing_interval' => 'monthly',
+                'description' => '',
+                'features' => $user->plan->features_json ?? [],
+                'max_domains' => $user->plan->getLimit('max_domains'),
+                'max_campaigns' => $user->plan->getLimit('max_campaigns'),
+                'daily_backlink_limit' => $user->plan->getLimit('daily_backlink_limit'),
             ] : null,
             'subscription' => $subscription,
             'subscription_status' => $user->subscription_status,

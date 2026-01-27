@@ -77,6 +77,36 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Plan::class);
     }
 
+    /**
+     * Get subscription for quota system
+     */
+    public function subscription()
+    {
+        return $this->hasOne(UserSubscription::class);
+    }
+
+    /**
+     * Get current plan (from subscription or fallback)
+     */
+    public function currentPlan()
+    {
+        $subscription = $this->subscription;
+        if ($subscription && $subscription->isActive()) {
+            return $subscription->plan;
+        }
+        // Fallback to starter plan
+        return \App\Models\Plan::where('code', 'starter')->first();
+    }
+
+    /**
+     * Get plan limits
+     */
+    public function planLimits(): array
+    {
+        $plan = $this->currentPlan();
+        return $plan ? $plan->limits_json : [];
+    }
+
     public function notifications()
     {
         return $this->hasMany(UserNotification::class);
@@ -85,6 +115,32 @@ class User extends Authenticatable implements MustVerifyEmail
     public function unreadNotifications()
     {
         return $this->hasMany(UserNotification::class)->unread();
+    }
+
+    /**
+     * Get teams this user belongs to
+     */
+    public function teams()
+    {
+        return $this->belongsToMany(Team::class, 'team_members')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get team memberships
+     */
+    public function teamMemberships()
+    {
+        return $this->hasMany(TeamMember::class);
+    }
+
+    /**
+     * Get the primary team (first team where user is owner)
+     */
+    public function primaryTeam()
+    {
+        return $this->teams()->wherePivot('role', Team::ROLE_OWNER)->first();
     }
 
     /**
@@ -112,5 +168,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new \App\Notifications\ResetPasswordNotification($token));
+    }
+
+    /**
+     * Get provider settings
+     */
+    public function providerSettings()
+    {
+        return $this->hasMany(UserProviderSetting::class);
+    }
+
+    /**
+     * Get cost logs
+     */
+    public function costLogs()
+    {
+        return $this->hasMany(CrawlCostLog::class);
     }
 }

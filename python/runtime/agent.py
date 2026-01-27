@@ -270,18 +270,28 @@ class RuntimeAgent:
         result = PopupController.clear_if_needed(
             self.state.page,
             self.state.task_id,
-            state=page_state,
-            domain=self.state.domain
+            state=page_state
         )
         
         if result.get('cleared'):
             log_step(self.state.task_id, 'agent_popup_cleared')
             return True
         
+        # If popups weren't cleared but no errors, continue anyway
+        # (popups might not exist or might be non-blocking)
+        if not result.get('errors'):
+            log_step(self.state.task_id, 'agent_popup_no_action_needed')
+            return True  # Continue even if no popups were cleared
+        
+        # Only fail if there were actual errors
+        logger.warning(f"Popup clearing had errors: {result.get('errors', [])}")
         return False
     
     def _open_comment_editor(self) -> Optional[Locator]:
         """Open comment editor using LocatorEngine"""
+        logger.info(f"Opening comment editor for task {self.state.task_id}")
+        logger.info(f"Current URL: {self.state.page.url}")
+        logger.info(f"Page title: {self.state.page.title()}")
         if self.state.has_tried('open_comment_editor') and self.state.get_try_count('open_comment_editor') >= 3:
             return None
         
@@ -294,6 +304,7 @@ class RuntimeAgent:
         self.state.add_history('open_comment_editor', {'attempt': self.state.get_try_count('open_comment_editor') + 1})
         
         # Use LocatorEngine to find comment form
+        logger.info("Searching for comment form using LocatorEngine...")
         locator, candidate, candidates = LocatorEngine.find(
             self.state.page,
             target_role='form',
@@ -303,12 +314,14 @@ class RuntimeAgent:
         )
         
         if locator:
+            logger.info(f"Found comment form! Strategy: {candidate.strategy if candidate else 'unknown'}, Confidence: {candidate.confidence if candidate else 0.0}")
             log_step(self.state.task_id, 'agent_comment_editor_found', {
                 'strategy': candidate.strategy if candidate else 'unknown',
                 'confidence': candidate.confidence if candidate else 0.0
             })
             return locator
         
+        logger.info("Comment form not found, trying textarea fallback...")
         # Fallback: try textarea directly
         textarea_locator, candidate, candidates = LocatorEngine.find(
             self.state.page,
@@ -319,10 +332,16 @@ class RuntimeAgent:
         )
         
         if textarea_locator:
+            logger.info("Found textarea for comment!")
             log_step(self.state.task_id, 'agent_comment_textarea_found')
             return textarea_locator
         
-        log_step(self.state.task_id, 'agent_comment_editor_not_found')
+        logger.warning(f"Comment form not found on page: {self.state.page.url}")
+        logger.warning(f"Tried {len(candidates) if candidates else 0} candidates")
+        log_step(self.state.task_id, 'agent_comment_editor_not_found', {
+            'url': self.state.page.url,
+            'candidates_tried': len(candidates) if candidates else 0
+        })
         return None
     
     def _submit_comment(self, form: Locator) -> bool:

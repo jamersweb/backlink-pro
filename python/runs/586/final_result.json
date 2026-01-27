@@ -1,0 +1,15 @@
+{
+  "task_id": 586,
+  "started_at": "2025-12-21T18:47:05.128202Z",
+  "completed_at": "2025-12-21T18:47:34.563951Z",
+  "execution_time": 23.473796844482422,
+  "result": {
+    "success": false,
+    "failure_reason": "comment_form_not_found",
+    "error": "Comment form not found",
+    "execution_time": 23.473796844482422,
+    "retry_count": 0,
+    "url": null,
+    "backlink_id": null
+  }
+}

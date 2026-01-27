@@ -1,32 +1,32 @@
 {
   "metrics": {
-    "accuracy": 0.23809523809523808,
-    "precision_macro": 0.13157894736842105,
-    "recall_macro": 0.16129032258064516,
-    "f1_macro": 0.14492753623188406,
+    "accuracy": 0.16666666666666666,
+    "precision_macro": 0.125,
+    "recall_macro": 0.11290322580645161,
+    "f1_macro": 0.11864406779661017,
     "precision_per_class": {
-      "comment": 0.5263157894736842,
+      "comment": 0.5,
       "profile": 0.0,
       "forum": 0.0,
       "guest": 0.0
     },
     "recall_per_class": {
-      "comment": 0.6451612903225806,
+      "comment": 0.45161290322580644,
       "profile": 0.0,
       "forum": 0.0,
       "guest": 0.0
     },
     "f1_per_class": {
-      "comment": 0.5797101449275363,
+      "comment": 0.4745762711864407,
       "profile": 0.0,
       "forum": 0.0,
       "guest": 0.0
     },
     "confusion_matrix": [
       [
-        20,
+        14,
         0,
-        11,
+        17,
         0
       ],
       [
@@ -42,21 +42,21 @@
         0
       ],
       [
-        18,
-        2,
-        30,
+        14,
+        0,
+        36,
         0
       ]
     ]
   },
   "failure_rate_reduction": {
     "baseline_accuracy": 0.5952380952380952,
-    "model_accuracy": 0.23809523809523808,
-    "accuracy_improvement": -0.35714285714285715,
-    "relative_improvement_pct": -60.0,
+    "model_accuracy": 0.16666666666666666,
+    "accuracy_improvement": -0.4285714285714286,
+    "relative_improvement_pct": -72.00000000000001,
     "baseline_error_rate": 0.40476190476190477,
-    "model_error_rate": 0.7619047619047619,
-    "failure_rate_reduction": -0.3571428571428571,
-    "failure_rate_reduction_pct": -88.23529411764704
+    "model_error_rate": 0.8333333333333334,
+    "failure_rate_reduction": -0.4285714285714286,
+    "failure_rate_reduction_pct": -105.88235294117648
   }
 }

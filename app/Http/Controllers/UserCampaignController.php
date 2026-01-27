@@ -48,10 +48,12 @@ public function show($id)
     $plan = $user->plan;
     
     // Get plan settings or defaults
+    $planDailyLimit = $plan ? $plan->getLimit('daily_backlink_limit') : 10;
+    $planBacklinkTypes = $plan ? $plan->getBacklinkTypes() : ['comment', 'profile'];
     $planSettings = [
-        'daily_limit' => $plan ? $plan->daily_backlink_limit : 10,
-        'total_limit' => $plan ? ($plan->daily_backlink_limit * 30) : 300, // Monthly limit based on daily
-        'backlink_types' => $plan ? ($plan->backlink_types ?? []) : ['comment', 'profile'],
+        'daily_limit' => $planDailyLimit ?? 10,
+        'total_limit' => ($planDailyLimit ?? 10) * 30, // Monthly limit based on daily
+        'backlink_types' => $planBacklinkTypes,
     ];
     
     return Inertia::render('Campaigns/Create', [
@@ -59,12 +61,14 @@ public function show($id)
         'states'    => State::all(['id','name','country_id']) ?? [],
         'cities'    => City::all(['id','name','state_id']) ?? [],
         'domains' => Domain::where('user_id', Auth::id())->get(['id', 'name']) ?? [],
-        'connectedAccounts' => ConnectedAccount::where('user_id', Auth::id())->get(['id', 'email']) ?? [],
+        'connectedAccounts' => ConnectedAccount::where('user_id', Auth::id())
+            ->where('service', ConnectedAccount::SERVICE_GMAIL)
+            ->get(['id', 'email']) ?? [],
         'planSettings' => $planSettings,
         'plan' => $plan ? [
             'name' => $plan->name,
-            'daily_backlink_limit' => $plan->daily_backlink_limit,
-            'backlink_types' => $plan->backlink_types ?? [],
+            'daily_backlink_limit' => $plan->getLimit('daily_backlink_limit'),
+            'backlink_types' => $plan->getBacklinkTypes(),
         ] : null,
     ]);
 }
@@ -81,7 +85,9 @@ public function show($id)
             'states'    => State::all(['id', 'name', 'country_id']),
             'cities'    => City::all(['id', 'name', 'state_id']),
             'domains' => Domain::where('user_id', Auth::id())->get(['id', 'name']),
-            'connectedAccounts' => ConnectedAccount::where('user_id', Auth::id())->get(['id', 'email']),
+            'connectedAccounts' => ConnectedAccount::where('user_id', Auth::id())
+                ->where('service', ConnectedAccount::SERVICE_GMAIL)
+                ->get(['id', 'email']),
         ]);
     }
     public function store(StoreUserCampaignRequest $request)
@@ -120,11 +126,12 @@ public function show($id)
     // Check plan limits before creating campaign
     if ($plan) {
         // Check max campaigns limit (-1 means unlimited)
-        if ($plan->max_campaigns !== -1) {
+        $maxCampaigns = $plan->getLimit('max_campaigns');
+        if ($maxCampaigns !== null && $maxCampaigns !== -1) {
             $userCampaignCount = Campaign::where('user_id', $user->id)->count();
-            if ($userCampaignCount >= $plan->max_campaigns) {
+            if ($userCampaignCount >= $maxCampaigns) {
                 return back()->withErrors([
-                    'campaign_limit' => "You have reached your plan's maximum campaign limit ({$plan->max_campaigns}). Please upgrade your plan or delete an existing campaign to create a new one."
+                    'campaign_limit' => "You have reached your plan's maximum campaign limit ({$maxCampaigns}). Please upgrade your plan or delete an existing campaign to create a new one."
                 ])->withInput();
             }
         }
@@ -142,8 +149,8 @@ public function show($id)
     }
     
     // Use plan settings automatically
-    $planDailyLimit = $plan ? $plan->daily_backlink_limit : 10;
-    $planBacklinkTypes = $plan ? ($plan->backlink_types ?? []) : ['comment', 'profile'];
+    $planDailyLimit = $plan ? ($plan->getLimit('daily_backlink_limit') ?? 10) : 10;
+    $planBacklinkTypes = $plan ? $plan->getBacklinkTypes() : ['comment', 'profile'];
     
     // Prepare settings JSON - use plan settings, not user input
     $settings = [
@@ -226,8 +233,8 @@ public function update(StoreUserCampaignRequest $request, $id)
     $plan = $user->plan;
     
     if ($plan) {
-        $planDailyLimit = $plan->daily_backlink_limit;
-        $planBacklinkTypes = $plan->backlink_types ?? [];
+        $planDailyLimit = $plan->getLimit('daily_backlink_limit') ?? 10;
+        $planBacklinkTypes = $plan->getBacklinkTypes();
         
         // Update settings from plan
         $settings = is_array($campaign->settings) ? $campaign->settings : (json_decode($campaign->settings, true) ?? []);
@@ -435,14 +442,14 @@ public function export(Request $request)
         }
 
         // Get backlink types from plan
-        $backlinkTypes = $plan->backlink_types ?? ['comment', 'profile'];
+        $backlinkTypes = $plan->getBacklinkTypes();
         
         if (empty($backlinkTypes)) {
             return; // No backlink types allowed
         }
         
         // Calculate initial tasks per type (based on daily limit)
-        $dailyLimit = $plan->daily_backlink_limit ?? 10;
+        $dailyLimit = $plan->getLimit('daily_backlink_limit') ?? 10;
         $tasksPerType = max(1, floor($dailyLimit / count($backlinkTypes)));
 
         // Handle keywords - convert string to array if needed
@@ -466,14 +473,51 @@ public function export(Request $request)
             // Map 'guestposting' to 'guest' (task type enum uses 'guest')
             $taskType = $type === 'guestposting' ? 'guest' : $type;
 
-            // Create initial batch of tasks
+            // Get unique URLs from backlinks for this task type
+            $siteTypeMap = [
+                'comment' => 'comment',
+                'profile' => 'profile',
+                'forum' => 'forum',
+                'guest' => 'guestposting',
+            ];
+            $siteType = $siteTypeMap[$taskType] ?? null;
+            
+            $backlinks = \App\Models\Backlink::where('status', \App\Models\Backlink::STATUS_ACTIVE)
+                ->where(function($query) use ($siteType) {
+                    if ($siteType) {
+                        $query->where('site_type', $siteType)
+                              ->orWhereNull('site_type');
+                    } else {
+                        $query->whereNull('site_type');
+                    }
+                })
+                ->select('id', 'url')
+                ->distinct('url')
+                ->limit($tasksPerType * 2)
+                ->get()
+                ->unique('url')
+                ->values();
+
+            // Create initial batch of tasks with different URLs
             for ($i = 0; $i < $tasksPerType; $i++) {
+                $taskUrl = null;
+                $backlinkId = null;
+                
+                if ($backlinks->isNotEmpty()) {
+                    $urlIndex = $i % $backlinks->count();
+                    $backlink = $backlinks[$urlIndex];
+                    $taskUrl = $backlink->url;
+                    $backlinkId = $backlink->id;
+                }
+
                 AutomationTask::create([
                     'campaign_id' => $campaign->id,
                     'type' => $taskType,
                     'status' => AutomationTask::STATUS_PENDING,
                     'payload' => [
                         'campaign_id' => $campaign->id,
+                        'target_urls' => $taskUrl ? [$taskUrl] : [],
+                        'backlink_id' => $backlinkId,
                         'keywords' => $keywords,
                         'anchor_text_strategy' => $settings['anchor_text_strategy'] ?? 'variation',
                         'content_tone' => $settings['content_tone'] ?? 'professional',

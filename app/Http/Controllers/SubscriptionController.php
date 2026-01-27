@@ -30,14 +30,14 @@ class SubscriptionController extends Controller
             return [
                 'id' => $plan->id,
                 'name' => $plan->name,
-                'slug' => $plan->slug,
-                'description' => $plan->description,
-                'price' => (float) $plan->price,
-                'billing_interval' => $plan->billing_interval,
-                'features' => $plan->features ?? [],
-                'max_domains' => $plan->max_domains,
-                'max_campaigns' => $plan->max_campaigns,
-                'daily_backlink_limit' => $plan->daily_backlink_limit,
+                'slug' => $plan->code ?? '',
+                'description' => '',
+                'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
+                'billing_interval' => 'monthly',
+                'features' => $plan->features_json ?? [],
+                'max_domains' => $plan->getLimit('max_domains'),
+                'max_campaigns' => $plan->getLimit('max_campaigns'),
+                'daily_backlink_limit' => $plan->getLimit('daily_backlink_limit'),
             ];
         });
         
@@ -157,13 +157,14 @@ class SubscriptionController extends Controller
      */
     public function checkout(Request $request, $plan)
     {
-        // Try to find by ID first, then by slug
+        // Try to find by ID first, then by code
         $planModel = Plan::where('id', $plan)
-            ->orWhere('slug', $plan)
+            ->orWhere('code', $plan)
             ->firstOrFail();
         
         // If free plan, just assign it directly
-        if ($planModel->price == 0) {
+        $planPrice = $planModel->price_monthly ? ($planModel->price_monthly / 100) : 0;
+        if ($planPrice == 0) {
             if (!Auth::check()) {
                 return redirect()->route('login')->with('error', 'Please login to activate the free plan.');
             }
@@ -214,9 +215,9 @@ class SubscriptionController extends Controller
                             'name' => $planModel->name . ' Plan',
                             'description' => $planModel->description,
                         ],
-                        'unit_amount' => (int)($planModel->price * 100), // Convert to cents
+                        'unit_amount' => $planModel->price_monthly ?? 0, // Already in cents
                         'recurring' => [
-                            'interval' => $planModel->billing_interval === 'yearly' ? 'year' : 'month',
+                            'interval' => 'month', // Always monthly in new structure
                         ],
                     ],
                     'quantity' => 1,
@@ -353,9 +354,10 @@ class SubscriptionController extends Controller
         $user = \App\Models\User::where('stripe_subscription_id', $subscription->id)->first();
         
         if ($user) {
+            $freePlan = Plan::where('code', 'free')->orWhere('code', 'starter')->first();
             $user->update([
                 'subscription_status' => 'cancelled',
-                'plan_id' => Plan::where('slug', Plan::PLAN_FREE)->first()?->id,
+                'plan_id' => $freePlan?->id,
             ]);
         }
     }

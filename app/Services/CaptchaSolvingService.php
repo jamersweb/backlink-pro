@@ -43,8 +43,9 @@ class CaptchaSolvingService
             $cost = $this->getCost($captchaType);
             CaptchaLog::create([
                 'campaign_id' => $campaignId,
-                'provider' => $this->provider,
+                'site_domain' => $options['site_domain'] ?? 'unknown',
                 'captcha_type' => $captchaType,
+                'service' => $this->provider, // Map provider to service field
                 'order_id' => $taskId,
                 'estimated_cost' => $cost,
                 'status' => CaptchaLog::STATUS_SOLVED,
@@ -62,11 +63,13 @@ class CaptchaSolvingService
         // Log failure
         CaptchaLog::create([
             'campaign_id' => $campaignId,
-            'provider' => $this->provider,
+            'site_domain' => $options['site_domain'] ?? 'unknown',
             'captcha_type' => $captchaType,
+            'service' => $this->provider, // Map provider to service field
             'order_id' => $taskId,
             'estimated_cost' => 0,
             'status' => CaptchaLog::STATUS_FAILED,
+            'error' => 'Solution not found',
         ]);
 
         return null;

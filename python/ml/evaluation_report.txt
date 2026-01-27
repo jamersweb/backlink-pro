@@ -9,15 +9,15 @@ Number of Features: 23
 ======================================================================
 OVERALL METRICS
 ======================================================================
-Accuracy: 0.2381
-Macro Precision: 0.1316
-Macro Recall: 0.1613
-Macro F1-Score: 0.1449
+Accuracy: 0.1667
+Macro Precision: 0.1250
+Macro Recall: 0.1129
+Macro F1-Score: 0.1186
 
 ======================================================================
 PRECISION PER CLASS
 ======================================================================
-comment         | Precision: 0.5263 | Recall: 0.6452 | F1: 0.5797
+comment         | Precision: 0.5000 | Recall: 0.4516 | F1: 0.4746
 profile         | Precision: 0.0000 | Recall: 0.0000 | F1: 0.0000
 forum           | Precision: 0.0000 | Recall: 0.0000 | F1: 0.0000
 guest           | Precision: 0.0000 | Recall: 0.0000 | F1: 0.0000
@@ -28,23 +28,23 @@ CONFUSION MATRIX
 
                 | comment    | profile    | forum      | guest     
 -------------------------------------------------------------------
-comment         |         20 |          0 |         11 |          0
+comment         |         14 |          0 |         17 |          0
 profile         |          0 |          0 |          3 |          0
 forum           |          0 |          0 |          0 |          0
-guest           |         18 |          2 |         30 |          0
+guest           |         14 |          0 |         36 |          0
 
 ======================================================================
 FAILURE RATE REDUCTION
 ======================================================================
 Baseline Accuracy (Most Common Class): 0.5952
-Model Accuracy: 0.2381
-Accuracy Improvement: -0.3571
-Relative Improvement: -60.00%
+Model Accuracy: 0.1667
+Accuracy Improvement: -0.4286
+Relative Improvement: -72.00%
 
 Baseline Error Rate: 0.4048
-Model Error Rate: 0.7619
-Failure Rate Reduction: -0.3571
-Failure Rate Reduction: -88.24%
+Model Error Rate: 0.8333
+Failure Rate Reduction: -0.4286
+Failure Rate Reduction: -105.88%
 
 ======================================================================
 DETAILED CLASSIFICATION REPORT
@@ -52,14 +52,14 @@ DETAILED CLASSIFICATION REPORT
 
               precision    recall  f1-score   support
 
-     comment       0.53      0.65      0.58        31
+     comment       0.50      0.45      0.47        31
      profile       0.00      0.00      0.00         3
        forum       0.00      0.00      0.00         0
        guest       0.00      0.00      0.00        50
 
-    accuracy                           0.24        84
-   macro avg       0.13      0.16      0.14        84
-weighted avg       0.19      0.24      0.21        84
+    accuracy                           0.17        84
+   macro avg       0.12      0.11      0.12        84
+weighted avg       0.18      0.17      0.18        84
 
 
 ======================================================================

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
 
 export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
     const [isTraining, setIsTraining] = useState(false);

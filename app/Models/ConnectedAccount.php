@@ -14,6 +14,7 @@ class ConnectedAccount extends Model
     protected $fillable = [
         'user_id',
         'provider',
+        'service',
         'email',
         'provider_user_id',
         'access_token',
@@ -32,6 +33,12 @@ class ConnectedAccount extends Model
      * Providers
      */
     const PROVIDER_GOOGLE = 'google';
+
+    /**
+     * Services
+     */
+    const SERVICE_GMAIL = 'gmail';
+    const SERVICE_SEO = 'seo';
 
     /**
      * Statuses
@@ -125,6 +132,14 @@ class ConnectedAccount extends Model
     public function scopeGoogle($query)
     {
         return $query->where('provider', self::PROVIDER_GOOGLE);
+    }
+
+    /**
+     * Scope for service
+     */
+    public function scopeService($query, string $service)
+    {
+        return $query->where('service', $service);
     }
 }
 

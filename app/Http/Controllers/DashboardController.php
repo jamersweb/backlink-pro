@@ -30,7 +30,7 @@ class DashboardController extends Controller
             ->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count();
         
         // Get daily limit from user's plan
-        $dailyLimit = $user->plan?->daily_backlink_limit ?? 0;
+        $dailyLimit = $user->plan ? ($user->plan->getLimit('daily_backlink_limit') ?? 0) : 0;
         
         // Get recent opportunities (where links were added)
         $recentOpportunities = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)

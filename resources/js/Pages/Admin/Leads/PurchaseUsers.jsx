@@ -1,5 +1,5 @@
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
 import { Link } from '@inertiajs/react';
 
 export default function PurchaseUsers({ users, total }) {

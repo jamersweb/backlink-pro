@@ -16,7 +16,7 @@ class SubscriptionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with('plan:id,name,price,billing_interval')
+        $query = User::with('plan:id,name,code,price_monthly')
             ->where(function($q) {
                 $q->whereNotNull('plan_id')
                   ->orWhereNotNull('stripe_subscription_id');
@@ -93,8 +93,8 @@ class SubscriptionController extends Controller
                 'plan' => $user->plan ? [
                     'id' => $user->plan->id,
                     'name' => $user->plan->name,
-                    'price' => $user->plan->price,
-                    'billing_interval' => $user->plan->billing_interval,
+                    'price' => $user->plan->price_monthly ? ($user->plan->price_monthly / 100) : 0,
+                    'billing_interval' => 'monthly',
                 ] : null,
                 'subscription_status' => $user->subscription_status,
                 'stripe_customer_id' => $user->stripe_customer_id,
@@ -123,7 +123,7 @@ class SubscriptionController extends Controller
     public function show($id)
     {
         $user = User::with([
-            'plan:id,name,price,billing_interval,description',
+            'plan:id,name,code,price_monthly',
             'campaigns' => function($query) {
                 $query->latest()->limit(10);
             },
@@ -141,7 +141,13 @@ class SubscriptionController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'plan' => $user->plan,
+                'plan' => $user->plan ? [
+                    'id' => $user->plan->id,
+                    'name' => $user->plan->name,
+                    'code' => $user->plan->code,
+                    'price' => $user->plan->price_monthly ? ($user->plan->price_monthly / 100) : 0,
+                    'billing_interval' => 'monthly',
+                ] : null,
                 'subscription_status' => $user->subscription_status,
                 'stripe_customer_id' => $user->stripe_customer_id,
                 'stripe_subscription_id' => $user->stripe_subscription_id,

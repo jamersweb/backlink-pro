@@ -1,6 +1,6 @@
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
 import { Link, router, usePage } from '@inertiajs/react';
 
 export default function AdminAutomationTaskShow({ task, backlinks }) {
@@ -147,6 +147,27 @@ export default function AdminAutomationTaskShow({ task, backlinks }) {
                                 <h3 className="text-sm font-medium text-gray-500 mb-2">Task Type</h3>
                                 <p className="text-lg font-semibold text-gray-900 capitalize">{task.type}</p>
                             </div>
+
+                            {/* Target URL */}
+                            {task.payload?.target_urls && task.payload.target_urls.length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500 mb-2">Target URL</h3>
+                                    <a
+                                        href={task.payload.target_urls[0]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline break-all"
+                                    >
+                                        {task.payload.target_urls[0]}
+                                        <i className="bi bi-box-arrow-up-right ml-2 text-sm"></i>
+                                    </a>
+                                    {task.payload.target_urls.length > 1 && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            +{task.payload.target_urls.length - 1} more URL(s)
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Retry Info */}
                             <div>

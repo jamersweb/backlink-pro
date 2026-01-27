@@ -137,3 +137,4 @@ def apply_smote_to_datasets(
     oversampler = SMOTEOversampler(strategy=strategy, random_state=random_state)
     return oversampler.fit_resample(X_train, y_train)
 
+

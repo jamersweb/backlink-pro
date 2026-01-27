@@ -29,7 +29,7 @@ class UsersController extends Controller
     public function show($id)
     {
         $user = User::with([
-            'plan:id,name,price,billing_interval',
+            'plan:id,name,code,price_monthly',
             'campaigns' => function($query) {
                 $query->latest()->limit(10);
             },
@@ -77,7 +77,15 @@ class UsersController extends Controller
     public function edit($id)
     {
         $user = User::with('plan')->findOrFail($id);
-        $plans = Plan::active()->ordered()->get(['id', 'name', 'price', 'billing_interval']);
+        $plans = Plan::active()->ordered()->get(['id', 'name', 'code', 'price_monthly'])->map(function($plan) {
+            return [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'code' => $plan->code,
+                'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
+                'billing_interval' => 'monthly',
+            ];
+        });
 
         return Inertia::render('Admin/Users/Edit', [
             'user' => $user,

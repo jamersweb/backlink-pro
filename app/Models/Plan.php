@@ -2,78 +2,89 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class Plan extends Model
 {
-    use HasFactory;
     protected $fillable = [
         'name',
-        'slug',
-        'description',
-        'price',
-        'billing_interval', // monthly, yearly
-        'max_domains',
-        'max_campaigns',
-        'daily_backlink_limit',
-        'backlink_types', // JSON array of allowed types
-        'features', // JSON array of features
+        'code',
+        'price_monthly',
+        'limits_json',
+        'features_json',
         'is_active',
-        'sort_order',
-        'min_pa',
-        'max_pa',
-        'min_da',
-        'max_da',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'backlink_types' => 'array',
-        'features' => 'array',
+        'limits_json' => 'array',
+        'features_json' => 'array',
+        'price_monthly' => 'integer',
         'is_active' => 'boolean',
-        'sort_order' => 'integer',
     ];
 
     /**
-     * Plan slugs
+     * Get all subscriptions for this plan
      */
-    const PLAN_FREE = 'free';
-    const PLAN_STARTER = 'starter';
-    const PLAN_PRO = 'pro';
-    const PLAN_AGENCY = 'agency';
-
-    /**
-     * Get all users subscribed to this plan
-     */
-    public function users(): HasMany
+    public function subscriptions(): HasMany
     {
-        return $this->hasMany(User::class);
+        return $this->hasMany(UserSubscription::class);
     }
 
     /**
-     * Check if plan allows specific backlink type
+     * Get a limit value
+     */
+    public function getLimit(string $key): ?int
+    {
+        return $this->limits_json[$key] ?? null;
+    }
+
+    /**
+     * Get backlink types from features_json
+     */
+    public function getBacklinkTypes(): array
+    {
+        // Check if backlink_types is in features_json
+        if (isset($this->features_json['backlink_types']) && is_array($this->features_json['backlink_types'])) {
+            return $this->features_json['backlink_types'];
+        }
+        
+        // Check if backlink_types is in limits_json (for backward compatibility)
+        if (isset($this->limits_json['backlink_types']) && is_array($this->limits_json['backlink_types'])) {
+            return $this->limits_json['backlink_types'];
+        }
+        
+        // Default fallback
+        return ['comment', 'profile'];
+    }
+
+    /**
+     * Check if plan allows a specific backlink type
      */
     public function allowsBacklinkType(string $type): bool
     {
-        return in_array($type, $this->backlink_types ?? []);
+        $allowedTypes = $this->getBacklinkTypes();
+        return in_array($type, $allowedTypes);
     }
 
     /**
-     * Scope for active plans
+     * Scope a query to only include active plans
      */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
     /**
-     * Scope ordered by sort order
+     * Scope a query to order plans
      */
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
-        return $query->orderBy('sort_order');
+        // If sort_order column exists, use it; otherwise order by name
+        if (in_array('sort_order', $this->getConnection()->getSchemaBuilder()->getColumnListing($this->getTable()))) {
+            return $query->orderBy('sort_order')->orderBy('name');
+        }
+        return $query->orderBy('name');
     }
 }
-

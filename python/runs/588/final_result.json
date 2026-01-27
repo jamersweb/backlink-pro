@@ -1,0 +1,15 @@
+{
+  "task_id": 588,
+  "started_at": "2025-12-21T19:22:06.194083Z",
+  "completed_at": "2025-12-21T19:26:57.851206Z",
+  "execution_time": 285.22637391090393,
+  "result": {
+    "success": false,
+    "failure_reason": "popup_blocking",
+    "error": "Failed to clear popups",
+    "execution_time": 285.22637391090393,
+    "retry_count": 0,
+    "url": null,
+    "backlink_id": null
+  }
+}

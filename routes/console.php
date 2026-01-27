@@ -23,3 +23,12 @@ Schedule::command('proxy:check-health --all')->daily();
 Schedule::command('automation:run-worker --limit=5')
     ->everyTwoMinutes()
     ->withoutOverlapping(10); // 10 minute timeout to prevent stuck processes
+
+// Sync Google Search Console and GA4 data daily
+Schedule::command('integrations:sync-google')->dailyAt('02:10');
+
+// Generate domain insights daily
+Schedule::command('insights:generate')->dailyAt('03:10');
+
+// Roll subscription periods daily
+Schedule::command('billing:roll-periods')->dailyAt('00:20');

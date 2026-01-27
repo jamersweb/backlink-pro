@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import AdminLayout from '../../../Components/Layout/AdminLayout';
-import Card from '../../../Components/Shared/Card';
-import Button from '../../../Components/Shared/Button';
-import Input from '../../../Components/Shared/Input';
+import AdminLayout from '@/Components/Layout/AdminLayout';
+import Card from '@/Components/Shared/Card';
+import Button from '@/Components/Shared/Button';
+import Input from '@/Components/Shared/Input';
 import { router, usePage } from '@inertiajs/react';
 
 export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, filters = {} }) {

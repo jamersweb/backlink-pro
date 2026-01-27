@@ -229,7 +229,7 @@ class CampaignController extends Controller
         }
 
         // Get backlink types from plan
-        $backlinkTypes = $plan->backlink_types ?? ['comment', 'profile'];
+        $backlinkTypes = $plan->getBacklinkTypes();
         
         if (empty($backlinkTypes)) {
             \Log::warning('Cannot create tasks: Plan has no backlink types', ['campaign_id' => $campaign->id, 'plan_id' => $plan->id]);
@@ -237,7 +237,7 @@ class CampaignController extends Controller
         }
         
         // Calculate initial tasks per type (based on daily limit)
-        $dailyLimit = $plan->daily_backlink_limit ?? 10;
+        $dailyLimit = $plan->getLimit('daily_backlink_limit') ?? 10;
         $tasksPerType = max(1, floor($dailyLimit / count($backlinkTypes)));
 
         // Handle keywords - convert string to array if needed
@@ -273,14 +273,51 @@ class CampaignController extends Controller
             // Map 'guestposting' to 'guest' (task type enum uses 'guest')
             $taskType = $type === 'guestposting' ? 'guest' : $type;
 
-            // Create initial batch of tasks
+            // Get unique URLs from backlinks for this task type
+            $siteTypeMap = [
+                'comment' => 'comment',
+                'profile' => 'profile',
+                'forum' => 'forum',
+                'guest' => 'guestposting',
+            ];
+            $siteType = $siteTypeMap[$taskType] ?? null;
+            
+            $backlinks = \App\Models\Backlink::where('status', \App\Models\Backlink::STATUS_ACTIVE)
+                ->where(function($query) use ($siteType) {
+                    if ($siteType) {
+                        $query->where('site_type', $siteType)
+                              ->orWhereNull('site_type');
+                    } else {
+                        $query->whereNull('site_type');
+                    }
+                })
+                ->select('id', 'url')
+                ->distinct('url')
+                ->limit($tasksPerType * 2)
+                ->get()
+                ->unique('url')
+                ->values();
+
+            // Create initial batch of tasks with different URLs
             for ($i = 0; $i < $tasksPerType; $i++) {
+                $taskUrl = null;
+                $backlinkId = null;
+                
+                if ($backlinks->isNotEmpty()) {
+                    $urlIndex = $i % $backlinks->count();
+                    $backlink = $backlinks[$urlIndex];
+                    $taskUrl = $backlink->url;
+                    $backlinkId = $backlink->id;
+                }
+
                 AutomationTask::create([
                     'campaign_id' => $campaign->id,
                     'type' => $taskType,
                     'status' => AutomationTask::STATUS_PENDING,
                     'payload' => [
                         'campaign_id' => $campaign->id,
+                        'target_urls' => $taskUrl ? [$taskUrl] : [],
+                        'backlink_id' => $backlinkId,
                         'keywords' => $keywords,
                         'anchor_text_strategy' => $settings['anchor_text_strategy'] ?? 'variation',
                         'content_tone' => $settings['content_tone'] ?? 'professional',

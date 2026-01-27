@@ -1,0 +1,530 @@
+{"timestamp": "2025-12-21T18:29:20.870362Z", "step": "task_started", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T18:29:20.870362Z", "step": "budget_guard_initialized", "meta": {}}
+{"timestamp": "2025-12-21T18:29:20.909720Z", "step": "locking_task", "meta": {}}
+{"timestamp": "2025-12-21T18:29:24.192226Z", "step": "task_locked", "meta": {}}
+{"timestamp": "2025-12-21T18:29:27.680728Z", "step": "status_set_to_running", "meta": {}}
+{"timestamp": "2025-12-21T18:29:27.680728Z", "step": "getting_automation_class", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T18:29:27.680728Z", "step": "automation_class_obtained", "meta": {"class_name": "CommentAutomation"}}
+{"timestamp": "2025-12-21T18:29:27.680728Z", "step": "getting_proxy", "meta": {}}
+{"timestamp": "2025-12-21T18:29:33.629867Z", "step": "no_proxy_available", "meta": {}}
+{"timestamp": "2025-12-21T18:29:33.629867Z", "step": "starting_automation_execution", "meta": {}}
+{"timestamp": "2025-12-21T18:29:52.036368Z", "step": "automation_context_entered", "meta": {}}
+{"timestamp": "2025-12-21T18:29:52.917207Z", "step": "page_state_detection_start", "meta": {}}
+{"timestamp": "2025-12-21T18:29:53.963454Z", "step": "page_state_detected", "meta": {"overlay_present": false, "modal_present": false, "cookie_banner_present": false, "newsletter_modal_present": false, "login_modal_present": false, "login_required": false, "registration_hints": false, "email_verification_hints": false, "iframe_count": 0, "captcha_present": false, "blocked_hints": false, "bot_check_hints": false, "intent_guess": "unknown"}}
+{"timestamp": "2025-12-21T18:29:53.966678Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T18:29:53.968197Z", "step": "popup_clear_complete", "meta": {"cleared": false, "strategies_attempted": [], "errors": []}}
+{"timestamp": "2025-12-21T18:29:53.969316Z", "step": "agent_execute_start", "meta": {"goal": "comment", "domain": "unknown"}}
+{"timestamp": "2025-12-21T18:29:53.977097Z", "step": "agent_comment_flow_start", "meta": {}}
+{"timestamp": "2025-12-21T18:29:55.017043Z", "step": "agent_execution_error", "meta": {"error": "PopupController.clear_if_needed() got an unexpected keyword argument 'domain'"}}
+{"timestamp": "2025-12-21T18:29:55.017043Z", "step": "agent_execution_completed", "meta": {"success": false, "subgoal": null}}
+{"timestamp": "2025-12-21T18:29:55.018943Z", "step": "agent_execution_failed", "meta": {"failure_reason": "unknown", "error": "PopupController.clear_if_needed() got an unexpected keyword argument 'domain'"}}
+{"timestamp": "2025-12-21T18:29:55.825996Z", "step": "result_failed", "meta": {"error": "PopupController.clear_if_needed() got an unexpected keyword argument 'domain'", "failure_reason": "unknown"}}
+{"timestamp": "2025-12-21T18:31:16.916466Z", "step": "task_started", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T18:31:16.918533Z", "step": "budget_guard_initialized", "meta": {}}
+{"timestamp": "2025-12-21T18:31:16.921776Z", "step": "locking_task", "meta": {}}
+{"timestamp": "2025-12-21T18:31:20.270693Z", "step": "task_locked", "meta": {}}
+{"timestamp": "2025-12-21T18:31:23.500194Z", "step": "status_set_to_running", "meta": {}}
+{"timestamp": "2025-12-21T18:31:23.500194Z", "step": "getting_automation_class", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T18:31:23.502166Z", "step": "automation_class_obtained", "meta": {"class_name": "CommentAutomation"}}
+{"timestamp": "2025-12-21T18:31:23.502166Z", "step": "getting_proxy", "meta": {}}
+{"timestamp": "2025-12-21T18:31:29.462512Z", "step": "no_proxy_available", "meta": {}}
+{"timestamp": "2025-12-21T18:31:29.463565Z", "step": "starting_automation_execution", "meta": {}}
+{"timestamp": "2025-12-21T18:31:35.031657Z", "step": "automation_context_entered", "meta": {}}
+{"timestamp": "2025-12-21T18:31:35.867354Z", "step": "page_state_detection_start", "meta": {}}
+{"timestamp": "2025-12-21T18:31:36.820810Z", "step": "page_state_detected", "meta": {"overlay_present": false, "modal_present": false, "cookie_banner_present": false, "newsletter_modal_present": false, "login_modal_present": false, "login_required": false, "registration_hints": false, "email_verification_hints": false, "iframe_count": 0, "captcha_present": false, "blocked_hints": false, "bot_check_hints": false, "intent_guess": "unknown"}}
+{"timestamp": "2025-12-21T18:31:36.823902Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T18:31:36.825760Z", "step": "popup_clear_complete", "meta": {"cleared": false, "strategies_attempted": [], "errors": []}}
+{"timestamp": "2025-12-21T18:31:36.826532Z", "step": "agent_execute_start", "meta": {"goal": "comment", "domain": "unknown"}}
+{"timestamp": "2025-12-21T18:31:36.830167Z", "step": "agent_comment_flow_start", "meta": {}}
+{"timestamp": "2025-12-21T18:31:37.561557Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T18:31:37.561557Z", "step": "agent_failed", "meta": {"failure_reason": "popup_blocking", "error": "Failed to clear popups", "subgoal": null}}
+{"timestamp": "2025-12-21T18:31:37.564843Z", "step": "agent_execution_completed", "meta": {"success": false, "subgoal": null}}
+{"timestamp": "2025-12-21T18:31:37.564843Z", "step": "agent_execution_failed", "meta": {"failure_reason": "popup_blocking", "error": "Failed to clear popups"}}
+{"timestamp": "2025-12-21T18:31:38.498687Z", "step": "result_failed", "meta": {"error": "Failed to clear popups", "failure_reason": "popup_blocking"}}
+{"timestamp": "2025-12-21T18:47:05.128202Z", "step": "task_started", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T18:47:05.128202Z", "step": "budget_guard_initialized", "meta": {}}
+{"timestamp": "2025-12-21T18:47:05.133555Z", "step": "locking_task", "meta": {}}
+{"timestamp": "2025-12-21T18:47:08.024024Z", "step": "task_locked", "meta": {}}
+{"timestamp": "2025-12-21T18:47:10.808941Z", "step": "status_set_to_running", "meta": {}}
+{"timestamp": "2025-12-21T18:47:10.810206Z", "step": "getting_automation_class", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T18:47:10.810206Z", "step": "automation_class_obtained", "meta": {"class_name": "CommentAutomation"}}
+{"timestamp": "2025-12-21T18:47:10.811568Z", "step": "getting_proxy", "meta": {}}
+{"timestamp": "2025-12-21T18:47:16.433906Z", "step": "no_proxy_available", "meta": {}}
+{"timestamp": "2025-12-21T18:47:16.433906Z", "step": "starting_automation_execution", "meta": {}}
+{"timestamp": "2025-12-21T18:47:21.510257Z", "step": "automation_context_entered", "meta": {}}
+{"timestamp": "2025-12-21T18:47:22.131488Z", "step": "page_state_detection_start", "meta": {}}
+{"timestamp": "2025-12-21T18:47:22.869060Z", "step": "page_state_detected", "meta": {"overlay_present": false, "modal_present": false, "cookie_banner_present": false, "newsletter_modal_present": false, "login_modal_present": false, "login_required": false, "registration_hints": false, "email_verification_hints": false, "iframe_count": 0, "captcha_present": false, "blocked_hints": false, "bot_check_hints": false, "intent_guess": "unknown"}}
+{"timestamp": "2025-12-21T18:47:22.869060Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T18:47:22.869060Z", "step": "popup_clear_complete", "meta": {"cleared": false, "strategies_attempted": [], "errors": []}}
+{"timestamp": "2025-12-21T18:47:22.873210Z", "step": "agent_execute_start", "meta": {"goal": "comment", "domain": "unknown"}}
+{"timestamp": "2025-12-21T18:47:22.874906Z", "step": "agent_comment_flow_start", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.682490Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.682490Z", "step": "agent_popup_no_action_needed", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.687470Z", "step": "locator_engine_form_comment_reply_start", "meta": {"target_role": "form", "keywords": ["comment", "reply", "message"], "context": {"domain": "unknown"}}}
+{"timestamp": "2025-12-21T18:47:23.687470Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.765016Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.782129Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:23.782129Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:23.782129Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.801008Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.819249Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:23.822849Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:23.822849Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.838277Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.857261Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:23.858623Z", "step": "iframe_router_locator_engine_form_comment_reply_get_by_role_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:23.858623Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.874050Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.892670Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:23.893217Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:23.893217Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.906703Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.926746Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:23.926746Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:23.930512Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.946844Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.966471Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:23.968671Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:23.969692Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:23.982765Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.003124Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.006267Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.007303Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.024086Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.043637Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.043637Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.045663Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.060778Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.082026Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.082026Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.082026Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.097793Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.116381Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.119138Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.119138Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.134167Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.150966Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.155299Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.155299Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.172261Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.205445Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.205953Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.207269Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.224336Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.243452Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.244809Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.244809Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.260886Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.278138Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.281805Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.282543Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.298759Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.316568Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.316568Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.316568Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.335019Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.353823Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.353823Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.355846Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.370703Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.389178Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.389178Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.391661Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.408570Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.422555Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.422555Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.422555Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.442609Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.463370Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.464184Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.464184Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.480537Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.499149Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.499149Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.502888Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.515530Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.534398Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.534398Z", "step": "iframe_router_locator_engine_form_comment_reply_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.534398Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.554949Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.575966Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.575966Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.575966Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.594812Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.614279Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.615324Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.615324Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.630726Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.649188Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.651934Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.651934Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.668267Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.690781Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.690781Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.693177Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.707415Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.725761Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.729242Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.729961Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.745669Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.764195Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.765433Z", "step": "iframe_router_locator_engine_form_comment_reply_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.766726Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.781929Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.799125Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.800679Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.800679Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.814212Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.833802Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.836156Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.836156Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.851646Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.869944Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.869944Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.869944Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.885628Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.905315Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.907957Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.907957Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.924079Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.946911Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.948467Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.948467Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.964397Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:24.981052Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:24.985268Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:24.985268Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.001809Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.020437Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.022475Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.023951Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.038178Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.054902Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.054902Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.059327Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.073605Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.090923Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.090923Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.094853Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.109903Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.130723Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.132612Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.132612Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.148848Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.166276Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.166276Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.169830Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.186423Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.205002Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.206565Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.206565Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.219278Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.237932Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.237932Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.243779Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.258663Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.277442Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.279466Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.281705Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.296808Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.314205Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.318031Z", "step": "iframe_router_locator_engine_form_comment_reply_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.319048Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.332132Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.353051Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.353051Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.353051Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.373517Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.386418Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.386418Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.394503Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.415628Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.431202Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.431202Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.436743Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.452656Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.471646Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.471646Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.473667Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.490469Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.510289Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.510289Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.510289Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.529842Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.550753Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.550753Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.552837Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.563215Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.587198Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.588295Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.588295Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.604965Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.624711Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.624711Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.624711Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.639841Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.656588Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.662362Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.662362Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.678691Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.695137Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.698255Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.698255Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.714129Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.736221Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.736221Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.736221Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.756502Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.776163Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.776163Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.776163Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.793875Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.813171Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.814865Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.814865Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.829276Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.846486Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.846486Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.846486Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.867375Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.888144Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.889794Z", "step": "iframe_router_locator_engine_form_comment_reply_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.889794Z", "step": "locator_engine_form_comment_reply_no_candidates", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.889794Z", "step": "locator_engine_input_comment_message_start", "meta": {"target_role": "input", "keywords": ["comment", "message"], "context": {"domain": "unknown"}}}
+{"timestamp": "2025-12-21T18:47:25.889794Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.902783Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.919949Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.919949Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.928189Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.945035Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.965427Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:25.965427Z", "step": "iframe_router_locator_engine_input_comment_message_get_by_role_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:25.965427Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:25.987839Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.004518Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.004518Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.004518Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.030573Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.056387Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.056387Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.058584Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.077235Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.097873Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.098981Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.098981Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.114578Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.133698Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.136223Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.136223Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.152520Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.171482Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.171482Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.171482Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.189702Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.203373Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.203373Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.203373Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.224721Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.245295Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.246399Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.246399Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.255594Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.281932Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.281932Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.281932Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.299015Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.318212Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.318212Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.320286Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.331464Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.353676Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.353676Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.353676Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.367848Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.387774Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.389788Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.389788Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.403790Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.424457Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.424457Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.424457Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.437534Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.455601Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.455601Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.455601Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.476862Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.492322Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.496740Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.497767Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.515014Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.532439Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.535676Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.537196Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.549780Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.571126Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.571126Z", "step": "iframe_router_locator_engine_input_comment_message_label_placeholder_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.571126Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.587327Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.604565Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.604565Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.604565Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.624079Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.643645Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.645130Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.645130Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.659988Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.679678Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.681595Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.681595Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.698213Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.714349Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.717236Z", "step": "iframe_router_locator_engine_input_comment_message_visible_text_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.717236Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.733684Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.751313Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.751313Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.751313Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.766748Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.783982Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.783982Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.783982Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.804946Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.823644Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.823644Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.823644Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.840578Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.857402Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.857402Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.862909Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.876944Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.897749Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.898915Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.899975Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.915219Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.930539Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.930539Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.930539Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.949786Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.970497Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:26.971601Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:26.971601Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:26.987913Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.005556Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.005556Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.005556Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.022831Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.043646Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.044845Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.044845Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.066008Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.084892Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.084892Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.084892Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.101394Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.116646Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.116646Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.116646Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.137075Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.157837Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.157837Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.157837Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.174476Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.192164Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.192164Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.192164Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.209846Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.224432Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.224432Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.229963Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.241779Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.256985Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.261208Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.262890Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.273943Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.293004Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.295074Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.296371Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.306678Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.329628Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.330594Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.330594Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.345675Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.364821Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.364821Z", "step": "iframe_router_locator_engine_input_comment_message_stable_attrs_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.366352Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.380603Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.401340Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.407239Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.407239Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.423587Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.439698Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.439698Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.439698Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.451400Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.477666Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.477666Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.480743Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.494891Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.514207Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.514947Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.516161Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.531404Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.547881Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.550361Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.550361Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.567420Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.585952Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.587342Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.587342Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.601557Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.618946Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.618946Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.623191Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.638767Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.659809Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.659809Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.659809Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.673736Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.695846Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.697158Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.697158Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.711591Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.731722Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.732796Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.733146Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.747209Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.765421Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.767716Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.767716Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_main", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.784370Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_try_iframes", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.802114Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_frames_found", "meta": {"frame_count": 0}}
+{"timestamp": "2025-12-21T18:47:27.803856Z", "step": "iframe_router_locator_engine_input_comment_message_css_xpath_not_found", "meta": {"searched_frames": 1}}
+{"timestamp": "2025-12-21T18:47:27.803856Z", "step": "locator_engine_input_comment_message_no_candidates", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.805880Z", "step": "agent_comment_editor_not_found", "meta": {}}
+{"timestamp": "2025-12-21T18:47:27.805880Z", "step": "agent_failed", "meta": {"failure_reason": "comment_form_not_found", "error": "Comment form not found", "subgoal": "open_comment_editor"}}
+{"timestamp": "2025-12-21T18:47:27.807859Z", "step": "agent_execution_completed", "meta": {"success": false, "subgoal": "open_comment_editor"}}
+{"timestamp": "2025-12-21T18:47:27.807859Z", "step": "agent_execution_failed", "meta": {"failure_reason": "comment_form_not_found", "error": "Comment form not found"}}
+{"timestamp": "2025-12-21T18:47:28.600434Z", "step": "result_failed", "meta": {"error": "Comment form not found", "failure_reason": "comment_form_not_found"}}
+{"timestamp": "2025-12-21T19:36:49.063961Z", "step": "task_started", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T19:36:49.065081Z", "step": "budget_guard_initialized", "meta": {}}
+{"timestamp": "2025-12-21T19:36:49.067148Z", "step": "locking_task", "meta": {}}
+{"timestamp": "2025-12-21T19:36:51.860753Z", "step": "task_locked", "meta": {}}
+{"timestamp": "2025-12-21T19:36:54.619806Z", "step": "status_set_to_running", "meta": {}}
+{"timestamp": "2025-12-21T19:36:54.620386Z", "step": "getting_automation_class", "meta": {"task_type": "comment"}}
+{"timestamp": "2025-12-21T19:36:54.621117Z", "step": "automation_class_obtained", "meta": {"class_name": "CommentAutomation"}}
+{"timestamp": "2025-12-21T19:36:54.621765Z", "step": "getting_proxy", "meta": {}}
+{"timestamp": "2025-12-21T19:37:00.871980Z", "step": "no_proxy_available", "meta": {}}
+{"timestamp": "2025-12-21T19:37:00.871980Z", "step": "starting_automation_execution", "meta": {}}
+{"timestamp": "2025-12-21T19:37:03.971397Z", "step": "automation_context_entered", "meta": {}}
+{"timestamp": "2025-12-21T19:37:35.784808Z", "step": "page_state_detection_start", "meta": {}}
+{"timestamp": "2025-12-21T19:37:35.787807Z", "step": "page_state_detected", "meta": {"overlay_present": false, "modal_present": false, "cookie_banner_present": false, "newsletter_modal_present": false, "login_modal_present": false, "login_required": false, "registration_hints": false, "email_verification_hints": false, "iframe_count": 0, "captcha_present": false, "blocked_hints": false, "bot_check_hints": false, "intent_guess": "unknown"}}
+{"timestamp": "2025-12-21T19:37:35.788808Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T19:37:35.788808Z", "step": "popup_clear_complete", "meta": {"cleared": false, "strategies_attempted": [], "errors": []}}
+{"timestamp": "2025-12-21T19:37:35.789808Z", "step": "agent_execute_start", "meta": {"goal": "comment", "domain": "unknown"}}
+{"timestamp": "2025-12-21T19:37:35.790314Z", "step": "agent_comment_flow_start", "meta": {}}
+{"timestamp": "2025-12-21T19:37:35.795845Z", "step": "popup_clear_not_needed", "meta": {}}
+{"timestamp": "2025-12-21T19:37:35.795845Z", "step": "agent_popup_no_action_needed", "meta": {}}
+{"timestamp": "2025-12-21T19:37:35.803867Z", "step": "agent_execution_error", "meta": {"error": "Page.title: Target page, context or browser has been closed"}}
+{"timestamp": "2025-12-21T19:37:35.804867Z", "step": "agent_execution_completed", "meta": {"success": false, "subgoal": "open_comment_editor"}}
+{"timestamp": "2025-12-21T19:37:35.804867Z", "step": "automation_execution_completed", "meta": {"success": false}}
+{"timestamp": "2025-12-21T19:37:40.093383Z", "step": "result_failed", "meta": {"error": "Page.title: Target page, context or browser has been closed", "failure_reason": "unknown"}}
