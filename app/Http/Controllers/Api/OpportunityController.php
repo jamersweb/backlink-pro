@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\BacklinkOpportunity;
 use App\Models\Backlink;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class OpportunityController extends Controller
 {
+    use ApiResponse;
     /**
      * GET /api/opportunities/for-campaign/{campaign_id}
      * Get backlinks from the store for a campaign based on category, plan limits, and daily limits

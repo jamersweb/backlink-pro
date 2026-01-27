@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import AppLayout from '@/Components/Layout/AppLayout';
+import AdminLayout from '@/Components/Layout/AdminLayout';
 import Card from '@/Components/Shared/Card';
 import Button from '@/Components/Shared/Button';
 import OverviewCards from './Partials/OverviewCards';
@@ -8,7 +8,7 @@ import RunsStatusPanel from './Partials/RunsStatusPanel';
 
 export default function SystemHealthIndex({ overview, recentFailures, runStatus, topErrors }) {
     return (
-        <AppLayout header="System Health">
+        <AdminLayout header="System Health">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
@@ -60,6 +60,6 @@ export default function SystemHealthIndex({ overview, recentFailures, runStatus,
                     </Card>
                 )}
             </div>
-        </AppLayout>
+        </AdminLayout>
     );
 }

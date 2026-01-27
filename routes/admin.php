@@ -132,6 +132,19 @@ Route::prefix('marketing-leads')->name('marketing-leads.')->group(function () {
 // Profile (accessible from admin panel)
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
 
+// Page Meta / SEO Management
+Route::prefix('page-metas')->name('page-metas.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\PageMetaController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\PageMetaController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\PageMetaController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [\App\Http\Controllers\Admin\PageMetaController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\Admin\PageMetaController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Admin\PageMetaController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle-status', [\App\Http\Controllers\Admin\PageMetaController::class, 'toggleStatus'])->name('toggle-status');
+    Route::post('/{id}/duplicate', [\App\Http\Controllers\Admin\PageMetaController::class, 'duplicate'])->name('duplicate');
+    Route::post('/import-defaults', [\App\Http\Controllers\Admin\PageMetaController::class, 'importDefaults'])->name('import-defaults');
+});
+
 // Roles & Permissions Management
 Route::prefix('roles-permissions')->name('roles-permissions.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'index'])->name('index');
@@ -141,4 +154,14 @@ Route::prefix('roles-permissions')->name('roles-permissions.')->group(function (
     Route::get('/users', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'users'])->name('users');
     Route::put('/users/{id}/roles', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'updateUserRoles'])->name('users.roles');
     Route::put('/users/{id}/permissions', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'updateUserPermissions'])->name('users.permissions');
+});
+
+// System Configuration
+Route::prefix('system-config')->name('system-config.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\SystemConfigController::class, 'index'])->name('index');
+    Route::post('/clear-cache', [\App\Http\Controllers\Admin\SystemConfigController::class, 'clearCache'])->name('clear-cache');
+    Route::post('/optimize', [\App\Http\Controllers\Admin\SystemConfigController::class, 'optimize'])->name('optimize');
+    Route::post('/migrate', [\App\Http\Controllers\Admin\SystemConfigController::class, 'migrate'])->name('migrate');
+    Route::post('/retry-failed-jobs', [\App\Http\Controllers\Admin\SystemConfigController::class, 'retryFailedJobs'])->name('retry-failed-jobs');
+    Route::post('/flush-failed-jobs', [\App\Http\Controllers\Admin\SystemConfigController::class, 'flushFailedJobs'])->name('flush-failed-jobs');
 });

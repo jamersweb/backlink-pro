@@ -20,6 +20,10 @@ class RankKeyword extends Model
         'source',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
     const DEVICE_DESKTOP = 'desktop';
     const DEVICE_MOBILE = 'mobile';
 

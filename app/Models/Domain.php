@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Domain extends Model
 {
@@ -107,7 +108,7 @@ class Domain extends Model
     /**
      * Get Google integration for this domain
      */
-    public function googleIntegration(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function googleIntegration(): HasOne
     {
         return $this->hasOne(DomainGoogleIntegration::class);
     }
@@ -139,7 +140,7 @@ class Domain extends Model
     /**
      * Get connector for this domain (new system)
      */
-    public function connector(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function connector(): HasOne
     {
         return $this->hasOne(DomainConnector::class);
     }
@@ -147,7 +148,7 @@ class Domain extends Model
     /**
      * Get meta connector for this domain (legacy)
      */
-    public function metaConnector(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function metaConnector(): HasOne
     {
         return $this->hasOne(DomainMetaConnector::class);
     }

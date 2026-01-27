@@ -16,36 +16,36 @@ class LoginController extends Controller
     }
 
     // Form submit hone par login
-   public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'email'    => 'required|email',
-        'password' => 'required',
-    ]);
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
 
-    if (Auth::attempt($credentials, $request->boolean('remember'))) {
-        $request->session()->regenerate();
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $request->session()->regenerate();
 
-        $user = Auth::user();
+            $user = Auth::user();
 
-        // Email ya role se admin detect karo
-        if ($user->email === 'admin@example.com' || $user->hasRole('admin')) {
-            return redirect()->intended('/admin/dashboard');
+            // Check role-based redirect (admin role only, no hardcoded emails)
+            if ($user->hasRole('admin')) {
+                return redirect()->intended('/admin/dashboard');
+            }
+
+            // Check if email is verified, if not redirect to verification page
+            if (!$user->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice')
+                    ->with('status', 'Please verify your email address to continue.');
+            }
+
+            return redirect()->intended('/dashboard');
         }
 
-        // Check if email is verified, if not redirect to verification page
-        if (!$user->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice')
-                ->with('status', 'Please verify your email address to continue.');
-        }
-
-        return redirect()->intended('/dashboard');
+        return back()->withErrors([
+            'email' => 'Invalid credentials. Please check your email and password.',
+        ])->onlyInput('email');
     }
-
-    return back()->withErrors([
-        'email' => 'invalid credetails',
-    ])->onlyInput('email');
-}
 
     // Logout method
     public function logout(Request $request)

@@ -57,11 +57,20 @@ class SiteAccount extends Model
     }
 
     /**
-     * Get all backlinks created with this site account
+     * Get all backlink opportunities using this site account
+     */
+    public function backlinkOpportunities(): HasMany
+    {
+        return $this->hasMany(BacklinkOpportunity::class);
+    }
+
+    /**
+     * Alias for backlinkOpportunities for backward compatibility
+     * @deprecated Use backlinkOpportunities() instead
      */
     public function backlinks(): HasMany
     {
-        return $this->hasMany(Backlink::class);
+        return $this->backlinkOpportunities();
     }
 
     /**

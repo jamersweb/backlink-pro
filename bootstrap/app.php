@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Apply security headers to all responses
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
@@ -33,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'security' => \App\Http\Middleware\SecurityHeaders::class,
+            'api.token' => \App\Http\Middleware\ApiTokenAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

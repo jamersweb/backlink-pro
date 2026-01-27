@@ -2,23 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PageMetaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class MarketingController extends Controller
 {
+    protected PageMetaService $pageMetaService;
+
+    public function __construct(PageMetaService $pageMetaService)
+    {
+        $this->pageMetaService = $pageMetaService;
+    }
+
+    /**
+     * Get meta data for a page with fallback defaults
+     */
+    protected function getPageMeta(string $pageKey, array $defaults): array
+    {
+        return $this->pageMetaService->getMeta($pageKey, $defaults);
+    }
+
     public function home()
     {
-        return Inertia::render('Marketing/Home', [
-            'meta' => [
-                'title' => 'Build Quality Backlinks Without Manual Grind | BacklinkPro',
-                'description' => 'AI-powered backlink automation with guardrails. Risk scoring, human approvals, evidence logs, and link monitoring. No PBNs. Start your free plan.',
-                'og' => [
-                    'title' => 'BacklinkPro - Automated Link Building with Guardrails',
-                    'description' => 'AI selects the safest action, executes workflows, and tracks every link with evidence.',
-                    'image' => asset('images/og-image.jpg'),
-                ],
+        $meta = $this->getPageMeta('home', [
+            'title' => 'Build Quality Backlinks Without Manual Grind | BacklinkPro',
+            'description' => 'AI-powered backlink automation with guardrails. Risk scoring, human approvals, evidence logs, and link monitoring. No PBNs. Start your free plan.',
+            'og' => [
+                'title' => 'BacklinkPro - Automated Link Building with Guardrails',
+                'description' => 'AI selects the safest action, executes workflows, and tracks every link with evidence.',
+                'image' => asset('images/og-image.jpg'),
             ],
+        ]);
+
+        return Inertia::render('Marketing/Home', [
+            'meta' => $meta,
             'initialMetrics' => [
                 ['label' => 'Links Placed', 'value' => 125000, 'suffix' => '+'],
                 ['label' => 'Hours Saved/Month', 'value' => 45000, 'suffix' => '+'],

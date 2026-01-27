@@ -95,53 +95,55 @@ use App\Http\Controllers\BlogController;
 Route::get('/sitemap.xml', [MarketingSitemapController::class, 'index'])->name('marketing.sitemap');
 Route::get('/robots.txt', [MarketingRobotsController::class, 'index'])->name('marketing.robots');
 
-// Marketing routes - Permission controlled access
-// Users need 'marketing.view' permission (admins and users with this permission can access)
-Route::middleware(['auth', 'permission:marketing.view'])->group(function () {
-    Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
-    Route::get('/how-it-works', [MarketingController::class, 'howItWorks'])->name('marketing.how');
-    Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
-    Route::get('/case-studies', [MarketingController::class, 'caseStudiesIndex'])->name('marketing.caseStudies.index');
-    Route::get('/case-studies/{slug}', [MarketingController::class, 'caseStudiesShow'])->name('marketing.caseStudies.show');
-    Route::get('/workflows', [MarketingController::class, 'workflowsIndex'])->name('marketing.workflows.index');
-    Route::get('/workflows/{slug}', [MarketingController::class, 'workflowsShow'])->name('marketing.workflows.show');
-    Route::get('/solutions', [MarketingController::class, 'solutionsIndex'])->name('marketing.solutions.index');
-    Route::get('/solutions/{slug}', [MarketingController::class, 'solutionsShow'])->name('marketing.solutions.show');
-    Route::get('/resources', [MarketingController::class, 'resourcesIndex'])->name('marketing.resources.index');
-    Route::get('/resources/{type}', [MarketingController::class, 'resourcesType'])->name('marketing.resources.type');
-    Route::get('/resources/{type}/{slug}', [MarketingController::class, 'resourcesShow'])->name('marketing.resources.show');
-    Route::get('/glossary', [MarketingController::class, 'glossaryIndex'])->name('marketing.glossary.index');
-    Route::get('/security', [MarketingController::class, 'security'])->name('marketing.security');
-    Route::get('/contact', [MarketingController::class, 'contact'])->name('marketing.contact');
-    Route::post('/contact', [MarketingController::class, 'contactSubmit'])
-        ->middleware(['throttle:10,1'])
-        ->name('marketing.contact.submit');
-    Route::get('/partners', [MarketingController::class, 'partners'])->name('marketing.partners');
-    Route::post('/partners/apply', [MarketingController::class, 'partnerApply'])
-        ->middleware(['throttle:10,1'])
-        ->name('marketing.partners.apply');
-    Route::get('/about', [MarketingController::class, 'about'])->name('marketing.about');
-    Route::get('/privacy-policy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
-    Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
-    Route::get('/product', [MarketingController::class, 'product'])->name('marketing.product');
-    Route::get('/features', [MarketingController::class, 'product'])->name('marketing.features');
-    Route::get('/free-backlink-plan', [MarketingController::class, 'freePlan'])->name('marketing.freePlan');
-    Route::post('/free-backlink-plan', [MarketingController::class, 'freePlanSubmit'])
-        ->middleware(['throttle:15,1'])
-        ->name('marketing.freePlan.submit');
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
-    Route::get('/plans', [SubscriptionController::class, 'index'])->name('plans');
+// Marketing routes - Public access (no authentication required)
+// These pages are the public-facing marketing website
+Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
+Route::get('/how-it-works', [MarketingController::class, 'howItWorks'])->name('marketing.how');
+Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
+Route::get('/case-studies', [MarketingController::class, 'caseStudiesIndex'])->name('marketing.caseStudies.index');
+Route::get('/case-studies/{slug}', [MarketingController::class, 'caseStudiesShow'])->name('marketing.caseStudies.show');
+Route::get('/workflows', [MarketingController::class, 'workflowsIndex'])->name('marketing.workflows.index');
+Route::get('/workflows/{slug}', [MarketingController::class, 'workflowsShow'])->name('marketing.workflows.show');
+Route::get('/solutions', [MarketingController::class, 'solutionsIndex'])->name('marketing.solutions.index');
+Route::get('/solutions/{slug}', [MarketingController::class, 'solutionsShow'])->name('marketing.solutions.show');
+Route::get('/resources', [MarketingController::class, 'resourcesIndex'])->name('marketing.resources.index');
+Route::get('/resources/{type}', [MarketingController::class, 'resourcesType'])->name('marketing.resources.type');
+Route::get('/resources/{type}/{slug}', [MarketingController::class, 'resourcesShow'])->name('marketing.resources.show');
+Route::get('/glossary', [MarketingController::class, 'glossaryIndex'])->name('marketing.glossary.index');
+Route::get('/security', [MarketingController::class, 'security'])->name('marketing.security');
+Route::get('/contact', [MarketingController::class, 'contact'])->name('marketing.contact');
+Route::post('/contact', [MarketingController::class, 'contactSubmit'])
+    ->middleware(['throttle:10,1'])
+    ->name('marketing.contact.submit');
+Route::get('/partners', [MarketingController::class, 'partners'])->name('marketing.partners');
+Route::post('/partners/apply', [MarketingController::class, 'partnerApply'])
+    ->middleware(['throttle:10,1'])
+    ->name('marketing.partners.apply');
+Route::get('/about', [MarketingController::class, 'about'])->name('marketing.about');
+Route::get('/privacy-policy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
+Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
+Route::get('/product', [MarketingController::class, 'product'])->name('marketing.product');
+Route::get('/features', [MarketingController::class, 'product'])->name('marketing.features');
+Route::get('/free-backlink-plan', [MarketingController::class, 'freePlan'])->name('marketing.freePlan');
+Route::post('/free-backlink-plan', [MarketingController::class, 'freePlanSubmit'])
+    ->middleware(['throttle:15,1'])
+    ->name('marketing.freePlan.submit');
+Route::get('/plans', [SubscriptionController::class, 'index'])->name('plans');
 
-    // Additional Marketing pages
-    Route::get('/about-page', [AboutController::class, 'index'])->name('about');
-    Route::get('/features-page', [FeaturesController::class, 'index'])->name('features');
-    Route::get('/contact-page', [ContactController::class, 'index'])->name('contact');
-    Route::post('/contact-page', [ContactController::class, 'store'])->name('contact.store');
+// Additional Marketing pages
+Route::get('/about-page', [AboutController::class, 'index'])->name('about');
+Route::get('/features-page', [FeaturesController::class, 'index'])->name('features');
+Route::get('/contact-page', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact-page', [ContactController::class, 'store'])
+    ->middleware(['throttle:10,1'])
+    ->name('contact.store');
 
-    // Blog Routes - requires marketing.blog permission
-    Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
-    Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
-});
+// Blog Routes - Public access
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
+
+// Home redirect (authenticated users go to dashboard)
+Route::get('/home', [HomeController::class, 'index'])->name('home')->middleware('auth');
 
 // Stripe webhook (no CSRF protection)
 Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');

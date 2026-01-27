@@ -9,12 +9,18 @@ export default function AdminLayout({ children, header }) {
     const isSystemActive = currentUrl.startsWith('/admin/proxies') ||
                           currentUrl.startsWith('/admin/captcha') ||
                           currentUrl.startsWith('/admin/system-health') ||
+                          currentUrl.startsWith('/admin/system-config') ||
                           currentUrl.startsWith('/admin/blocked-sites') ||
                           currentUrl.startsWith('/admin/ml-training');
+    const isContentActive = currentUrl.startsWith('/admin/page-metas') ||
+                           currentUrl.startsWith('/admin/marketing-leads');
+    const isAccessActive = currentUrl.startsWith('/admin/roles-permissions');
     
-    // Auto-expand System dropdown if on a System page
+    // Auto-expand dropdowns if on relevant pages
     const [leadsDropdownOpen, setLeadsDropdownOpen] = useState(isLeadsActive);
     const [systemDropdownOpen, setSystemDropdownOpen] = useState(isSystemActive);
+    const [contentDropdownOpen, setContentDropdownOpen] = useState(isContentActive);
+    const [accessDropdownOpen, setAccessDropdownOpen] = useState(isAccessActive);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     // Close dropdowns when clicking outside
@@ -121,8 +127,27 @@ export default function AdminLayout({ children, header }) {
                 { name: 'Proxies', href: '/admin/proxies', icon: 'bi-router' },
                 { name: 'Captcha Logs', href: '/admin/captcha-logs', icon: 'bi-shield-check' },
                 { name: 'System Health', href: '/admin/system-health', icon: 'bi-heart-pulse' },
+                { name: 'System Config', href: '/admin/system-config', icon: 'bi-gear-wide-connected' },
                 { name: 'Blocked Sites', href: '/admin/blocked-sites', icon: 'bi-ban' },
                 { name: 'ML Training', href: '/admin/ml-training', icon: 'bi-cpu' },
+            ],
+        },
+        {
+            name: 'Content',
+            icon: 'bi-file-earmark-text',
+            active: isContentActive,
+            children: [
+                { name: 'Page SEO', href: '/admin/page-metas', icon: 'bi-search' },
+                { name: 'Marketing Leads', href: '/admin/marketing-leads', icon: 'bi-envelope' },
+            ],
+        },
+        {
+            name: 'Access Control',
+            icon: 'bi-shield-lock',
+            active: isAccessActive,
+            children: [
+                { name: 'Roles & Permissions', href: '/admin/roles-permissions', icon: 'bi-people-fill' },
+                { name: 'User Permissions', href: '/admin/roles-permissions/users', icon: 'bi-person-gear' },
             ],
         },
         {
@@ -191,6 +216,8 @@ export default function AdminLayout({ children, header }) {
                                             onClick={() => {
                                                 if (item.name === 'Leads') setLeadsDropdownOpen(!leadsDropdownOpen);
                                                 if (item.name === 'System') setSystemDropdownOpen(!systemDropdownOpen);
+                                                if (item.name === 'Content') setContentDropdownOpen(!contentDropdownOpen);
+                                                if (item.name === 'Access Control') setAccessDropdownOpen(!accessDropdownOpen);
                                             }}
                                             className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${
                                                 item.active
@@ -202,11 +229,22 @@ export default function AdminLayout({ children, header }) {
                                             {sidebarOpen && (
                                                 <>
                                                     <span className="flex-1 text-left font-medium">{item.name}</span>
-                                                    <i className={`bi ${item.name === 'Leads' && leadsDropdownOpen || item.name === 'System' && systemDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'} text-xs`}></i>
+                                                    <i className={`bi ${
+                                                        (item.name === 'Leads' && leadsDropdownOpen) || 
+                                                        (item.name === 'System' && systemDropdownOpen) ||
+                                                        (item.name === 'Content' && contentDropdownOpen) ||
+                                                        (item.name === 'Access Control' && accessDropdownOpen)
+                                                            ? 'bi-chevron-up' : 'bi-chevron-down'
+                                                    } text-xs`}></i>
                                                 </>
                                             )}
                                         </button>
-                                        {sidebarOpen && ((item.name === 'Leads' && leadsDropdownOpen) || (item.name === 'System' && systemDropdownOpen)) && (
+                                        {sidebarOpen && (
+                                            (item.name === 'Leads' && leadsDropdownOpen) || 
+                                            (item.name === 'System' && systemDropdownOpen) ||
+                                            (item.name === 'Content' && contentDropdownOpen) ||
+                                            (item.name === 'Access Control' && accessDropdownOpen)
+                                        ) && (
                                             <ul className="mt-1 ml-4 space-y-1">
                                                 {item.children.map((child, childIndex) => (
                                                     <li key={childIndex}>

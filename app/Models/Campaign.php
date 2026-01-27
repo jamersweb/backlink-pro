@@ -45,9 +45,12 @@ class Campaign extends Model
 
     protected $casts = [
         'settings' => 'array',
+        'web_target' => 'array',
         'requires_email_verification' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'daily_limit' => 'integer',
+        'total_limit' => 'integer',
     ];
 
     /**

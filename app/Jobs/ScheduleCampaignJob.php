@@ -20,10 +20,26 @@ class ScheduleCampaignJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
+     * The number of times the job may be attempted.
+     */
+    public int $tries = 3;
+
+    /**
+     * The number of seconds the job can run before timing out.
+     */
+    public int $timeout = 600;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     */
+    public array $backoff = [60, 120, 300];
+
+    /**
      * Execute the job.
      */
     public function handle(): void
     {
+        Log::info('ScheduleCampaignJob started');
         // Get all active campaigns
         $campaigns = Campaign::where('status', Campaign::STATUS_ACTIVE)
             ->where(function ($query) {
@@ -274,6 +290,17 @@ class ScheduleCampaignJob implements ShouldQueue
         Log::info('Campaign scheduled', [
             'campaign_id' => $campaign->id,
             'tasks_created' => $tasksPerType * count($backlinkTypes),
+        ]);
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('ScheduleCampaignJob permanently failed', [
+            'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
         ]);
     }
 }

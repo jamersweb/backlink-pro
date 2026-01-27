@@ -331,6 +331,14 @@ class PermissionSeeder extends Seeder
             'admin.permissions.view' => 'View Permissions',
             'admin.permissions.assign' => 'Assign Permissions',
         ],
+
+        // Admin Page Meta / SEO Management
+        'admin_page_metas' => [
+            'admin.page_metas.view' => 'View Page SEO Settings',
+            'admin.page_metas.create' => 'Create Page SEO Settings',
+            'admin.page_metas.edit' => 'Edit Page SEO Settings',
+            'admin.page_metas.delete' => 'Delete Page SEO Settings',
+        ],
     ];
 
     /**

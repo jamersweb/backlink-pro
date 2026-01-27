@@ -15,6 +15,21 @@ class VerifyBacklinkJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * The number of times the job may be attempted.
+     */
+    public int $tries = 3;
+
+    /**
+     * The number of seconds the job can run before timing out.
+     */
+    public int $timeout = 120;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     */
+    public array $backoff = [30, 60, 120];
+
     public $backlink;
 
     /**
@@ -40,23 +55,52 @@ class VerifyBacklinkJob implements ShouldQueue
                 return;
             }
 
+            Log::info('Verifying backlink', ['backlink_id' => $backlink->id]);
+
             // Verify the backlink
             BacklinkVerificationService::verify($backlink);
+
+            Log::info('Backlink verification completed', ['backlink_id' => $backlink->id]);
 
         } catch (\Exception $e) {
             Log::error('Error in VerifyBacklinkJob', [
                 'backlink_id' => $this->backlink->id,
                 'error' => $e->getMessage(),
+                'attempt' => $this->attempts(),
             ]);
             
-            // Mark as failed if verification job itself fails
-            $backlink = Backlink::find($this->backlink->id);
-            if ($backlink) {
-                $backlink->update([
-                    'status' => Backlink::STATUS_FAILED,
-                    'error_message' => 'Verification job failed: ' . $e->getMessage(),
-                ]);
+            // Only mark as failed on final attempt
+            if ($this->attempts() >= $this->tries) {
+                $backlink = Backlink::find($this->backlink->id);
+                if ($backlink) {
+                    $backlink->update([
+                        'status' => Backlink::STATUS_FAILED,
+                        'error_message' => 'Verification job failed: ' . $e->getMessage(),
+                    ]);
+                }
             }
+
+            throw $e; // Re-throw to trigger retry
+        }
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('VerifyBacklinkJob permanently failed', [
+            'backlink_id' => $this->backlink->id,
+            'error' => $exception->getMessage(),
+        ]);
+
+        // Mark as failed
+        $backlink = Backlink::find($this->backlink->id);
+        if ($backlink) {
+            $backlink->update([
+                'status' => Backlink::STATUS_FAILED,
+                'error_message' => 'Verification permanently failed: ' . $exception->getMessage(),
+            ]);
         }
     }
 }

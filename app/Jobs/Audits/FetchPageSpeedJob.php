@@ -15,9 +15,25 @@ class FetchPageSpeedJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 120; // 2 minutes
-    public $tries = 2;
-    public $queue = 'audits';
+    /**
+     * The number of seconds the job can run before timing out.
+     */
+    public int $timeout = 120;
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public int $tries = 3;
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     */
+    public array $backoff = [30, 60, 120];
+
+    /**
+     * The queue this job should run on.
+     */
+    public string $queue = 'audits';
 
     /**
      * Create a new job instance.
@@ -33,7 +49,7 @@ class FetchPageSpeedJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $apiKey = env('PAGESPEED_API_KEY');
+        $apiKey = config('services.google.pagespeed_api_key');
 
         if (!$apiKey) {
             Log::debug('PageSpeed API key not configured, skipping', [
@@ -57,8 +73,11 @@ class FetchPageSpeedJob implements ShouldQueue
                     'audit_id' => $this->auditId,
                     'url' => $this->url,
                     'status' => $response->status(),
+                    'attempt' => $this->attempts(),
                 ]);
-                return;
+                
+                // Throw exception to trigger retry on failure
+                throw new \RuntimeException("PageSpeed API returned status {$response->status()}");
             }
 
             $data = $response->json();
@@ -110,7 +129,23 @@ class FetchPageSpeedJob implements ShouldQueue
                 'audit_id' => $this->auditId,
                 'url' => $this->url,
                 'error' => $e->getMessage(),
+                'attempt' => $this->attempts(),
             ]);
+
+            // Re-throw to trigger retry
+            throw $e;
         }
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('FetchPageSpeedJob permanently failed', [
+            'audit_id' => $this->auditId,
+            'url' => $this->url,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }
