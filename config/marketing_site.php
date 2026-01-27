@@ -31,6 +31,7 @@ return [
         ['label' => 'Pricing', 'href' => '/pricing'],
         ['label' => 'Case Studies', 'href' => '/case-studies'],
         ['label' => 'Resources', 'href' => '/resources'],
+        ['label' => 'Blog', 'href' => '/blog'],
     ],
     'nav_secondary' => [
         ['label' => 'Security', 'href' => '/security'],

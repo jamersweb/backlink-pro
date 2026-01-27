@@ -131,3 +131,14 @@ Route::prefix('marketing-leads')->name('marketing-leads.')->group(function () {
 
 // Profile (accessible from admin panel)
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+
+// Roles & Permissions Management
+Route::prefix('roles-permissions')->name('roles-permissions.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'index'])->name('index');
+    Route::post('/roles', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'storeRole'])->name('roles.store');
+    Route::put('/roles/{id}', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'updateRole'])->name('roles.update');
+    Route::delete('/roles/{id}', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'destroyRole'])->name('roles.destroy');
+    Route::get('/users', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'users'])->name('users');
+    Route::put('/users/{id}/roles', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'updateUserRoles'])->name('users.roles');
+    Route::put('/users/{id}/permissions', [\App\Http\Controllers\Admin\RolesPermissionsController::class, 'updateUserPermissions'])->name('users.permissions');
+});

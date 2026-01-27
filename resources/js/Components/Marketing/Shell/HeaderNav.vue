@@ -17,8 +17,21 @@
                 </nav>
             </div>
             <div class="flex items-center gap-4">
-                <Link href="/login" class="btn-ghost hidden sm:inline-block">Log In</Link>
-                <Link href="/free-backlink-plan" class="btn-primary">Run Free Backlink Plan</Link>
+                <template v-if="auth?.user">
+                    <Link href="/dashboard" class="btn-ghost hidden sm:inline-block">Dashboard</Link>
+                    <Link 
+                        :href="route('logout')" 
+                        method="post" 
+                        as="button"
+                        class="btn-primary"
+                    >
+                        Log Out
+                    </Link>
+                </template>
+                <template v-else>
+                    <Link href="/login" class="btn-ghost hidden sm:inline-block">Log In</Link>
+                    <Link href="/register" class="btn-primary">Get Started</Link>
+                </template>
                 <button
                     @click="toggleMobileMenu"
                     @keydown.escape="closeMobileMenu"
@@ -64,6 +77,41 @@
                     >
                         {{ item.label }}
                     </Link>
+                    <!-- Auth buttons for mobile -->
+                    <template v-if="auth?.user">
+                        <Link
+                            href="/dashboard"
+                            class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
+                            @click="closeMobileMenu"
+                        >
+                            Dashboard
+                        </Link>
+                        <Link 
+                            :href="route('logout')" 
+                            method="post" 
+                            as="button"
+                            class="block w-full text-left px-4 py-2 text-red-400 hover:text-red-300 hover:bg-surface transition-colors rounded"
+                            @click="closeMobileMenu"
+                        >
+                            Log Out
+                        </Link>
+                    </template>
+                    <template v-else>
+                        <Link
+                            href="/login"
+                            class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
+                            @click="closeMobileMenu"
+                        >
+                            Log In
+                        </Link>
+                        <Link
+                            href="/register"
+                            class="block px-4 py-2 text-primary hover:text-primary-light hover:bg-surface transition-colors rounded"
+                            @click="closeMobileMenu"
+                        >
+                            Get Started
+                        </Link>
+                    </template>
                 </div>
             </nav>
         </div>
@@ -71,11 +119,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 
 const page = usePage();
 const site = page.props.site;
+const auth = computed(() => page.props.auth);
+
+// Route helper function
+const route = (name, params = {}) => {
+    const routes = {
+        'logout': '/logout',
+        'login': '/login',
+        'register': '/register',
+        'dashboard': '/dashboard',
+    };
+    return routes[name] || `/${name}`;
+};
 
 const isScrolled = ref(false);
 const headerRef = ref(null);

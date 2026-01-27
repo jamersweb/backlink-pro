@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'  => RoleMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

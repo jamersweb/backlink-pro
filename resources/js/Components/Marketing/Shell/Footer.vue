@@ -20,6 +20,7 @@
                     <ul class="space-y-2">
                         <li><Link href="/case-studies" class="text-muted hover:text-text transition-colors">Case Studies</Link></li>
                         <li><Link href="/resources" class="text-muted hover:text-text transition-colors">Resources</Link></li>
+                        <li><Link href="/blog" class="text-muted hover:text-text transition-colors">Blog</Link></li>
                         <li><Link href="/security" class="text-muted hover:text-text transition-colors">Security</Link></li>
                     </ul>
                 </div>
