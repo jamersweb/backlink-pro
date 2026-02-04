@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\CaptchaController;
 use App\Http\Controllers\Api\OpportunityController;
 use App\Http\Controllers\Api\MLController;
 use App\Http\Controllers\Api\PlanController;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
