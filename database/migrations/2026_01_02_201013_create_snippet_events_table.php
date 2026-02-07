@@ -55,13 +55,20 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('snippet_events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('domain_id');
             $table->date('date')->index();
             $table->string('path')->index();
             $table->unsignedBigInteger('views')->default(0);
             $table->unsignedBigInteger('uniques')->default(0);
             $table->timestamps();
 
+            // Add foreign key with explicit name to avoid conflicts
+            $table->foreign('domain_id', 'snippet_events_domain_id_foreign')
+                  ->references('id')
+                  ->on('domains')
+                  ->onDelete('cascade');
+            
+            $table->index('domain_id');
             $table->unique(['domain_id', 'date', 'path']);
         });
     }

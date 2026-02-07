@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GscDailyMetric extends Model
 {
     protected $fillable = [
-        'domain_id',
+        'organization_id',
+        'site_url',
         'date',
         'clicks',
         'impressions',
@@ -25,10 +26,10 @@ class GscDailyMetric extends Model
     ];
 
     /**
-     * Get the domain
+     * Get the organization
      */
-    public function domain(): BelongsTo
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(Domain::class);
+        return $this->belongsTo(Organization::class);
     }
 }

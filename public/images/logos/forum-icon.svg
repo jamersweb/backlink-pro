@@ -1,0 +1,18 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White square background -->
+  <rect x="10" y="10" width="60" height="60" rx="12" fill="white"/>
+  
+  <!-- Professional forum/discussion icon -->
+  <g transform="translate(40, 40)">
+    <!-- Discussion bubbles -->
+    <!-- Left bubble -->
+    <circle cx="-8" cy="-4" r="6" fill="none" stroke="#1F2937" stroke-width="2.5"/>
+    <path d="M -14 -4 Q -14 -8 -10 -8 L -6 -8 Q -2 -8 -2 -4 L -2 2 Q -2 6 -6 6 L -10 6 Q -14 6 -14 2 Z" 
+          fill="none" stroke="#1F2937" stroke-width="2" stroke-linejoin="round" opacity="0.6"/>
+    
+    <!-- Right bubble -->
+    <circle cx="8" cy="4" r="6" fill="none" stroke="#1F2937" stroke-width="2.5"/>
+    <path d="M 2 4 Q 2 0 6 0 L 10 0 Q 14 0 14 4 L 14 10 Q 14 14 10 14 L 6 14 Q 2 14 2 10 Z" 
+          fill="none" stroke="#1F2937" stroke-width="2" stroke-linejoin="round" opacity="0.6"/>
+  </g>
+</svg>

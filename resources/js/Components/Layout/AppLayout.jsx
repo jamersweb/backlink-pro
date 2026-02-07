@@ -3,13 +3,14 @@ import { Link, usePage } from '@inertiajs/react';
 
 export default function AppLayout({ children, header }) {
     const { auth } = usePage().props;
+    const { url } = usePage();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     
     // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (profileDropdownOpen && !event.target.closest('.relative')) {
+            if (profileDropdownOpen && !event.target.closest('.profile-dropdown')) {
                 setProfileDropdownOpen(false);
             }
         };
@@ -18,6 +19,16 @@ export default function AppLayout({ children, header }) {
         }
         return () => document.removeEventListener('click', handleClickOutside);
     }, [profileDropdownOpen]);
+
+    const isActive = (path) => url === path || url.startsWith(`${path}/`);
+
+    const navLinkClass = (active) =>
+        [
+            'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium',
+            active
+                ? 'border-indigo-500 text-gray-900'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
+        ].join(' ');
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -34,49 +45,49 @@ export default function AppLayout({ children, header }) {
                             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                                 <Link
                                     href="/dashboard"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/dashboard'))}
                                 >
                                     Dashboard
                                 </Link>
                                 <Link
                                     href="/campaign"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/campaign'))}
                                 >
                                     Campaigns
                                 </Link>
                                 <Link
                                     href="/domains"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/domains'))}
                                 >
                                     Domains
                                 </Link>
                                 <Link
                                     href="/site-accounts"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/site-accounts'))}
                                 >
                                     Site Accounts
                                 </Link>
                                 <Link
                                     href="/gmail"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/gmail'))}
                                 >
                                     Gmail
                                 </Link>
                                 <Link
                                     href="/activity"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/activity'))}
                                 >
                                     Activity
                                 </Link>
                                 <Link
                                     href="/reports"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/reports'))}
                                 >
                                     Reports
                                 </Link>
                                 <Link
                                     href="/settings"
-                                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                                    className={navLinkClass(isActive('/settings'))}
                                 >
                                     Settings
                                 </Link>
@@ -84,7 +95,7 @@ export default function AppLayout({ children, header }) {
                         </div>
                         <div className="flex items-center space-x-4">
                             {/* Profile Dropdown */}
-                            <div className="relative">
+                            <div className="relative profile-dropdown">
                                 <button
                                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                                     className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded-lg p-1"
@@ -142,4 +153,3 @@ export default function AppLayout({ children, header }) {
         </div>
     );
 }
-

@@ -1,0 +1,48 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="snailBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFB88C"/>
+      <stop offset="100%" style="stop-color:#FF8C42"/>
+    </linearGradient>
+    <linearGradient id="snailShellGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A0522D"/>
+      <stop offset="100%" style="stop-color:#8B4513"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Dark Background -->
+  <rect width="200" height="200" rx="20" fill="#0B0F14"/>
+  
+  <!-- Snail Icon -->
+  <g transform="translate(100, 85)">
+    <!-- Shell - Brown with spiral -->
+    <circle cx="0" cy="0" r="30" fill="url(#snailShellGrad)" stroke="#654321" stroke-width="2"/>
+    <!-- Spiral lines -->
+    <path d="M 0 -30 Q 7 -23 10 -10 Q 12 0 10 10 Q 7 23 0 30 Q -7 23 -10 10 Q -12 0 -10 -10 Q -7 -23 0 -30" 
+          fill="none" stroke="#654321" stroke-width="1.5" opacity="0.7"/>
+    <circle cx="0" cy="0" r="9" fill="#654321"/>
+    
+    <!-- Body - Orange/Peach -->
+    <ellipse cx="26" cy="6" rx="20" ry="14" fill="url(#snailBodyGrad)" stroke="#FF8C42" stroke-width="2"/>
+    
+    <!-- Head -->
+    <ellipse cx="42" cy="4" rx="12" ry="9" fill="url(#snailBodyGrad)" stroke="#FF8C42" stroke-width="2"/>
+    
+    <!-- Antennae with white tips -->
+    <line x1="49" y1="-2" x2="57" y2="-14" stroke="#FF8C42" stroke-width="3" stroke-linecap="round"/>
+    <line x1="49" y1="6" x2="57" y2="18" stroke="#FF8C42" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- White dots at tips -->
+    <circle cx="57" cy="-14" r="4" fill="#FFFFFF"/>
+    <circle cx="57" cy="18" r="4" fill="#FFFFFF"/>
+    
+    <!-- Eyes -->
+    <circle cx="52" cy="1" r="1.5" fill="#000000"/>
+    <circle cx="52" cy="7" r="1.5" fill="#000000"/>
+  </g>
+  
+  <!-- Title Text -->
+  <text x="100" y="165" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#FFFFFF" letter-spacing="2px">
+    Manual Grind
+  </text>
+</svg>

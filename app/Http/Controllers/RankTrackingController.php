@@ -2,193 +2,176 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Domain;
+use App\Models\Organization;
+use App\Models\RankProject;
 use App\Models\RankKeyword;
-use App\Models\RankCheck;
-use App\Models\RankResult;
-use App\Services\RankTracking\RankTracker;
-use App\Services\Usage\QuotaService;
-use App\Jobs\RankTracking\RunRankCheckJob;
+use App\Jobs\RunRankChecksJob;
+use App\Services\Billing\PlanLimiter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class RankTrackingController extends Controller
 {
     /**
-     * Show rank tracking index
+     * List rank projects
      */
-    public function index(Domain $domain)
+    public function index(Organization $organization)
     {
-        Gate::authorize('domain.view', $domain);
+        $this->authorize('view', $organization);
 
-        $rankTracker = new RankTracker($domain);
-
-        $keywords = RankKeyword::where('domain_id', $domain->id)
-            ->orderBy('is_active', 'desc')
-            ->orderBy('keyword')
-            ->with(['latestResult'])
-            ->paginate(50);
-
-        $recentChecks = RankCheck::where('domain_id', $domain->id)
+        $projects = RankProject::where('organization_id', $organization->id)
+            ->withCount('keywords')
             ->orderBy('created_at', 'desc')
-            ->with('user')
-            ->limit(10)
             ->get();
 
-        $winners = $rankTracker->getWinners(7, 10);
-        $losers = $rankTracker->getLosers(7, 10);
-        $avgPosition = $rankTracker->getAveragePosition();
-
-        return Inertia::render('Domains/RankTracking/Index', [
-            'domain' => $domain,
-            'keywords' => $keywords,
-            'recentChecks' => $recentChecks,
-            'stats' => [
-                'total_keywords' => RankKeyword::where('domain_id', $domain->id)->where('is_active', true)->count(),
-                'winners_count' => count($winners),
-                'losers_count' => count($losers),
-                'avg_position' => $avgPosition,
+        return Inertia::render('SEO/Rankings', [
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
             ],
-            'winners' => $winners,
-            'losers' => $losers,
+            'projects' => $projects->map(function ($project) {
+                return [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'target_domain' => $project->target_domain,
+                    'status' => $project->status,
+                    'keywords_count' => $project->keywords_count,
+                ];
+            }),
         ]);
     }
 
     /**
-     * Store keyword (manual add)
+     * Create rank project
      */
-    public function storeKeyword(Domain $domain, Request $request)
+    public function createProject(Request $request, Organization $organization)
     {
-        Gate::authorize('domain.view', $domain);
+        $this->authorize('manage', $organization);
 
         $validated = $request->validate([
-            'keyword' => 'required|string|max:255',
-            'target_url' => 'nullable|url',
-            'location_code' => 'nullable|string|max:50',
-            'language_code' => 'nullable|string|max:10',
-            'device' => 'required|in:desktop,mobile',
-            'schedule' => 'required|in:daily,weekly,manual',
+            'name' => ['required', 'string', 'max:255'],
+            'target_domain' => ['required', 'string', 'max:255'],
+            'country_code' => ['required', 'string', 'size:2'],
+            'language_code' => ['required', 'string', 'max:5'],
         ]);
 
-        try {
+        $project = RankProject::create([
+            'organization_id' => $organization->id,
+            'name' => $validated['name'],
+            'target_domain' => $validated['target_domain'],
+            'country_code' => $validated['country_code'],
+            'language_code' => $validated['language_code'],
+            'status' => RankProject::STATUS_ACTIVE,
+        ]);
+
+        return redirect()->back()->with('success', 'Rank project created.');
+    }
+
+    /**
+     * Add keywords to project
+     */
+    public function addKeywords(Request $request, Organization $organization, RankProject $project)
+    {
+        $this->authorize('manage', $organization);
+
+        if ($project->organization_id !== $organization->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'keywords' => ['required', 'array', 'min:1'],
+            'keywords.*' => ['string', 'max:255'],
+            'device' => ['required', 'string', 'in:mobile,desktop'],
+            'location' => ['nullable', 'string'],
+        ]);
+
+        // Check plan limits
+        $planLimiter = app(PlanLimiter::class);
+        $currentCount = $project->keywords()->count();
+        $planLimit = $planLimiter->maxKeywords($organization);
+
+        if ($currentCount + count($validated['keywords']) > $planLimit) {
+            return redirect()->back()->with('error', "Plan limit exceeded. Maximum {$planLimit} keywords allowed.");
+        }
+
+        foreach ($validated['keywords'] as $keyword) {
             RankKeyword::create([
-                'domain_id' => $domain->id,
-                'keyword' => $validated['keyword'],
-                'target_url' => $validated['target_url'] ?? null,
-                'location_code' => $validated['location_code'] ?? null,
-                'language_code' => $validated['language_code'] ?? 'en',
+                'rank_project_id' => $project->id,
+                'keyword' => $keyword,
                 'device' => $validated['device'],
-                'schedule' => $validated['schedule'],
+                'location' => $validated['location'] ?? null,
                 'is_active' => true,
-                'source' => RankKeyword::SOURCE_MANUAL,
             ]);
-
-            return back()->with('success', 'Keyword added');
-        } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Duplicate entry')) {
-                return back()->with('error', 'This keyword combination already exists');
-            }
-            return back()->with('error', 'Failed to add keyword: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Sync keywords from sources
-     */
-    public function syncFromSources(Domain $domain, Request $request)
-    {
-        Gate::authorize('domain.view', $domain);
-
-        $rankTracker = new RankTracker($domain);
-        $synced = $rankTracker->syncKeywordsFromSources();
-
-        return back()->with('success', "Synced {$synced['keyword_map']} from Keyword Map, {$synced['opportunities']} from GSC opportunities");
-    }
-
-    /**
-     * Toggle keyword active status
-     */
-    public function toggleKeyword(Domain $domain, RankKeyword $keyword, Request $request)
-    {
-        Gate::authorize('domain.view', $domain);
-
-        if ($keyword->domain_id !== $domain->id) {
-            abort(404);
         }
 
-        $keyword->update(['is_active' => !$keyword->is_active]);
-
-        return back()->with('success', $keyword->is_active ? 'Keyword activated' : 'Keyword deactivated');
+        return redirect()->back()->with('success', count($validated['keywords']) . ' keywords added.');
     }
 
-    /**
-     * Run rank check now
-     */
-    public function runNow(Domain $domain, Request $request)
-    {
-        Gate::authorize('domain.view', $domain);
 
-        $validated = $request->validate([
-            'keyword_ids' => 'nullable|array',
-            'keyword_ids.*' => 'exists:rank_keywords,id',
-            'provider_code' => 'nullable|string',
+    /**
+     * Show project keywords
+     */
+    public function showProject(Organization $organization, RankProject $project)
+    {
+        $this->authorize('view', $organization);
+
+        if ($project->organization_id !== $organization->id) {
+            abort(403);
+        }
+
+        $keywords = $project->keywords()
+            ->with(['results' => function ($query) {
+                $query->orderBy('fetched_at', 'desc')->limit(2);
+            }])
+            ->get();
+
+        return Inertia::render('SEO/Rankings/Show', [
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
+            ],
+            'project' => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'target_domain' => $project->target_domain,
+                'country_code' => $project->country_code,
+                'language_code' => $project->language_code,
+            ],
+            'keywords' => $keywords->map(function ($keyword) {
+                $results = $keyword->results;
+                $latest = $results->first();
+                $previous = $results->count() > 1 ? $results->get(1) : null;
+
+                return [
+                    'id' => $keyword->id,
+                    'keyword' => $keyword->keyword,
+                    'device' => $keyword->device,
+                    'latest_result' => $latest ? [
+                        'position' => $latest->position,
+                        'url' => $latest->found_url,
+                        'last_checked' => $latest->fetched_at?->toIso8601String(),
+                    ] : null,
+                    'previous_result' => $previous ? [
+                        'position' => $previous->position,
+                    ] : null,
+                ];
+            }),
         ]);
-
-        $user = Auth::user();
-        $rankTracker = new RankTracker($domain);
-
-        // Check quota
-        $quotaService = app(QuotaService::class);
-        $keywordIds = $validated['keyword_ids'] ?? [];
-        $keywordCount = empty($keywordIds) 
-            ? RankKeyword::where('domain_id', $domain->id)->where('is_active', true)->count()
-            : count($keywordIds);
-
-        try {
-            $quotaService->assertCan($user, 'rank.keywords_checked_per_month', $keywordCount, [
-                'domain_id' => $domain->id,
-            ]);
-        } catch (\Exception $e) {
-            return back()->with('error', 'Quota exceeded: ' . $e->getMessage());
-        }
-
-        $providerCode = $validated['provider_code'] ?? 'gsc_fallback';
-        $check = $rankTracker->createCheck($user, $keywordIds, $providerCode);
-
-        // Consume quota
-        $quotaService->consume($user, 'rank.keywords_checked_per_month', $keywordCount, 'month', [
-            'domain_id' => $domain->id,
-            'check_id' => $check->id,
-        ]);
-
-        // Dispatch job
-        RunRankCheckJob::dispatch($check->id);
-
-        return back()->with('success', "Rank check queued for {$keywordCount} keywords");
     }
 
     /**
-     * Show check details
+     * Run rank checks for project
      */
-    public function showCheck(Domain $domain, RankCheck $check)
+    public function runChecks(Organization $organization, RankProject $project)
     {
-        Gate::authorize('domain.view', $domain);
+        $this->authorize('manage', $organization);
 
-        if ($check->domain_id !== $domain->id) {
-            abort(404);
+        if ($project->organization_id !== $organization->id) {
+            abort(403);
         }
 
-        $results = RankResult::where('rank_check_id', $check->id)
-            ->with('rankKeyword')
-            ->orderBy('keyword')
-            ->paginate(50);
+        RunRankChecksJob::dispatch($project->id);
 
-        return Inertia::render('Domains/RankTracking/CheckShow', [
-            'domain' => $domain,
-            'check' => $check->load('user'),
-            'results' => $results,
-        ]);
+        return redirect()->back()->with('success', 'Rank checks started.');
     }
 }

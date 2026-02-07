@@ -1,0 +1,15 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White square background -->
+  <rect x="10" y="10" width="60" height="60" rx="12" fill="white"/>
+  
+  <!-- Professional shield icon -->
+  <g transform="translate(40, 40)">
+    <!-- Shield shape -->
+    <path d="M 0 -20 L 16 -10 L 16 10 Q 16 14 12 16 Q 0 20 0 20 Q 0 20 -12 16 Q -16 14 -16 10 L -16 -10 Z" 
+          fill="none" stroke="#1F2937" stroke-width="2.5" stroke-linejoin="round"/>
+    
+    <!-- Checkmark inside -->
+    <path d="M -6 -2 L -2 2 L 6 -6" 
+          fill="none" stroke="#1F2937" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

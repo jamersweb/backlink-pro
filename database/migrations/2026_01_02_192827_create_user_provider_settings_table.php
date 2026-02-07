@@ -30,23 +30,39 @@ return new class extends Migration
             }
             
             // Table exists but is incomplete
-            // Check for existing foreign key constraints and drop them if they conflict
+            // Drop all foreign key constraints first
             try {
+                $dbName = DB::connection()->getDatabaseName();
                 $constraints = DB::select("
                     SELECT CONSTRAINT_NAME 
                     FROM information_schema.KEY_COLUMN_USAGE 
-                    WHERE TABLE_SCHEMA = DATABASE() 
+                    WHERE TABLE_SCHEMA = ? 
                     AND TABLE_NAME = 'user_provider_settings' 
-                    AND COLUMN_NAME = 'user_id' 
                     AND REFERENCED_TABLE_NAME IS NOT NULL
-                ");
+                ", [$dbName]);
                 
                 foreach ($constraints as $constraint) {
-                    // Drop existing foreign key constraint if it exists
-                    DB::statement("ALTER TABLE user_provider_settings DROP FOREIGN KEY {$constraint->CONSTRAINT_NAME}");
+                    $constraintName = $constraint->CONSTRAINT_NAME;
+                    try {
+                        DB::statement("ALTER TABLE user_provider_settings DROP FOREIGN KEY `{$constraintName}`");
+                    } catch (\Exception $e) {
+                        // Try without backticks if that fails
+                        try {
+                            DB::statement("ALTER TABLE user_provider_settings DROP FOREIGN KEY {$constraintName}");
+                        } catch (\Exception $e2) {
+                            // Ignore if constraint doesn't exist
+                        }
+                    }
                 }
             } catch (\Exception $e) {
-                // Ignore errors if constraint doesn't exist
+                // Ignore errors, will try to drop table anyway
+            }
+            
+            // Also try to drop any indexes that might conflict
+            try {
+                DB::statement("ALTER TABLE user_provider_settings DROP INDEX user_provider_settings_user_id_provider_code_unique");
+            } catch (\Exception $e) {
+                // Ignore if index doesn't exist
             }
             
             // Drop and recreate to avoid constraint conflicts
@@ -56,12 +72,19 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('user_provider_settings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('user_id');
             $table->string('provider_code')->index();
             $table->text('settings_json')->nullable(); // encrypted
             $table->boolean('is_enabled')->default(true);
             $table->timestamps();
 
+            // Add foreign key with explicit name to avoid conflicts
+            $table->foreign('user_id', 'user_provider_settings_user_id_foreign')
+                  ->references('id')
+                  ->on('users')
+                  ->onDelete('cascade');
+            
+            $table->index('user_id');
             $table->unique(['user_id', 'provider_code']);
         });
     }

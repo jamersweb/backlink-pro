@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -38,6 +39,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'google_access_token',
+        'google_refresh_token',
     ];
 
     /**
@@ -51,7 +54,32 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'trial_ends_at' => 'datetime',
+            'google_token_expires_at' => 'datetime',
+            'google_connected_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Encrypt/decrypt Google tokens
+     */
+    public function setGoogleAccessTokenAttribute($value): void
+    {
+        $this->attributes['google_access_token'] = ($value && $value !== '') ? Crypt::encryptString($value) : null;
+    }
+
+    public function getGoogleAccessTokenAttribute($value): ?string
+    {
+        return $value ? Crypt::decryptString($value) : null;
+    }
+
+    public function setGoogleRefreshTokenAttribute($value): void
+    {
+        $this->attributes['google_refresh_token'] = ($value && $value !== '') ? Crypt::encryptString($value) : null;
+    }
+
+    public function getGoogleRefreshTokenAttribute($value): ?string
+    {
+        return $value ? Crypt::decryptString($value) : null;
     }
 
     /**
@@ -184,5 +212,23 @@ class User extends Authenticatable implements MustVerifyEmail
     public function costLogs()
     {
         return $this->hasMany(CrawlCostLog::class);
+    }
+
+    /**
+     * Get organization memberships
+     */
+    public function organizationUsers()
+    {
+        return $this->hasMany(OrganizationUser::class);
+    }
+
+    /**
+     * Get organizations this user belongs to
+     */
+    public function organizations()
+    {
+        return $this->belongsToMany(Organization::class, 'organization_users')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 }

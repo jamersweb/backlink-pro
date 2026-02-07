@@ -6,6 +6,9 @@
                     BacklinkPro
                 </Link>
                 <nav class="hidden md:flex items-center gap-6" aria-label="Main navigation">
+                    <Link href="/seo-audit-report" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm">
+                        🔍 SEO Audit Report
+                    </Link>
                     <Link href="/" class="nav-link">Home</Link>
                     <Link href="/product" class="nav-link">Product</Link>
                     <Link href="/how-it-works" class="nav-link">How It Works</Link>

@@ -7,6 +7,7 @@ import { Link } from '@inertiajs/react';
 
 export default function Dashboard({ user, subscription, stats, recentBacklinks, recentCampaigns, dailyBacklinks, backlinksByType }) {
     const [chartPeriod, setChartPeriod] = useState(7); // 7 or 30 days
+    const [activeTab, setActiveTab] = useState('overview');
 
     // Prepare chart data
     const dailyBacklinksData = dailyBacklinks?.map(item => ({
@@ -35,9 +36,36 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
         );
     };
 
-    return (
-        <AppLayout header="Dashboard">
-            <div className="space-y-6">
+    const tabs = [
+        { id: 'overview', label: 'Overview', icon: '📊' },
+        { id: 'seo-audit', label: 'SEO Audit', icon: '🔍' },
+        { id: 'seo-tracking', label: 'SEO Tracking', icon: '📈' },
+        { id: 'analytics', label: 'Analytics', icon: '📊' },
+        { id: 'automation', label: 'Automation', icon: '⚙️' },
+        { id: 'managed-services', label: 'Managed Services', icon: '👥' },
+    ];
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'overview':
+                return renderOverviewTab();
+            case 'seo-audit':
+                return renderSeoAuditTab();
+            case 'seo-tracking':
+                return renderSeoTrackingTab();
+            case 'analytics':
+                return renderAnalyticsTab();
+            case 'automation':
+                return renderAutomationTab();
+            case 'managed-services':
+                return renderManagedServicesTab();
+            default:
+                return renderOverviewTab();
+        }
+    };
+
+    const renderOverviewTab = () => (
+        <div className="space-y-6">
                 {/* Subscription Status */}
                 {user.plan && (
                     <Card>
@@ -365,6 +393,265 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                         <p className="text-gray-500 text-center py-4">No backlinks yet. Create your first campaign to get started!</p>
                     )}
                 </Card>
+        </div>
+    );
+
+    const renderSeoAuditTab = () => (
+        <div className="space-y-6">
+            <Card>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO Audit</h2>
+                <p className="text-gray-600 mb-6">Run comprehensive SEO audits for your websites</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/audit" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">🔍</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">New SEO Audit</h3>
+                                <p className="text-sm text-gray-600">Start a new SEO audit for any website</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/audit" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">📄</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">View Reports</h3>
+                                <p className="text-sm text-gray-600">View and export audit reports</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/audit" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">⚡</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Performance</h3>
+                                <p className="text-sm text-gray-600">Check website performance metrics</p>
+                            </div>
+                        </Card>
+                    </Link>
+                </div>
+            </Card>
+
+            {/* Audit Reports Section */}
+            <Card>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Audit Reports & Exports</h3>
+                <p className="text-gray-600 mb-6">Export your audit reports in various formats</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">📄</div>
+                        <h4 className="font-semibold text-gray-900 mb-1">PDF Export</h4>
+                        <p className="text-sm text-gray-600 mb-3">Export complete audit as PDF</p>
+                        <p className="text-xs text-gray-500">Available on audit detail page</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">📊</div>
+                        <h4 className="font-semibold text-gray-900 mb-1">Pages CSV</h4>
+                        <p className="text-sm text-gray-600 mb-3">Export all crawled pages data</p>
+                        <p className="text-xs text-gray-500">/audit/{'{id}'}/export/pages.csv</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">⚠️</div>
+                        <h4 className="font-semibold text-gray-900 mb-1">Issues CSV</h4>
+                        <p className="text-sm text-gray-600 mb-3">Export all SEO issues found</p>
+                        <p className="text-xs text-gray-500">/audit/{'{id}'}/export/issues.csv</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">🔗</div>
+                        <h4 className="font-semibold text-gray-900 mb-1">Links CSV</h4>
+                        <p className="text-sm text-gray-600 mb-3">Export all links data</p>
+                        <p className="text-xs text-gray-500">/audit/{'{id}'}/export/links.csv</p>
+                    </div>
+                </div>
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                        <strong>How to access:</strong> Go to any audit detail page (e.g., <code className="bg-blue-100 px-1 rounded">/audit/1</code>) and you'll find the "Export PDF" button in the top right corner. For CSV exports, use the export URLs shown above.
+                    </p>
+                </div>
+            </Card>
+        </div>
+    );
+
+    const renderSeoTrackingTab = () => (
+        <div className="space-y-6">
+            <Card>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO Tracking</h2>
+                <p className="text-gray-600 mb-6">Track keyword rankings, GSC data, and GA4 metrics</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">🔑</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Rank Tracking</h3>
+                                <p className="text-sm text-gray-600">Track keyword rankings</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">📊</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Google Search Console</h3>
+                                <p className="text-sm text-gray-600">View GSC data and insights</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">📈</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Google Analytics 4</h3>
+                                <p className="text-sm text-gray-600">View GA4 metrics and reports</p>
+                            </div>
+                        </Card>
+                    </Link>
+                </div>
+            </Card>
+        </div>
+    );
+
+    const renderAnalyticsTab = () => (
+        <div className="space-y-6">
+            <Card>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Analytics</h2>
+                <p className="text-gray-600 mb-6">Enterprise analytics, cohorts, and data warehouse insights</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/reports" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">📊</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Warehouse</h3>
+                                <p className="text-sm text-gray-600">View data warehouse analytics</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/reports" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">👥</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Cohort Analysis</h3>
+                                <p className="text-sm text-gray-600">User activation and retention</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/reports" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">🧪</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">A/B Testing</h3>
+                                <p className="text-sm text-gray-600">Run experiments and tests</p>
+                            </div>
+                        </Card>
+                    </Link>
+                </div>
+            </Card>
+        </div>
+    );
+
+    const renderAutomationTab = () => (
+        <div className="space-y-6">
+            <Card>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Automation</h2>
+                <p className="text-gray-600 mb-6">Fix automation, backlink strategy, and monitoring</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">🔧</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Fix Automation</h3>
+                                <p className="text-sm text-gray-600">Automated code fixes and patches</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">🔗</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Backlink Strategy</h3>
+                                <p className="text-sm text-gray-600">Generate backlink campaigns</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">👁️</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Continuous Monitoring</h3>
+                                <p className="text-sm text-gray-600">Monitor and detect changes</p>
+                            </div>
+                        </Card>
+                    </Link>
+                </div>
+            </Card>
+        </div>
+    );
+
+    const renderManagedServicesTab = () => (
+        <div className="space-y-6">
+            <Card>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Managed Services</h2>
+                <p className="text-gray-600 mb-6">Manage clients, projects, and deliverables</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">👥</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Client Portal</h3>
+                                <p className="text-sm text-gray-600">Manage client projects</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">📋</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Deliverables</h3>
+                                <p className="text-sm text-gray-600">Track deliverables and SLAs</p>
+                            </div>
+                        </Card>
+                    </Link>
+                    <Link href="/domains" className="block">
+                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                            <div className="text-center p-6">
+                                <div className="text-4xl mb-3">✅</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Approval Workflows</h3>
+                                <p className="text-sm text-gray-600">Manage approval processes</p>
+                            </div>
+                        </Card>
+                    </Link>
+                </div>
+            </Card>
+        </div>
+    );
+
+    return (
+        <AppLayout header="Dashboard">
+            <div className="space-y-6">
+                {/* Tabs Navigation */}
+                <Card className="p-0">
+                    <div className="border-b border-gray-200">
+                        <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`
+                                        whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+                                        ${activeTab === tab.id
+                                            ? 'border-indigo-500 text-indigo-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }
+                                    `}
+                                >
+                                    <span className="text-lg">{tab.icon}</span>
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+                </Card>
+
+                {/* Tab Content */}
+                {renderTabContent()}
             </div>
         </AppLayout>
     );

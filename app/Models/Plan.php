@@ -14,6 +14,8 @@ class Plan extends Model
         'tagline',
         'price_monthly',
         'price_annual',
+        'stripe_price_id_monthly',
+        'stripe_price_id_yearly',
         'limits_json',
         'display_limits',
         'features_json',

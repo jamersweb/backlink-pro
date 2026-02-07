@@ -9,15 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class RankKeyword extends Model
 {
     protected $fillable = [
-        'domain_id',
+        'rank_project_id',
+        'domain_id', // Legacy support
         'keyword',
         'target_url',
-        'location_code',
+        'location',
+        'location_code', // Legacy
         'language_code',
         'device',
         'schedule',
         'is_active',
         'source',
+        'tags',
+    ];
+
+    protected $casts = [
+        'tags' => 'array',
+        'is_active' => 'boolean',
     ];
 
     protected $casts = [
@@ -37,7 +45,15 @@ class RankKeyword extends Model
     const SOURCE_BRIEF = 'brief';
 
     /**
-     * Get the domain
+     * Get the rank project
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(RankProject::class, 'rank_project_id');
+    }
+
+    /**
+     * Get the domain (legacy)
      */
     public function domain(): BelongsTo
     {

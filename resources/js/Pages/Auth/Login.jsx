@@ -11,7 +11,30 @@ export default function Login() {
 
     const submit = (e) => {
         e.preventDefault();
-        post('/login');
+        console.log('Form submitted', { email: data.email, password: data.password ? '***' : '' });
+        
+        // Validate required fields
+        if (!data.email || !data.password) {
+            console.log('Validation failed: missing email or password');
+            return;
+        }
+        
+        console.log('Submitting login request...');
+        post('/login', {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Login successful - Inertia will handle redirect
+                console.log('Login successful');
+            },
+            onError: (errors) => {
+                // Errors are automatically handled by Inertia
+                console.log('Login errors:', errors);
+            },
+            onFinish: () => {
+                // Always called after request completes
+                console.log('Login request finished');
+            },
+        });
     };
 
     return (
@@ -53,7 +76,7 @@ export default function Login() {
                     </div>
 
                     {/* Login Form Card */}
-                    <form onSubmit={submit} className="mt-8">
+                    <form onSubmit={submit} className="mt-8" noValidate>
                         <div className="bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl shadow-black/50">
                             <div className="space-y-5">
                                 {/* Email Field */}

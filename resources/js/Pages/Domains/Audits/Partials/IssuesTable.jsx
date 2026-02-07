@@ -120,11 +120,27 @@ export default function IssuesTable({ audit, issues, issueTypes, filters }) {
                                                 <span className="text-gray-400">-</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                             {issue.page && (
                                                 <Link href={`/domains/${audit.domain_id}/audits/${audit.id}?tab=pages&search=${encodeURIComponent(issue.page.url)}`}>
                                                     <Button variant="outline" className="text-xs">View Page</Button>
                                                 </Link>
+                                            )}
+                                            {audit.organization_id && issue.code && (
+                                                <Button 
+                                                    variant="primary" 
+                                                    className="text-xs"
+                                                    onClick={() => {
+                                                        // Map issue type to service catalog (simplified - would need proper mapping)
+                                                        router.post(`/orgs/${audit.organization_id}/service-requests`, {
+                                                            audit_id: audit.id,
+                                                            issue_codes: [issue.code],
+                                                            service_catalog_ids: [1], // TODO: Map issue type to service catalog ID
+                                                        });
+                                                    }}
+                                                >
+                                                    Fix this
+                                                </Button>
                                             )}
                                         </td>
                                     </tr>

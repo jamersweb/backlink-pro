@@ -23,6 +23,11 @@ class HandleInertiaRequests extends Middleware
         if ($request->routeIs('marketing.*') || $request->routeIs('blog.*')) {
             return 'app-marketing';
         }
+
+        // Audit and public report pages are Vue (use marketing app shell)
+        if ($request->routeIs('audit.*') || $request->is('audit*') || $request->is('r/*')) {
+            return 'app-marketing';
+        }
         
         // Auth routes (login, register, password reset, etc.) should use the React app template
         // These routes are NOT marketing pages
@@ -89,4 +94,3 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 }
-

@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\UserCampaignController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GmailOAuthController;
+use App\Http\Controllers\GoogleGa4Controller;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\BacklinkController;
 use App\Http\Controllers\DomainController;
@@ -45,7 +46,11 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationSettingsController;
+use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AuditController;
+use App\Http\Controllers\AuditExportController;
 
 
 
@@ -98,6 +103,7 @@ Route::get('/robots.txt', [MarketingRobotsController::class, 'index'])->name('ma
 // Marketing routes - Public access (no authentication required)
 // These pages are the public-facing marketing website
 Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
+Route::get('/seo-audit-report', [MarketingController::class, 'seoAuditReport'])->name('marketing.seo-audit-report');
 Route::get('/how-it-works', [MarketingController::class, 'howItWorks'])->name('marketing.how');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/case-studies', [MarketingController::class, 'caseStudiesIndex'])->name('marketing.caseStudies.index');
@@ -142,6 +148,43 @@ Route::post('/contact-page', [ContactController::class, 'store'])
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
+// SEO Audit Routes - Public (guest + auth)
+Route::get('/audit', [AuditController::class, 'create'])->name('audit.create');
+Route::post('/audit', [AuditController::class, 'store'])->name('audit.store');
+Route::get('/audit/{audit}', [AuditController::class, 'show'])->name('audit.show');
+Route::get('/audit/{audit}/status', [AuditController::class, 'status'])->name('audit.status');
+Route::get('/audit/{audit}/pagespeed', [AuditController::class, 'pagespeed'])->name('audit.pagespeed');
+Route::post('/audit/{audit}/pagespeed/run', [AuditController::class, 'runPagespeed'])->name('audit.pagespeed.run');
+Route::get('/audit/{audit}/export/pdf', [AuditExportController::class, 'pdf'])->name('audit.export.pdf');
+Route::get('/audit/{audit}/export/pdf-v2', [AuditExportController::class, 'pdfV2'])->name('audit.export.pdf.v2');
+Route::get('/audit/{audit}/export/pages.csv', [AuditExportController::class, 'pagesCsv'])->name('audit.export.pages.csv');
+Route::get('/audit/{audit}/export/issues.csv', [AuditExportController::class, 'issuesCsv'])->name('audit.export.issues.csv');
+Route::get('/audit/{audit}/export/links.csv', [AuditExportController::class, 'linksCsv'])->name('audit.export.links.csv');
+Route::get('/audit/{audit}/export/broken-links.csv', [AuditExportController::class, 'brokenLinksCsv'])->name('audit.export.broken-links.csv');
+Route::get('/audit/{audit}/export/lighthouse.json', [AuditExportController::class, 'lighthouseJson'])->name('audit.export.lighthouse.json');
+Route::get('/audit/{audit}/export/assets.csv', [AuditExportController::class, 'assetsCsv'])->name('audit.export.assets.csv');
+
+// AI endpoints for public audits (if authenticated)
+Route::middleware(['auth'])->group(function() {
+    Route::prefix('orgs/{organization}/audits/{audit}')->name('orgs.audits.ai.')->group(function() {
+        Route::post('/ai/chat', [\App\Http\Controllers\AiController::class, 'chat'])->name('chat');
+        Route::get('/ai/chat/{questionHash}', [\App\Http\Controllers\AiController::class, 'getChatAnswer'])->name('chat.answer');
+        Route::post('/ai/snippets', [\App\Http\Controllers\AiController::class, 'generateSnippets'])->name('snippets.generate');
+        Route::get('/ai/snippets/{fingerprint}', [\App\Http\Controllers\AiController::class, 'getSnippets'])->name('snippets.get');
+        Route::get('/ai/summary', [\App\Http\Controllers\AiController::class, 'getSummary'])->name('summary');
+        
+        // Competitor benchmarking
+        Route::get('/competitors', [\App\Http\Controllers\CompetitorController::class, 'index'])->name('competitors.index');
+        Route::post('/competitors', [\App\Http\Controllers\CompetitorController::class, 'store'])->name('competitors.store');
+        Route::get('/competitors/{competitorRun}', [\App\Http\Controllers\CompetitorController::class, 'show'])->name('competitors.show');
+    });
+});
+
+// Affiliate tracking middleware (public)
+Route::middleware([\App\Http\Middleware\TrackAffiliateReferral::class])->group(function () {
+    Route::get('/', [MarketingController::class, 'home'])->name('marketing.home');
+});
+
 // Home redirect (authenticated users go to dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home')->middleware('auth');
 
@@ -167,6 +210,13 @@ Route::middleware(['auth', 'verified'])->group(function(){
                     Route::post('/disconnect/{id}', [GmailOAuthController::class, 'disconnect'])->name('disconnect');
                 });
         });
+
+    // Google GA4 OAuth routes
+    Route::get('/auth/google/redirect', [GoogleGa4Controller::class, 'redirect'])->name('google.ga4.redirect');
+    Route::get('/auth/google/callback', [GoogleGa4Controller::class, 'callback'])->name('google.ga4.callback');
+    Route::post('/auth/google/disconnect', [GoogleGa4Controller::class, 'disconnect'])->name('google.ga4.disconnect');
+    Route::get('/ga4/properties', [GoogleGa4Controller::class, 'properties'])->name('ga4.properties');
+    Route::get('/ga4/summary', [GoogleGa4Controller::class, 'summary'])->name('ga4.summary');
 
     // Subscription routes
     Route::prefix('subscription')
@@ -216,6 +266,20 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/audits', [DomainAuditController::class, 'store'])->name('store');
         Route::get('/audits/{audit}', [DomainAuditController::class, 'show'])->name('show');
         Route::get('/audits/{audit}/export', [DomainAuditController::class, 'export'])->name('export');
+        
+        // AI endpoints
+        Route::prefix('audits/{audit}')->name('ai.')->group(function() {
+            Route::post('/ai/chat', [\App\Http\Controllers\AiController::class, 'chat'])->name('chat');
+            Route::get('/ai/chat/{questionHash}', [\App\Http\Controllers\AiController::class, 'getChatAnswer'])->name('chat.answer');
+            Route::post('/ai/snippets', [\App\Http\Controllers\AiController::class, 'generateSnippets'])->name('snippets.generate');
+            Route::get('/ai/snippets/{fingerprint}', [\App\Http\Controllers\AiController::class, 'getSnippets'])->name('snippets.get');
+            Route::get('/ai/summary', [\App\Http\Controllers\AiController::class, 'getSummary'])->name('summary');
+            
+            // Competitor benchmarking
+            Route::get('/competitors', [\App\Http\Controllers\CompetitorController::class, 'index'])->name('competitors.index');
+            Route::post('/competitors', [\App\Http\Controllers\CompetitorController::class, 'store'])->name('competitors.store');
+            Route::get('/competitors/{competitorRun}', [\App\Http\Controllers\CompetitorController::class, 'show'])->name('competitors.show');
+        });
     });
 
     // Domain Backlinks (nested under domains)
@@ -407,6 +471,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
     // Profile
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
 
+    // SEO Audit Share (auth only)
+    Route::post('/audit/{audit}/share', [AuditController::class, 'share'])->name('audit.share');
+
     // Team Management
     Route::get('/team', [TeamController::class, 'show'])->name('team.show');
     Route::post('/team', [TeamController::class, 'update'])->name('team.update');
@@ -414,6 +481,158 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::post('/team/invitations/{id}/revoke', [TeamInvitationController::class, 'revoke'])->name('team.invitations.revoke');
     Route::post('/team/members/{member}/role', [TeamMemberController::class, 'updateRole'])->name('team.members.role');
     Route::post('/team/members/{member}/remove', [TeamMemberController::class, 'remove'])->name('team.members.remove');
+
+    // Organization Management
+    Route::prefix('orgs')->name('orgs.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\OrganizationController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\OrganizationController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\OrganizationController::class, 'store'])->name('store');
+        
+        Route::prefix('{organization}')->group(function () {
+            // Settings
+            Route::prefix('settings')->name('settings.')->group(function () {
+                Route::get('/branding', [\App\Http\Controllers\OrgSettingsController::class, 'branding'])->name('branding');
+                Route::post('/branding', [\App\Http\Controllers\OrgSettingsController::class, 'updateBranding'])->name('branding.update');
+                Route::get('/domains', [\App\Http\Controllers\OrgSettingsController::class, 'domains'])->name('domains');
+                Route::post('/domains', [\App\Http\Controllers\OrgSettingsController::class, 'addDomain'])->name('domains.add');
+                Route::delete('/domains/{domain}', [\App\Http\Controllers\OrgSettingsController::class, 'removeDomain'])->name('domains.remove');
+                Route::get('/pagespeed', [\App\Http\Controllers\OrgSettingsController::class, 'pagespeed'])->name('pagespeed');
+                Route::post('/pagespeed', [\App\Http\Controllers\OrgSettingsController::class, 'updatePagespeed'])->name('pagespeed.update');
+                Route::post('/pagespeed/verify', [\App\Http\Controllers\OrgSettingsController::class, 'verifyPagespeed'])->name('pagespeed.verify');
+            });
+            
+            // API Keys
+            Route::get('/api-keys', [\App\Http\Controllers\ApiKeyController::class, 'index'])->name('api-keys.index');
+            Route::post('/api-keys', [\App\Http\Controllers\ApiKeyController::class, 'store'])->name('api-keys.store');
+            Route::delete('/api-keys/{apiKey}', [\App\Http\Controllers\ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
+            Route::get('/api-keys/{apiKey}/widget-snippet', [\App\Http\Controllers\ApiKeyController::class, 'widgetSnippet'])->name('api-keys.widget-snippet');
+            
+            // Leads
+            Route::get('/leads', [\App\Http\Controllers\LeadsController::class, 'index'])->name('leads.index');
+            Route::get('/leads/{lead}', [\App\Http\Controllers\LeadsController::class, 'show'])->name('leads.show');
+            Route::put('/leads/{lead}', [\App\Http\Controllers\LeadsController::class, 'update'])->name('leads.update');
+            
+            // Audits
+            Route::get('/audits', [\App\Http\Controllers\AuditController::class, 'index'])->name('audits.index');
+            
+            // Billing
+            Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'index'])->name('billing.index');
+            Route::get('/billing/plans', [\App\Http\Controllers\BillingController::class, 'plans'])->name('billing.plans');
+            Route::post('/billing/checkout', [\App\Http\Controllers\BillingController::class, 'checkout'])->name('billing.checkout');
+            Route::get('/billing/success', [\App\Http\Controllers\BillingController::class, 'success'])->name('billing.success');
+            Route::get('/billing/portal', [\App\Http\Controllers\BillingController::class, 'portal'])->name('billing.portal');
+            
+            // Usage
+            Route::get('/usage', [\App\Http\Controllers\UsageController::class, 'index'])->name('usage.index');
+            
+            // Team Invitations
+            Route::post('/invites', [\App\Http\Controllers\InvitationController::class, 'store'])->name('invites.store');
+            Route::delete('/invites/{invitation}', [\App\Http\Controllers\InvitationController::class, 'revoke'])->name('invites.revoke');
+            
+            // Service Requests
+            Route::get('/service-requests', [\App\Http\Controllers\ServiceRequestController::class, 'index'])->name('service-requests.index');
+            Route::post('/service-requests', [\App\Http\Controllers\ServiceRequestController::class, 'store'])->name('service-requests.store');
+            Route::get('/service-requests/{serviceRequest}', [\App\Http\Controllers\ServiceRequestController::class, 'show'])->name('service-requests.show');
+            Route::post('/service-requests/{serviceRequest}/quote', [\App\Http\Controllers\ServiceRequestController::class, 'quote'])->name('service-requests.quote');
+            Route::post('/service-requests/{serviceRequest}/checkout', [\App\Http\Controllers\ServiceRequestController::class, 'checkout'])->name('service-requests.checkout');
+            Route::post('/service-requests/{serviceRequest}/messages', [\App\Http\Controllers\ServiceRequestController::class, 'addMessage'])->name('service-requests.messages');
+            
+            // Analytics
+            Route::get('/insights', [\App\Http\Controllers\AnalyticsController::class, 'insights'])->name('insights');
+            
+            // Google Integration
+            Route::get('/integrations/google', [\App\Http\Controllers\GoogleIntegrationController::class, 'index'])->name('integrations.google');
+            Route::get('/integrations/google/connect', [\App\Http\Controllers\GoogleIntegrationController::class, 'connect'])->name('integrations.google.connect');
+            Route::get('/integrations/google/callback', [\App\Http\Controllers\GoogleIntegrationController::class, 'callback'])->name('integrations.google.callback');
+            Route::post('/integrations/google/disconnect', [\App\Http\Controllers\GoogleIntegrationController::class, 'disconnect'])->name('integrations.google.disconnect');
+            Route::post('/integrations/google/gsc-site', [\App\Http\Controllers\GoogleIntegrationController::class, 'selectGscSite'])->name('integrations.google.gsc-site');
+            Route::post('/integrations/google/ga4-property', [\App\Http\Controllers\GoogleIntegrationController::class, 'selectGa4Property'])->name('integrations.google.ga4-property');
+            
+            // SEO Dashboard
+            Route::get('/seo/dashboard', [\App\Http\Controllers\SeoController::class, 'dashboard'])->name('seo.dashboard');
+            Route::get('/seo/gsc-queries', [\App\Http\Controllers\SeoController::class, 'gscQueries'])->name('seo.gsc-queries');
+            Route::get('/seo/ga4-pages', [\App\Http\Controllers\SeoController::class, 'ga4Pages'])->name('seo.ga4-pages');
+            Route::get('/seo/reports', [\App\Http\Controllers\SeoController::class, 'reports'])->name('seo.reports');
+            Route::get('/seo/reports/{report}/download', [\App\Http\Controllers\SeoController::class, 'downloadReport'])->name('seo.reports.download');
+            
+            // Rank Tracking
+            Route::get('/seo/rankings', [\App\Http\Controllers\RankTrackingController::class, 'index'])->name('seo.rankings.index');
+            Route::post('/seo/rank-projects', [\App\Http\Controllers\RankTrackingController::class, 'createProject'])->name('seo.rank-projects.create');
+            Route::get('/seo/rank-projects/{project}', [\App\Http\Controllers\RankTrackingController::class, 'showProject'])->name('seo.rank-projects.show');
+            Route::post('/seo/rank-projects/{project}/keywords', [\App\Http\Controllers\RankTrackingController::class, 'addKeywords'])->name('seo.rank-projects.keywords');
+            Route::post('/seo/rank-projects/{project}/run-checks', [\App\Http\Controllers\RankTrackingController::class, 'runChecks'])->name('seo.rank-projects.run-checks');
+            
+            // SEO Alerts
+            Route::get('/seo/alerts', [\App\Http\Controllers\SeoAlertController::class, 'index'])->name('seo.alerts.index');
+            Route::post('/seo/alerts/rules', [\App\Http\Controllers\SeoAlertController::class, 'storeRule'])->name('seo.alerts.rules.store');
+            Route::post('/seo/alerts/rules/{rule}/toggle', [\App\Http\Controllers\SeoAlertController::class, 'toggleRule'])->name('seo.alerts.rules.toggle');
+            
+            // Fix Automation
+            Route::get('/audits/{audit}/fix-automation', [\App\Http\Controllers\FixAutomationController::class, 'index'])->name('audits.fix-automation');
+            Route::post('/audits/{audit}/fix-automation/candidates', [\App\Http\Controllers\FixAutomationController::class, 'generateCandidates'])->name('audits.fix-automation.candidates');
+            Route::post('/audits/{audit}/fix-automation/candidates/{candidate}/patch', [\App\Http\Controllers\FixAutomationController::class, 'generatePatch'])->name('audits.fix-automation.patch');
+            Route::get('/audits/{audit}/fix-automation/patches/{patch}/download', [\App\Http\Controllers\FixAutomationController::class, 'downloadPatch'])->name('audits.fix-automation.download');
+            Route::post('/audits/{audit}/fix-automation/patches/{patch}/pr', [\App\Http\Controllers\FixAutomationController::class, 'openPR'])->name('audits.fix-automation.pr');
+            Route::post('/repos/connect/github', [\App\Http\Controllers\FixAutomationController::class, 'connectGithub'])->name('repos.connect.github');
+            Route::get('/repos/list', [\App\Http\Controllers\FixAutomationController::class, 'listRepos'])->name('repos.list');
+            Route::post('/repos/select', [\App\Http\Controllers\FixAutomationController::class, 'selectRepo'])->name('repos.select');
+            
+            // Backlink Campaigns
+            Route::get('/backlinks/campaigns', [\App\Http\Controllers\BacklinkCampaignController::class, 'index'])->name('backlinks.campaigns.index');
+            Route::post('/audits/{audit}/backlinks/campaigns', [\App\Http\Controllers\BacklinkCampaignController::class, 'create'])->name('backlinks.campaigns.create');
+            Route::get('/backlinks/campaigns/{campaign}', [\App\Http\Controllers\BacklinkCampaignController::class, 'show'])->name('backlinks.campaigns.show');
+            
+            // Monitoring
+            Route::get('/monitoring', [\App\Http\Controllers\MonitoringController::class, 'index'])->name('monitoring.index');
+            Route::post('/monitoring', [\App\Http\Controllers\MonitoringController::class, 'store'])->name('monitoring.store');
+            Route::get('/monitoring/{monitor}', [\App\Http\Controllers\MonitoringController::class, 'show'])->name('monitoring.show');
+            Route::post('/monitoring/{monitor}/run', [\App\Http\Controllers\MonitoringController::class, 'run'])->name('monitoring.run');
+            Route::post('/monitoring/{monitor}/toggle', [\App\Http\Controllers\MonitoringController::class, 'toggle'])->name('monitoring.toggle');
+            
+            // Google Integration
+            Route::get('/integrations/google', [\App\Http\Controllers\GoogleIntegrationController::class, 'index'])->name('integrations.google');
+            Route::get('/integrations/google/connect', [\App\Http\Controllers\GoogleIntegrationController::class, 'connect'])->name('integrations.google.connect');
+            Route::get('/integrations/google/callback', [\App\Http\Controllers\GoogleIntegrationController::class, 'callback'])->name('integrations.google.callback');
+            Route::post('/integrations/google/disconnect', [\App\Http\Controllers\GoogleIntegrationController::class, 'disconnect'])->name('integrations.google.disconnect');
+            Route::post('/integrations/google/gsc-site', [\App\Http\Controllers\GoogleIntegrationController::class, 'selectGscSite'])->name('integrations.google.gsc-site');
+            Route::post('/integrations/google/ga4-property', [\App\Http\Controllers\GoogleIntegrationController::class, 'selectGa4Property'])->name('integrations.google.ga4-property');
+            
+            // SEO Dashboard
+            Route::get('/seo/dashboard', [\App\Http\Controllers\SeoController::class, 'dashboard'])->name('seo.dashboard');
+            Route::get('/seo/gsc-queries', [\App\Http\Controllers\SeoController::class, 'gscQueries'])->name('seo.gsc-queries');
+            Route::get('/seo/ga4-pages', [\App\Http\Controllers\SeoController::class, 'ga4Pages'])->name('seo.ga4-pages');
+            Route::get('/seo/reports', [\App\Http\Controllers\SeoController::class, 'reports'])->name('seo.reports');
+            Route::get('/seo/reports/{report}/download', [\App\Http\Controllers\SeoController::class, 'downloadReport'])->name('seo.reports.download');
+            
+            // Rank Tracking
+            Route::get('/seo/rankings', [\App\Http\Controllers\RankTrackingController::class, 'index'])->name('seo.rankings.index');
+            Route::post('/seo/rank-projects', [\App\Http\Controllers\RankTrackingController::class, 'createProject'])->name('seo.rank-projects.create');
+            Route::get('/seo/rank-projects/{project}', [\App\Http\Controllers\RankTrackingController::class, 'showProject'])->name('seo.rank-projects.show');
+            Route::post('/seo/rank-projects/{project}/keywords', [\App\Http\Controllers\RankTrackingController::class, 'addKeywords'])->name('seo.rank-projects.keywords');
+            Route::post('/seo/rank-projects/{project}/run-checks', [\App\Http\Controllers\RankTrackingController::class, 'runChecks'])->name('seo.rank-projects.run-checks');
+            
+            // SEO Alerts
+            Route::get('/seo/alerts', [\App\Http\Controllers\SeoAlertController::class, 'index'])->name('seo.alerts.index');
+            Route::post('/seo/alerts/rules', [\App\Http\Controllers\SeoAlertController::class, 'storeRule'])->name('seo.alerts.rules.store');
+            Route::post('/seo/alerts/rules/{rule}/toggle', [\App\Http\Controllers\SeoAlertController::class, 'toggleRule'])->name('seo.alerts.rules.toggle');
+        });
+    });
+    
+    // Affiliate Routes
+    Route::prefix('affiliate')->name('affiliate.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\AffiliateController::class, 'index'])->name('index');
+        Route::get('/links', [\App\Http\Controllers\AffiliateController::class, 'links'])->name('links');
+        Route::get('/commissions', [\App\Http\Controllers\AffiliateController::class, 'commissions'])->name('commissions');
+        Route::get('/payouts', [\App\Http\Controllers\AffiliateController::class, 'payouts'])->name('payouts');
+        Route::post('/payouts/method', [\App\Http\Controllers\AffiliateController::class, 'updatePayoutMethod'])->name('payouts.method');
+        Route::get('/apply', [\App\Http\Controllers\AffiliateController::class, 'apply'])->name('apply');
+        Route::post('/apply', [\App\Http\Controllers\AffiliateController::class, 'store'])->name('store');
+    });
+    
+    // Analytics Routes
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/retention', [\App\Http\Controllers\AnalyticsController::class, 'retention'])->name('retention');
+    });
 });
 
 
@@ -423,9 +642,21 @@ Route::middleware(['auth', 'verified'])->group(function(){
 Route::get('/r/{token}', [PublicReportController::class, 'show'])->name('public.report.show');
 Route::post('/r/{token}/unlock', [PublicReportController::class, 'unlock'])->name('public.report.unlock');
 
+// Widget JS endpoint
+Route::get('/widget.js', [\App\Http\Controllers\WidgetController::class, 'js'])->name('widget.js');
+
+// Stripe webhook (no CSRF protection)
+Route::post('/stripe/webhook', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook'])
+    ->middleware('throttle:60,1')
+    ->name('stripe.webhook');
+
 // Team Invitation Acceptance (public route, auth optional)
 Route::get('/team/invitations/{token}', [TeamInvitationController::class, 'accept'])->name('team.invitations.accept');
 Route::post('/team/invitations/{token}/accept', [TeamInvitationController::class, 'accept'])->name('team.invitations.accept.post');
+
+// Organization Invitations (public)
+Route::get('/invites/{token}', [\App\Http\Controllers\InvitationController::class, 'show'])->name('invitations.accept');
+Route::post('/invites/{token}/accept', [\App\Http\Controllers\InvitationController::class, 'accept'])->name('invitations.accept.post');
 
 // Simple public test comment page for automation validation
 Route::get('/test-comment', function () {

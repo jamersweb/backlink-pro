@@ -55,8 +55,8 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('content_briefs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedBigInteger('domain_id');
+            $table->unsignedBigInteger('user_id');
             $table->string('title');
             $table->string('primary_keyword')->index();
             $table->json('secondary_keywords_json')->nullable();
@@ -70,6 +70,19 @@ return new class extends Migration
             $table->json('meta_suggestion_json')->nullable();
             $table->enum('status', ['draft', 'writing', 'published', 'archived'])->default('draft')->index();
             $table->timestamps();
+
+            // Add foreign keys with explicit names to avoid conflicts
+            $table->foreign('domain_id', 'content_briefs_domain_id_foreign')
+                  ->references('id')
+                  ->on('domains')
+                  ->onDelete('cascade');
+            
+            $table->foreign('user_id', 'content_briefs_user_id_foreign')
+                  ->references('id')
+                  ->on('users')
+                  ->onDelete('cascade');
+            
+            $table->index('domain_id');
         });
     }
 

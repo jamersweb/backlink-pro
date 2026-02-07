@@ -102,6 +102,18 @@ class SecurityHeaders
             "frame-ancestors 'self'",
         ];
 
+        if (app()->environment('local')) {
+            $policies = array_map(function ($policy) {
+                if (str_starts_with($policy, 'script-src')) {
+                    return $policy . ' http://localhost:5173 http://127.0.0.1:5173';
+                }
+                if (str_starts_with($policy, 'connect-src')) {
+                    return $policy . ' ws://localhost:5173 ws://127.0.0.1:5173 http://localhost:5173 http://127.0.0.1:5173';
+                }
+                return $policy;
+            }, $policies);
+        }
+
         return implode('; ', $policies);
     }
 }

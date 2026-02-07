@@ -13,9 +13,11 @@
                     v-for="(pillar, idx) in pillars"
                     :key="idx"
                     data-reveal
-                    class="marketing-card"
+                    class="marketing-card transition-all duration-300 ease-out hover:!border-[1.5px] hover:!border-white cursor-pointer group"
                 >
-                    <div class="text-5xl mb-6">{{ pillar.icon }}</div>
+                    <div class="mb-6">
+                        <img :src="pillar.icon" :alt="pillar.title" class="w-16 h-16 transition-transform duration-300 ease-out group-hover:rotate-12 will-change-transform" style="transform-origin: center center;" />
+                    </div>
                     <h3 class="text-2xl font-bold mb-4 text-text">{{ pillar.title }}</h3>
                     <ul class="space-y-3 mb-6">
                         <li
@@ -41,7 +43,7 @@
 <script setup>
 const pillars = [
     {
-        icon: '🛡️',
+        icon: '/images/logos/safety-icon.svg',
         title: 'Safety',
         bullets: [
             'Risk scoring for every opportunity',
@@ -50,7 +52,7 @@ const pillars = [
         ],
     },
     {
-        icon: '⚡',
+        icon: '/images/logos/scale-icon.svg',
         title: 'Scale',
         bullets: [
             'Automated workflow execution',
@@ -59,7 +61,7 @@ const pillars = [
         ],
     },
     {
-        icon: '📊',
+        icon: '/images/logos/clarity-icon.svg',
         title: 'Clarity',
         bullets: [
             'Evidence logs for every link',

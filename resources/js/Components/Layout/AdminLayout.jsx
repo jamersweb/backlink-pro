@@ -58,6 +58,12 @@ export default function AdminLayout({ children, header }) {
             active: currentUrl === '/admin/dashboard',
         },
         {
+            name: 'SEO Audit',
+            href: '/audit',
+            icon: 'bi-search',
+            active: currentUrl.startsWith('/audit'),
+        },
+        {
             name: 'Leads',
             icon: 'bi-people',
             active: isLeadsActive,

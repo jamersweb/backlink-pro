@@ -56,12 +56,19 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('domain_provider_preferences', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('domain_id');
             $table->string('task_type')->index(); // speed.pagespeed, crawl.http_basic, backlinks.provider
             $table->string('provider_code')->index();
             $table->json('fallback_codes_json')->nullable();
             $table->timestamps();
 
+            // Add foreign key with explicit name to avoid conflicts
+            $table->foreign('domain_id', 'domain_provider_preferences_domain_id_foreign')
+                  ->references('id')
+                  ->on('domains')
+                  ->onDelete('cascade');
+            
+            $table->index('domain_id');
             $table->unique(['domain_id', 'task_type']);
         });
     }

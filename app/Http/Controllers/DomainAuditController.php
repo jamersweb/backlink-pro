@@ -166,7 +166,12 @@ class DomainAuditController extends Controller
 
         return Inertia::render('Domains/Audits/Show', [
             'domain' => $domain,
-            'audit' => $audit,
+            'audit' => [
+                'id' => $audit->id,
+                'domain_id' => $audit->domain_id,
+                'organization_id' => $audit->organization_id,
+                'status' => $audit->status,
+            ],
             'pages' => $pages,
             'issues' => $issues,
             'issueTypes' => $issueTypes,

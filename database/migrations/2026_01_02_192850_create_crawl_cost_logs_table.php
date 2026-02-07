@@ -55,8 +55,8 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('crawl_cost_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->index();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('domain_id');
             $table->string('task_type')->index();
             $table->string('provider_code')->index();
             $table->decimal('units', 10, 4)->default(0);
@@ -65,6 +65,19 @@ return new class extends Migration
             $table->json('context_json')->nullable();
             $table->timestamp('created_at');
 
+            // Add foreign keys with explicit names to avoid conflicts
+            $table->foreign('user_id', 'crawl_cost_logs_user_id_foreign')
+                  ->references('id')
+                  ->on('users')
+                  ->onDelete('cascade');
+            
+            $table->foreign('domain_id', 'crawl_cost_logs_domain_id_foreign')
+                  ->references('id')
+                  ->on('domains')
+                  ->onDelete('cascade');
+            
+            $table->index('user_id');
+            $table->index('domain_id');
             $table->index(['user_id', 'created_at']);
             $table->index(['domain_id', 'created_at']);
             $table->index(['task_type', 'created_at']);

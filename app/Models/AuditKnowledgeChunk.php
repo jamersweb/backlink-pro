@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class AuditKnowledgeChunk extends Model
+{
+    protected $fillable = [
+        'audit_id',
+        'chunk_type',
+        'source_id',
+        'content',
+        'embedding',
+    ];
+
+    protected $casts = [
+        'embedding' => 'array',
+    ];
+
+    /**
+     * Get the audit
+     */
+    public function audit(): BelongsTo
+    {
+        return $this->belongsTo(Audit::class);
+    }
+}

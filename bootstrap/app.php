@@ -27,6 +27,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply security headers to all responses
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         
+        // Resolve organization from host (must run early)
+        $middleware->web(prepend: [
+            \App\Http\Middleware\ResolveOrganizationFromHost::class,
+            \App\Http\Middleware\TrackAffiliateReferral::class,
+        ]);
+        
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);

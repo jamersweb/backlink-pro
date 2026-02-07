@@ -1,0 +1,19 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White square background -->
+  <rect x="10" y="10" width="60" height="60" rx="12" fill="white"/>
+  
+  <!-- Professional growth/scale icon -->
+  <g transform="translate(40, 40)">
+    <!-- Upward arrow/growth -->
+    <path d="M -12 8 L 0 -12 L 12 8" 
+          fill="none" stroke="#1F2937" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Base line -->
+    <line x1="-14" y1="8" x2="14" y2="8" stroke="#1F2937" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Growth bars -->
+    <rect x="-10" y="4" width="4" height="4" fill="#1F2937" opacity="0.6"/>
+    <rect x="-2" y="0" width="4" height="8" fill="#1F2937" opacity="0.8"/>
+    <rect x="6" y="-4" width="4" height="12" fill="#1F2937"/>
+  </g>
+</svg>

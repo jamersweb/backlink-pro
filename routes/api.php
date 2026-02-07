@@ -34,6 +34,17 @@ Route::middleware(['api', 'throttle:30,1'])->group(function () {
     // Marketing/Lead capture endpoints
     Route::post('/plan/preview', [PlanController::class, 'preview'])->name('api.plan.preview');
     Route::post('/plan/lead', [PlanController::class, 'lead'])->name('api.plan.lead');
+    
+    // Public Widget API (rate limited)
+    Route::prefix('public/widget')->middleware('throttle:100,1')->group(function () {
+        Route::post('/audit', [\App\Http\Controllers\PublicWidgetController::class, 'createAudit'])->name('api.public.widget.audit');
+    });
+    
+    // Public Report API
+    Route::prefix('public/audit')->group(function () {
+        Route::get('/{token}/summary', [\App\Http\Controllers\PublicReportController::class, 'summary'])->name('api.public.audit.summary');
+        Route::post('/{token}/unlock', [\App\Http\Controllers\PublicReportController::class, 'unlock'])->name('api.public.audit.unlock');
+    });
 });
 
 // ============================================================================

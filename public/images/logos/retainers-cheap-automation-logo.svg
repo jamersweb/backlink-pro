@@ -1,0 +1,61 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rcaGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#B6F400"/>
+      <stop offset="100%" style="stop-color:#9CDE00"/>
+    </linearGradient>
+    <linearGradient id="rcaGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2F6BFF"/>
+      <stop offset="100%" style="stop-color:#1E4BB8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="200" height="200" rx="20" fill="#0B0F14"/>
+  <circle cx="100" cy="100" r="85" fill="url(#rcaGrad1)" opacity="0.15"/>
+  
+  <!-- Automation Robot -->
+  <g transform="translate(100, 100)">
+    <!-- Head -->
+    <rect x="-32" y="-42" width="64" height="52" rx="10" fill="url(#rcaGrad2)" stroke="#2F6BFF" stroke-width="3"/>
+    
+    <!-- Eyes - Glowing -->
+    <circle cx="-16" cy="-24" r="7" fill="#B6F400"/>
+    <circle cx="16" cy="-24" r="7" fill="#B6F400"/>
+    <circle cx="-16" cy="-24" r="4" fill="#FFFFFF"/>
+    <circle cx="16" cy="-24" r="4" fill="#FFFFFF"/>
+    
+    <!-- Antenna -->
+    <circle cx="0" cy="-47" r="6" fill="#B6F400"/>
+    <line x1="0" y1="-47" x2="0" y2="-42" stroke="#B6F400" stroke-width="3"/>
+    
+    <!-- Body -->
+    <rect x="-26" y="6" width="52" height="42" rx="8" fill="url(#rcaGrad1)" stroke="#B6F400" stroke-width="3"/>
+    
+    <!-- Control Panel -->
+    <rect x="-16" y="16" width="32" height="22" rx="4" fill="#FFFFFF" opacity="0.3"/>
+    <circle cx="-8" cy="27" r="3" fill="#2F6BFF"/>
+    <circle cx="0" cy="27" r="3" fill="#2F6BFF"/>
+    <circle cx="8" cy="27" r="3" fill="#2F6BFF"/>
+    
+    <!-- Arms -->
+    <rect x="-38" y="10" width="14" height="28" rx="7" fill="url(#rcaGrad2)" stroke="#2F6BFF" stroke-width="2.5"/>
+    <rect x="24" y="10" width="14" height="28" rx="7" fill="url(#rcaGrad2)" stroke="#2F6BFF" stroke-width="2.5"/>
+    
+    <!-- Legs -->
+    <rect x="-22" y="48" width="18" height="22" rx="9" fill="url(#rcaGrad2)" stroke="#2F6BFF" stroke-width="2.5"/>
+    <rect x="4" y="48" width="18" height="22" rx="9" fill="url(#rcaGrad2)" stroke="#2F6BFF" stroke-width="2.5"/>
+    
+    <!-- Automation Arrows -->
+    <path d="M -46 -20 L -36 -20 L -32 -16 L -36 -12 L -36 -8 L -46 -8 Z" fill="#B6F400"/>
+    <path d="M 46 -20 L 36 -20 L 32 -16 L 36 -12 L 36 -8 L 46 -8 Z" fill="#B6F400"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="100" y="168" font-family="Arial, sans-serif" font-size="15" font-weight="bold" text-anchor="middle" fill="#B6F400">
+    RETAINERS
+  </text>
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle" fill="#9CA3AF">
+    Cheap Automation
+  </text>
+</svg>

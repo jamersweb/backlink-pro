@@ -55,7 +55,7 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('backlink_ref_domains', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('domain_id');
             $table->string('ref_domain')->index();
             $table->timestamp('first_seen_at')->nullable();
             $table->timestamp('last_seen_at')->nullable();
@@ -68,6 +68,13 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
+            // Add foreign key with explicit name to avoid conflicts
+            $table->foreign('domain_id', 'backlink_ref_domains_domain_id_foreign')
+                  ->references('id')
+                  ->on('domains')
+                  ->onDelete('cascade');
+            
+            $table->index('domain_id');
             $table->unique(['domain_id', 'ref_domain']);
         });
     }

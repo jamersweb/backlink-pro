@@ -54,6 +54,21 @@ class MarketingController extends Controller
         ]);
     }
 
+    public function seoAuditReport()
+    {
+        return Inertia::render('Marketing/SeoAuditReport', [
+            'meta' => [
+                'title' => 'SEO Audit Report - Comprehensive Website Analysis | BacklinkPro',
+                'description' => 'Get a complete SEO audit report with performance metrics, security headers, multi-page crawl analysis, and actionable insights.',
+                'og' => [
+                    'title' => 'SEO Audit Report - Comprehensive Website Analysis | BacklinkPro',
+                    'description' => 'Get a complete SEO audit report with performance metrics, security headers, multi-page crawl analysis, and actionable insights.',
+                    'image' => asset('images/og-image.jpg'),
+                ],
+            ],
+        ]);
+    }
+
     public function howItWorks()
     {
         return Inertia::render('Marketing/HowItWorks', [

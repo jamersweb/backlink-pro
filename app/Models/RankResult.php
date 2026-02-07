@@ -17,6 +17,8 @@ class RankResult extends Model
         'matched',
         'serp_top_urls_json',
         'features_json',
+        'serp_features',
+        'source',
         'fetched_at',
     ];
 
@@ -24,6 +26,7 @@ class RankResult extends Model
         'fetched_at' => 'datetime',
         'serp_top_urls_json' => 'array',
         'features_json' => 'array',
+        'serp_features' => 'array',
     ];
 
     /**

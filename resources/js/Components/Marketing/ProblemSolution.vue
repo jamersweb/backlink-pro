@@ -9,9 +9,11 @@
                     v-for="(problem, idx) in problems"
                     :key="idx"
                     data-reveal
-                    class="marketing-card"
+                    class="marketing-card transition-all duration-300 ease-out hover:!border-[1.5px] hover:!border-white cursor-pointer group"
                 >
-                    <div class="text-4xl mb-4">{{ problem.icon }}</div>
+                    <div class="mb-4">
+                        <img :src="problem.icon" :alt="problem.title" class="w-16 h-16 transition-transform duration-300 ease-out group-hover:rotate-12 will-change-transform" style="transform-origin: center center;" />
+                    </div>
                     <h3 class="text-xl font-bold mb-3 text-text">{{ problem.title }}</h3>
                     <p class="text-muted">{{ problem.description }}</p>
                 </div>
@@ -26,17 +28,17 @@
 <script setup>
 const problems = [
     {
-        icon: '🐌',
+        icon: '/images/logos/manual-grind-icon.svg',
         title: 'Manual Grind',
         description: 'Hours spent researching, reaching out, and following up. Growth is painfully slow.',
     },
     {
-        icon: '💰',
+        icon: '/images/logos/retainers-icon.svg',
         title: 'Retainers',
         description: 'Opaque agencies charge thousands monthly with no transparency or control.',
     },
     {
-        icon: '⚠️',
+        icon: '/images/logos/cheap-automation-icon.svg',
         title: 'Cheap Automation',
         description: 'Spam blasts that risk penalties. No safety checks or quality control.',
     },

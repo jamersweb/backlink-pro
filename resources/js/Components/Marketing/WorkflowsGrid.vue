@@ -13,9 +13,11 @@
                     v-for="(workflow, idx) in workflows"
                     :key="idx"
                     data-reveal
-                    class="marketing-card"
+                    class="marketing-card transition-all duration-300 ease-out hover:!border-[1.5px] hover:!border-white cursor-pointer group"
                 >
-                    <div class="text-4xl mb-4">{{ workflow.icon }}</div>
+                    <div class="mb-4">
+                        <img :src="workflow.icon" :alt="workflow.name" class="w-16 h-16 transition-transform duration-300 ease-out group-hover:rotate-12 will-change-transform" style="transform-origin: center center;" />
+                    </div>
                     <h3 class="text-xl font-bold mb-3 text-text">{{ workflow.name }}</h3>
                     <p class="text-sm text-muted mb-4">{{ workflow.description }}</p>
                     <div class="space-y-2 mb-6 text-sm">
@@ -44,7 +46,7 @@
 <script setup>
 const workflows = [
     {
-        icon: '💬',
+        icon: '/images/logos/comment-icon.svg',
         name: 'Comment',
         description: 'Engage with relevant blog posts and discussions.',
         bestFor: 'Blog posts, articles',
@@ -52,7 +54,7 @@ const workflows = [
         controls: 'Templates, filters',
     },
     {
-        icon: '👤',
+        icon: '/images/logos/profile-icon.svg',
         name: 'Profile',
         description: 'Create profiles on relevant platforms.',
         bestFor: 'Forums, communities',
@@ -60,7 +62,7 @@ const workflows = [
         controls: 'Bio templates, rules',
     },
     {
-        icon: '📝',
+        icon: '/images/logos/forum-icon.svg',
         name: 'Forum',
         description: 'Participate in forum discussions.',
         bestFor: 'Active forums',
@@ -68,7 +70,7 @@ const workflows = [
         controls: 'Topic filters, rules',
     },
     {
-        icon: '✍️',
+        icon: '/images/logos/guest-icon.svg',
         name: 'Guest',
         description: 'Submit guest post opportunities.',
         bestFor: 'High-authority blogs',

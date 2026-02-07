@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly SEO Report - {{ $report->month }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #1f2937;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            color: #6b7280;
+            margin: 10px 0 0 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .metric-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .metric-value {
+            color: #1f2937;
+            font-weight: 600;
+        }
+        .metric-change {
+            font-size: 14px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .metric-change.positive {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .metric-change.negative {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: #ffffff;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .cta-button:hover {
+            background-color: #2563eb;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .highlight-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .highlight-box strong {
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Monthly SEO Report</h1>
+            <p>{{ $report->month }} • {{ $organization->name }}</p>
+        </div>
+
+        <div class="highlight-box">
+            <strong>Your monthly SEO report is ready!</strong><br>
+            Download the full PDF report with detailed insights, rankings analysis, and recommendations.
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <p>This report covers your SEO performance for {{ $report->month }}, including rankings, search console metrics, analytics data, and actionable insights.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">What's Included</h2>
+            <ul style="line-height: 2;">
+                <li>📈 Rankings summary and top movers</li>
+                <li>🔍 Search Console performance (clicks, impressions, CTR)</li>
+                <li>📊 GA4 analytics (sessions, users, conversions)</li>
+                <li>⚠️ SEO alerts and anomalies detected</li>
+                <li>💡 Actionable recommendations</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ $downloadUrl }}" class="cta-button">Download Full Report (PDF)</a>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Next Steps</h2>
+            <p>Review your report and take action on the recommendations. Log in to your dashboard to:</p>
+            <ul style="line-height: 2;">
+                <li>View detailed rankings and trends</li>
+                <li>Monitor ongoing SEO alerts</li>
+                <li>Track keyword performance</li>
+                <li>Access historical data</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated report generated by BacklinkPro.</p>
+            <p>Questions? Contact us at <a href="mailto:support@backlinkpro.com" style="color: #3b82f6;">support@backlinkpro.com</a></p>
+        </div>
+    </div>
+</body>
+</html>
