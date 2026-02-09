@@ -14,6 +14,7 @@ use App\Models\Ga4PageMetric;
 use App\Models\Organization;
 use App\Models\Lead;
 use App\Jobs\RunSeoAuditJob;
+use App\Jobs\RunCruxJob;
 use App\Services\Billing\PlanLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -539,6 +540,76 @@ class AuditController extends Controller
     }
 
     /**
+     * Get CrUX KPIs for audit
+     */
+    public function crux(Audit $audit, Request $request)
+    {
+        $token = $request->query('token');
+        $hasOrgAccess = false;
+        if (auth()->check() && $audit->organization_id) {
+            $org = $audit->organization;
+            if ($org && $org->hasUser(auth()->user())) {
+                $hasOrgAccess = true;
+            }
+        }
+
+        if (!$hasOrgAccess && !$audit->canBeViewedBy(auth()->user(), $token)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $google = data_get($audit->audit_kpis, 'google.crux');
+
+        return response()->json([
+            'crux' => $google,
+        ]);
+    }
+
+    /**
+     * Run CrUX for audit (manual trigger)
+     */
+    public function runCrux(Audit $audit, Request $request)
+    {
+        $token = $request->query('token');
+        $hasOrgAccess = false;
+        if (auth()->check() && $audit->organization_id) {
+            $org = $audit->organization;
+            if ($org && $org->hasUser(auth()->user())) {
+                $hasOrgAccess = true;
+            }
+        }
+
+        if (!$hasOrgAccess && !$audit->canBeViewedBy(auth()->user(), $token)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $organization = $audit->organization;
+        $hasSharedKey = (bool) config('services.google.crux_api_key');
+        $hasByokKey = $organization
+            && $organization->crux_byok_enabled
+            && $organization->crux_api_key_encrypted;
+
+        if (!$hasSharedKey && !$hasByokKey) {
+            return response()->json([
+                'error' => 'CrUX API key not configured.',
+            ], 400);
+        }
+
+        $shouldRunSync = app()->environment('local') || config('queue.default') === 'sync';
+        if ($shouldRunSync) {
+            RunCruxJob::dispatchSync($audit->id, $audit->normalized_url);
+        } else {
+            RunCruxJob::dispatch($audit->id, $audit->normalized_url)
+                ->onQueue('integrations');
+        }
+
+        $google = data_get($audit->fresh()->audit_kpis, 'google.crux');
+
+        return response()->json([
+            'crux' => $google,
+        ]);
+    }
+
+    /**
      * Generate share link for audit
      */
     public function share(Audit $audit)
@@ -566,9 +637,27 @@ class AuditController extends Controller
     protected function buildGoogleKpis(Audit $audit): array
     {
         $organization = $audit->organization;
+        $pagespeed = data_get($audit->audit_kpis, 'google.pagespeed');
+        $crux = data_get($audit->audit_kpis, 'google.crux');
+        $pagespeedConfigured = (bool) config('services.google.pagespeed_api_key');
+        $cruxConfigured = (bool) config('services.google.crux_api_key');
+
+        if ($organization && $organization->pagespeed_byok_enabled && $organization->pagespeed_last_key_verified_at) {
+            $pagespeedConfigured = true;
+        }
+        if ($organization && $organization->crux_byok_enabled && $organization->crux_api_key_encrypted) {
+            $cruxConfigured = true;
+        }
+
         if (!$organization) {
             return [
                 'connected' => false,
+                'pagespeed_configured' => $pagespeedConfigured || (bool) $pagespeed,
+                'crux_configured' => $cruxConfigured || (bool) $crux,
+                'pagespeed_byok_enabled' => false,
+                'crux_byok_enabled' => false,
+                'pagespeed' => $pagespeed,
+                'crux' => $crux,
             ];
         }
 
@@ -727,18 +816,16 @@ class AuditController extends Controller
             ];
         }
 
-        $pagespeedConfigured = (bool) config('services.google.pagespeed_api_key');
-        if ($organization->pagespeed_byok_enabled && $organization->pagespeed_last_key_verified_at) {
-            $pagespeedConfigured = true;
-        }
-
         return [
             'connected' => $connected,
-            'pagespeed_configured' => $pagespeedConfigured,
+            'pagespeed_configured' => $pagespeedConfigured || (bool) $pagespeed,
             'pagespeed_byok_enabled' => (bool) $organization->pagespeed_byok_enabled,
+            'crux_configured' => $cruxConfigured || (bool) $crux,
+            'crux_byok_enabled' => (bool) $organization->crux_byok_enabled,
             'gsc' => $gsc,
             'ga4' => $ga4,
-            'pagespeed' => data_get($audit->audit_kpis, 'google.pagespeed'),
+            'pagespeed' => $pagespeed,
+            'crux' => $crux,
         ];
     }
 

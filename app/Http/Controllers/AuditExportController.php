@@ -6,6 +6,7 @@ use App\Models\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AuditExportController extends Controller
 {
@@ -47,13 +48,33 @@ class AuditExportController extends Controller
             );
         }
 
-        // Check if Browsershot is available
-        if (class_exists(\Spatie\Browsershot\Browsershot::class)) {
-            return $this->exportWithBrowsershot($audit, $page, $issues, $token);
+        $html = $this->renderPdfHtml($audit, $page, $issues, $request, 'audit.pdf_v2');
+
+        $shouldDownload = $request->boolean('download');
+        if ($shouldDownload) {
+            if (class_exists(Pdf::class)) {
+                try {
+                    return $this->exportPdfWithDompdf($audit, $html);
+                } catch (\Throwable $e) {
+                    // Fall through to Browsershot if Dompdf fails.
+                }
+            }
+            if (class_exists(\Spatie\Browsershot\Browsershot::class)) {
+                try {
+                    return $this->exportPdfFromHtml($audit, $html);
+                } catch (\Throwable $e) {
+                    // Continue to HTML fallback.
+                }
+            }
+            return response($html, 200, [
+                'Content-Type' => 'text/html; charset=utf-8',
+                'X-Export-Notice' => 'PDF engine unavailable, showing HTML instead.',
+            ]);
         }
 
-        // Fallback: return HTML view for browser print
-        return $this->exportAsHtml($audit, $page, $issues);
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+        ]);
     }
 
     /**
@@ -324,14 +345,8 @@ class AuditExportController extends Controller
     /**
      * Export using Browsershot
      */
-    protected function exportWithBrowsershot(Audit $audit, $page, $issues, ?string $token): \Illuminate\Http\Response
+    protected function exportPdfFromHtml(Audit $audit, string $html): \Illuminate\Http\Response
     {
-        $html = View::make('audit.pdf', [
-            'audit' => $audit,
-            'page' => $page,
-            'issues' => $issues,
-        ])->render();
-
         $pdf = \Spatie\Browsershot\Browsershot::html($html)
             ->setOption('printBackground', true)
             ->pdf();
@@ -342,6 +357,17 @@ class AuditExportController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    protected function exportPdfWithDompdf(Audit $audit, string $html): \Illuminate\Http\Response
+    {
+        $pdf = Pdf::loadHTML($html)->setPaper('A4');
+        if (method_exists($pdf, 'setOption')) {
+            $pdf->setOption('isRemoteEnabled', true);
+        }
+        $filename = 'seo-audit-' . $audit->id . '-' . date('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     /**
@@ -358,6 +384,53 @@ class AuditExportController extends Controller
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=utf-8',
         ]);
+    }
+
+    protected function renderPdfHtml(Audit $audit, $page, $issues, Request $request, string $view): string
+    {
+        if ($view === 'audit.pdf_v2') {
+            $pages = $audit->pages()->get();
+            $topPages = $pages->whereNotNull('performance_metrics')
+                ->sortByDesc(fn($p) => $p->performance_metrics['mobile']['score'] ?? 0)
+                ->take(5);
+
+            $branding = null;
+            $hideBranding = false;
+            $logoUrl = null;
+
+            if ($audit->organization_id) {
+                $branding = $audit->organization->brandingProfile;
+                if ($branding) {
+                    $hideBranding = $branding->hide_backlinkpro_branding;
+                    if ($branding->logo_path) {
+                        $logoUrl = asset('storage/' . $branding->logo_path);
+                    }
+                }
+            }
+
+            if ($request->query('brand') === 'client') {
+                $hideBranding = true;
+            }
+            if ($request->query('logo_url')) {
+                $logoUrl = $request->query('logo_url');
+            }
+
+            return View::make('audit.pdf_v2', [
+                'audit' => $audit,
+                'pages' => $pages,
+                'topPages' => $topPages,
+                'issues' => $issues,
+                'hideBranding' => $hideBranding,
+                'logoUrl' => $logoUrl,
+                'branding' => $branding,
+            ])->render();
+        }
+
+        return View::make('audit.pdf', [
+            'audit' => $audit,
+            'page' => $page,
+            'issues' => $issues,
+        ])->render();
     }
 
     /**

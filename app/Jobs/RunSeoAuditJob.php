@@ -9,6 +9,8 @@ use App\Services\SeoAudit\PageParser;
 use App\Services\SeoAudit\AuditKpiBuilder;
 use App\Jobs\StartAuditPipelineJob;
 use App\Jobs\RunPageSpeedJob;
+use App\Jobs\RunCruxJob;
+use App\Services\Google\CruxService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -59,6 +61,18 @@ class RunSeoAuditJob implements ShouldQueue
                 RunPageSpeedJob::dispatchSync($audit->id, $audit->normalized_url);
             } else {
                 RunPageSpeedJob::dispatch($audit->id, $audit->normalized_url)
+                    ->onQueue('integrations');
+            }
+        }
+
+        $cruxService = new CruxService();
+        $cruxKeyInfo = $cruxService->resolveKey($organization);
+        if ($cruxKeyInfo['key']) {
+            $shouldRunSync = app()->environment('local') || config('queue.default') === 'sync';
+            if ($shouldRunSync) {
+                RunCruxJob::dispatchSync($audit->id, $audit->normalized_url);
+            } else {
+                RunCruxJob::dispatch($audit->id, $audit->normalized_url)
                     ->onQueue('integrations');
             }
         }

@@ -35,7 +35,7 @@ class PageSpeedService
             ->orderByDesc('fetched_at')
             ->first();
 
-        if ($cached) {
+        if ($cached && $cached->status === 'success') {
             return [
                 'status' => $cached->status,
                 'cache_hit' => true,
@@ -64,7 +64,7 @@ class PageSpeedService
 
             if (!$response->successful()) {
                 $error = $body['error']['message'] ?? 'PageSpeed API error';
-                $result = $this->storeResult($orgId, $url, $strategy, 'failed', $status, $error, $body, null);
+            $result = $this->storeResult($orgId, $url, $strategy, 'failed', $status, $error, $body, null);
 
                 return [
                     'status' => 'failed',
@@ -110,10 +110,14 @@ class PageSpeedService
     protected function callApi(string $url, string $strategy, string $apiKey)
     {
         $globalPerMin = (int) config('services.google.pagespeed_global_per_min', 60);
-        Cache::throttle('pagespeed-global')
-            ->allow($globalPerMin)
-            ->every(60)
-            ->block(5);
+        try {
+            Cache::throttle('pagespeed-global')
+                ->allow($globalPerMin)
+                ->every(60)
+                ->block(5);
+        } catch (\Throwable $e) {
+            // Some cache stores (e.g. database) do not support throttling.
+        }
 
         $params = [
             'url' => $url,
@@ -122,8 +126,8 @@ class PageSpeedService
             'key' => $apiKey,
         ];
 
-        return Http::timeout(20)
-            ->retry(2, 500)
+        return Http::timeout(120)
+            ->retry(3, 1000)
             ->get('https://www.googleapis.com/pagespeedonline/v5/runPagespeed', $params);
     }
 
@@ -137,6 +141,10 @@ class PageSpeedService
         ?array $payload,
         ?array $kpis
     ): PageSpeedResult {
+        $expiresAt = $status === 'success'
+            ? now()->addDay()
+            : now()->addMinutes(10);
+
         return PageSpeedResult::updateOrCreate(
             [
                 'organization_id' => $orgId,
@@ -145,7 +153,7 @@ class PageSpeedService
             ],
             [
                 'fetched_at' => now(),
-                'expires_at' => now()->addDay(),
+                'expires_at' => $expiresAt,
                 'status' => $status,
                 'http_status' => $httpStatus,
                 'error_message' => $errorMessage,

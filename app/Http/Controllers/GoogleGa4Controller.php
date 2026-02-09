@@ -161,6 +161,7 @@ class GoogleGa4Controller extends Controller
     public function properties(Request $request)
     {
         $user = $request->user();
+        $domain = $request->query('domain');
 
         try {
             $token = $this->getAccessToken($user);
@@ -174,21 +175,31 @@ class GoogleGa4Controller extends Controller
 
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$token}",
-        ])->get('https://analyticsadmin.googleapis.com/v1beta/accounts/-/properties');
+        ])->get('https://analyticsadmin.googleapis.com/v1beta/accountSummaries');
 
         if (!$response->successful()) {
+            $body = $response->body();
+            $message = 'Failed to fetch GA4 properties.';
+            if (str_starts_with(ltrim($body), '<!DOCTYPE html>')) {
+                $message .= ' Google Analytics Admin API endpoint returned HTML. Please ensure the Analytics Admin API is enabled in Google Cloud Console.';
+            } else {
+                $message .= ' ' . $body;
+            }
+
             return response()->json([
                 'properties' => [],
-                'error' => 'Failed to fetch GA4 properties: ' . $response->body(),
+                'error' => $message,
             ], 400);
         }
 
-        $properties = collect($response->json()['properties'] ?? [])
+        $properties = collect($response->json()['accountSummaries'] ?? [])
+            ->flatMap(fn($account) => $account['propertySummaries'] ?? [])
             ->map(fn($property) => [
-                'property_id' => $property['name'] ?? null,
+                'property_id' => $property['property'] ?? null,
                 'display_name' => $property['displayName'] ?? 'Unknown',
             ])
             ->filter(fn($property) => !empty($property['property_id']))
+            ->unique('property_id')
             ->values()
             ->all();
 
@@ -199,8 +210,23 @@ class GoogleGa4Controller extends Controller
             ]);
         }
 
+        $selected = $user->ga4_property_id;
+        if (!$selected) {
+            if (count($properties) === 1) {
+                $selected = $properties[0]['property_id'];
+            } elseif ($domain) {
+                $selected = $this->matchPropertyByDomain($token, $properties, $domain);
+            }
+
+            if ($selected) {
+                $user->ga4_property_id = $selected;
+                $user->save();
+            }
+        }
+
         return response()->json([
             'properties' => $properties,
+            'selected_property_id' => $selected,
         ]);
     }
 
@@ -352,6 +378,48 @@ class GoogleGa4Controller extends Controller
         }
 
         return 'properties/' . $propertyId;
+    }
+
+    protected function matchPropertyByDomain(string $token, array $properties, string $domain): ?string
+    {
+        $domain = strtolower(trim($domain));
+        if ($domain === '') {
+            return null;
+        }
+
+        foreach ($properties as $property) {
+            $propertyId = $property['property_id'] ?? null;
+            if (!$propertyId) {
+                continue;
+            }
+
+            try {
+                $streams = Http::withHeaders([
+                    'Authorization' => "Bearer {$token}",
+                ])->get("https://analyticsadmin.googleapis.com/v1beta/{$propertyId}/dataStreams");
+
+                if (!$streams->successful()) {
+                    continue;
+                }
+
+                $items = $streams->json('dataStreams', []);
+                foreach ($items as $stream) {
+                    $uri = $stream['webStreamData']['defaultUri'] ?? null;
+                    if (!$uri) {
+                        continue;
+                    }
+
+                    $host = parse_url($uri, PHP_URL_HOST);
+                    if ($host && strtolower($host) === $domain) {
+                        return $propertyId;
+                    }
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return null;
     }
 
     protected function runReport(string $token, string $propertyId, array $payload): array

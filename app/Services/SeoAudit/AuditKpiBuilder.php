@@ -32,6 +32,42 @@ class AuditKpiBuilder
         $schemaTypes = $pages->pluck('schema_types')->filter()->flatten()->unique()->values()->toArray();
         $schemaDetected = !empty($schemaTypes);
 
+        $missingTitleCount = $pages->filter(fn($page) => empty($page->title))->count();
+        $missingMetaCount = $pages->filter(fn($page) => empty($page->meta_description))->count();
+        $missingH1Count = $pages->filter(fn($page) => ($page->h1_count ?? 0) === 0)->count();
+        $multipleH1Count = $pages->filter(fn($page) => ($page->h1_count ?? 0) > 1)->count();
+
+        $duplicateTitles = $pages->filter(fn($page) => !empty($page->title))
+            ->groupBy('title')
+            ->filter(fn($group) => $group->count() > 1);
+        $duplicateTitlePages = $duplicateTitles->flatten();
+
+        $duplicateMeta = $pages->filter(fn($page) => !empty($page->meta_description))
+            ->groupBy('meta_description')
+            ->filter(fn($group) => $group->count() > 1);
+        $duplicateMetaPages = $duplicateMeta->flatten();
+
+        $titleTooLong = $pages->filter(fn($page) => ($page->title_len ?? 0) > 60)->count();
+        $titleTooShort = $pages->filter(fn($page) => ($page->title_len ?? 0) > 0 && ($page->title_len ?? 0) < 30)->count();
+        $metaTooLong = $pages->filter(fn($page) => ($page->meta_len ?? 0) > 160)->count();
+        $metaTooShort = $pages->filter(fn($page) => ($page->meta_len ?? 0) > 0 && ($page->meta_len ?? 0) < 70)->count();
+
+        $avgWordCount = $pages->count() > 0 ? round($pages->avg('word_count')) : null;
+        $thinPagesCount = $pages->filter(fn($page) => ($page->word_count ?? 0) > 0 && ($page->word_count ?? 0) < 300)->count();
+
+        $duplicateTitlesTable = $duplicateTitlePages->take(50)->map(fn($page) => [
+            'url' => $page->url,
+            'title' => $page->title,
+        ])->values()->toArray();
+
+        $missingMetaTable = $pages->filter(fn($page) => empty($page->meta_description))->take(50)->map(fn($page) => [
+            'url' => $page->url,
+        ])->values()->toArray();
+
+        $missingH1Table = $pages->filter(fn($page) => ($page->h1_count ?? 0) === 0)->take(50)->map(fn($page) => [
+            'url' => $page->url,
+        ])->values()->toArray();
+
         $onPage = [
             'title_tag_text' => $homepage?->title,
             'title_length' => $homepage?->title_len,
@@ -71,6 +107,23 @@ class AuditKpiBuilder
             'schema_format' => $schemaDetected ? 'JSON-LD' : null,
             'schema_types' => $schemaTypes,
             'rendered_content_percentage' => null,
+            'title_missing_count' => $missingTitleCount,
+            'title_duplicate_count' => $duplicateTitlePages->count(),
+            'title_too_long_count' => $titleTooLong,
+            'title_too_short_count' => $titleTooShort,
+            'meta_missing_count' => $missingMetaCount,
+            'meta_duplicate_count' => $duplicateMetaPages->count(),
+            'meta_too_long_count' => $metaTooLong,
+            'meta_too_short_count' => $metaTooShort,
+            'h1_missing_count' => $missingH1Count,
+            'h1_multiple_count' => $multipleH1Count,
+            'images_total' => $pages->sum('images_total'),
+            'images_missing_alt_total' => $pages->sum('images_missing_alt'),
+            'avg_word_count' => $avgWordCount,
+            'thin_pages_count' => $thinPagesCount,
+            'duplicate_titles_table' => $duplicateTitlesTable,
+            'missing_meta_table' => $missingMetaTable,
+            'missing_h1_table' => $missingH1Table,
         ];
 
         $linkTotals = $this->buildLinkTotals($links);
@@ -82,6 +135,8 @@ class AuditKpiBuilder
             'referring_domains_count' => null,
             'nofollow_backlinks_count' => null,
             'dofollow_backlinks_count' => null,
+            'new_backlinks_count' => null,
+            'lost_backlinks_count' => null,
             'edu_backlinks_count' => null,
             'gov_backlinks_count' => null,
             'ips_count' => null,
@@ -102,6 +157,11 @@ class AuditKpiBuilder
         $techEmail = $this->buildTechEmail($homepage, $siteSignals);
         $technical = $this->buildTechnical($audit, $pages, $links, $siteSignals, $schemaDetected);
 
+        $issuesTotal = $issues->count();
+        $issuesHigh = $issues->where('impact', 'high')->count();
+        $issuesMedium = $issues->where('impact', 'medium')->count();
+        $issuesLow = $issues->where('impact', 'low')->count();
+
         return [
             'overview' => [
                 'overall_grade' => $audit->overall_grade,
@@ -118,6 +178,13 @@ class AuditKpiBuilder
                 'report_generated_datetime_utc' => now()->utc()->toIso8601String(),
                 'pages_crawled_count' => $audit->pages_scanned ?? $pages->count(),
                 'crawl_depth_used' => $audit->crawl_depth,
+                'overall_score' => $audit->overall_score,
+                'issues_total' => $issuesTotal,
+                'issues_high' => $issuesHigh,
+                'issues_medium' => $issuesMedium,
+                'issues_low' => $issuesLow,
+                'warnings_count' => $issuesMedium,
+                'passed_checks' => max(0, ($pages->count() ?: 0) - $issuesTotal),
             ],
             'on_page_seo' => $onPage,
             'links' => $linksSection,
@@ -249,6 +316,14 @@ class AuditKpiBuilder
             'other_resources_count' => $assets->whereIn('type', ['font', 'other'])->count(),
         ];
 
+        $heavyAssets = $assets->sortByDesc('size_bytes')->take(10)->map(function ($asset) {
+            return [
+                'asset_url' => $asset->asset_url,
+                'type' => $asset->type,
+                'size_kb' => $asset->size_bytes ? round($asset->size_bytes / 1024, 1) : null,
+            ];
+        })->values()->toArray();
+
         return [
             'website_load_timeline' => [
                 'server_response_sec' => null,
@@ -272,6 +347,7 @@ class AuditKpiBuilder
             'js_errors_detected' => null,
             'http2_enabled' => null,
             'minification_ok' => null,
+            'heavy_assets' => $heavyAssets,
         ];
     }
 
@@ -379,6 +455,27 @@ class AuditKpiBuilder
         ])->toArray();
 
         $securitySummary = $this->summarizeSecurityHeaders($pages);
+        $securityList = collect($securitySummary)->except('pages_with_headers')->map(function ($count, $header) use ($pages) {
+            return [
+                'header' => strtoupper(str_replace('_', '-', $header)),
+                'pages_with_header' => $count,
+                'total_pages' => $pages->count(),
+            ];
+        })->values()->toArray();
+
+        $indexabilityIssues = $pages->filter(function ($page) {
+            $robots = strtolower($page->robots_meta ?? '');
+            $xrobots = strtolower($page->x_robots_tag ?? '');
+            return str_contains($robots, 'noindex') || str_contains($robots, 'nofollow')
+                || str_contains($xrobots, 'noindex') || str_contains($xrobots, 'nofollow');
+        });
+
+        $non200Pages = $pages->filter(fn($page) => ($page->status_code ?? 0) < 200 || ($page->status_code ?? 0) >= 300)
+            ->take(50)
+            ->map(fn($page) => [
+                'url' => $page->url,
+                'status_code' => $page->status_code,
+            ])->values()->toArray();
 
         return [
             'https_enabled' => str_starts_with($audit->normalized_url, 'https://'),
@@ -393,10 +490,14 @@ class AuditKpiBuilder
             'redirect_chains_count' => $redirectChains->count(),
             'redirect_chains_examples' => $redirectSamples,
             'status_code_distribution' => $statusDist,
+            'canonical_present_count' => $pages->filter(fn($page) => !empty($page->canonical_url))->count(),
+            'indexability_issues_count' => $indexabilityIssues->count(),
+            'non_200_pages' => $non200Pages,
             'structured_data_detected' => $schemaDetected,
             'analytics_detected' => $pages->whereNotNull('analytics_tool')->count() > 0,
             'favicon_present' => $pages->where('favicon_present', true)->count() > 0,
             'security_headers' => $securitySummary,
+            'security_headers_list' => $securityList,
         ];
     }
 

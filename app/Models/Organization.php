@@ -27,6 +27,8 @@ class Organization extends Model
         'pagespeed_api_key_encrypted',
         'pagespeed_byok_enabled',
         'pagespeed_last_key_verified_at',
+        'crux_api_key_encrypted',
+        'crux_byok_enabled',
         'usage_period_started_at',
         'usage_period_ends_at',
     ];
@@ -39,6 +41,8 @@ class Organization extends Model
         'pagespeed_api_key_encrypted' => 'encrypted',
         'pagespeed_byok_enabled' => 'boolean',
         'pagespeed_last_key_verified_at' => 'datetime',
+        'crux_api_key_encrypted' => 'encrypted',
+        'crux_byok_enabled' => 'boolean',
     ];
 
     /**

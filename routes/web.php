@@ -155,6 +155,8 @@ Route::get('/audit/{audit}', [AuditController::class, 'show'])->name('audit.show
 Route::get('/audit/{audit}/status', [AuditController::class, 'status'])->name('audit.status');
 Route::get('/audit/{audit}/pagespeed', [AuditController::class, 'pagespeed'])->name('audit.pagespeed');
 Route::post('/audit/{audit}/pagespeed/run', [AuditController::class, 'runPagespeed'])->name('audit.pagespeed.run');
+Route::get('/audit/{audit}/crux', [AuditController::class, 'crux'])->name('audit.crux');
+Route::post('/audit/{audit}/crux/run', [AuditController::class, 'runCrux'])->name('audit.crux.run');
 Route::get('/audit/{audit}/export/pdf', [AuditExportController::class, 'pdf'])->name('audit.export.pdf');
 Route::get('/audit/{audit}/export/pdf-v2', [AuditExportController::class, 'pdfV2'])->name('audit.export.pdf.v2');
 Route::get('/audit/{audit}/export/pages.csv', [AuditExportController::class, 'pagesCsv'])->name('audit.export.pages.csv');
