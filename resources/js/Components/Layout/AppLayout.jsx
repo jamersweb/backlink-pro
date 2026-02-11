@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
-export default function AppLayout({ children, header }) {
+export default function AppLayout({ children, header, flush = false, bodyClass = '' }) {
     const { auth } = usePage().props;
     const { url } = usePage();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,6 +22,14 @@ export default function AppLayout({ children, header }) {
 
     const isActive = (path) => url === path || url.startsWith(`${path}/`);
 
+    useEffect(() => {
+        if (!bodyClass) return undefined;
+        document.body.classList.add(bodyClass);
+        return () => {
+            document.body.classList.remove(bodyClass);
+        };
+    }, [bodyClass]);
+
     const navLinkClass = (active) =>
         [
             'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium',
@@ -30,8 +38,16 @@ export default function AppLayout({ children, header }) {
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
         ].join(' ');
 
+    const pageShellClass = flush ? 'min-h-screen bg-white' : 'min-h-screen bg-gray-100';
+    const headerContainerClass = flush
+        ? 'w-full px-4 sm:px-6 lg:px-8'
+        : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8';
+    const mainContainerClass = flush
+        ? 'w-full'
+        : 'max-w-7xl mx-auto py-6 sm:px-6 lg:px-8';
+
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className={pageShellClass}>
             {/* Navigation */}
             <nav className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,6 +100,12 @@ export default function AppLayout({ children, header }) {
                                     className={navLinkClass(isActive('/reports'))}
                                 >
                                     Reports
+                                </Link>
+                                <Link
+                                    href="/Backlink/auditreport"
+                                    className={navLinkClass(isActive('/Backlink/auditreport'))}
+                                >
+                                    Audit Report
                                 </Link>
                                 <Link
                                     href="/settings"
@@ -140,14 +162,14 @@ export default function AppLayout({ children, header }) {
             {/* Page Header */}
             {header && (
                 <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    <div className={headerContainerClass}>
                         <h2 className="text-3xl font-bold text-gray-900">{header}</h2>
                     </div>
                 </header>
             )}
 
             {/* Page Content */}
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <main className={mainContainerClass}>
                 {children}
             </main>
         </div>

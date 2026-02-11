@@ -95,7 +95,7 @@ class SecurityHeaders
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:",
             "img-src 'self' data: https: blob:",
             "connect-src 'self' https://api.stripe.com wss:",
-            "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+            "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://backlinkproreport.lovable.app",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",

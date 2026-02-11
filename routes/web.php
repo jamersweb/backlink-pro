@@ -51,6 +51,7 @@ use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditExportController;
+use Inertia\Inertia;
 
 
 
@@ -165,6 +166,21 @@ Route::get('/audit/{audit}/export/links.csv', [AuditExportController::class, 'li
 Route::get('/audit/{audit}/export/broken-links.csv', [AuditExportController::class, 'brokenLinksCsv'])->name('audit.export.broken-links.csv');
 Route::get('/audit/{audit}/export/lighthouse.json', [AuditExportController::class, 'lighthouseJson'])->name('audit.export.lighthouse.json');
 Route::get('/audit/{audit}/export/assets.csv', [AuditExportController::class, 'assetsCsv'])->name('audit.export.assets.csv');
+
+Route::get('/Backlink/auditreport', function (Illuminate\Http\Request $request) {
+    $auditId = $request->query('audit_id');
+    $url = $request->query('url');
+
+    if ($auditId) {
+        return redirect("/audit/{$auditId}");
+    }
+
+    if ($url) {
+        return redirect('/audit?url=' . urlencode($url));
+    }
+
+    return redirect('/audit');
+})->name('backlink.auditreport');
 
 // AI endpoints for public audits (if authenticated)
 Route::middleware(['auth'])->group(function() {

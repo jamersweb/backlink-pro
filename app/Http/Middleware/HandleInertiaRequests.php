@@ -19,6 +19,11 @@ class HandleInertiaRequests extends Middleware
      */
     public function rootView(Request $request): string
     {
+        // Force React app shell for the embedded audit report
+        if ($request->is('Backlink/auditreport') || $request->is('backlink/auditreport')) {
+            return parent::rootView($request);
+        }
+
         // Use marketing template ONLY for marketing-named routes and blog routes
         if ($request->routeIs('marketing.*') || $request->routeIs('blog.*')) {
             return 'app-marketing';

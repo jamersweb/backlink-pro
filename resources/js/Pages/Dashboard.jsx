@@ -411,7 +411,7 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                             </div>
                         </Card>
                     </Link>
-                    <Link href="/audit" className="block">
+                    <Link href="/Backlink/auditreport" className="block">
                         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                             <div className="text-center p-6">
                                 <div className="text-4xl mb-3">📄</div>
@@ -464,7 +464,7 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                 </div>
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                     <p className="text-sm text-blue-800">
-                        <strong>How to access:</strong> Go to any audit detail page (e.g., <code className="bg-blue-100 px-1 rounded">/audit/1</code>) and you'll find the "Export PDF" button in the top right corner. For CSV exports, use the export URLs shown above.
+                        <strong>How to access:</strong> Open the audit report page (e.g., <code className="bg-blue-100 px-1 rounded">/Backlink/auditreport</code>) and you'll find the export options there. For CSV exports, use the export URLs shown above.
                     </p>
                 </div>
             </Card>

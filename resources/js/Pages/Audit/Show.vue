@@ -8,7 +8,7 @@
         <header class="audit-header">
             <div class="audit-container header-grid">
                 <div>
-                    <h1 class="audit-title">SEO Dashboard</h1>
+                    <h1 class="audit-title">SEO Audit Report</h1>
                     <p class="audit-subtitle">
                         <span class="muted">{{ audit.url }}</span>
                         <span class="divider">|</span>
@@ -17,6 +17,10 @@
                     </p>
                 </div>
                 <div class="header-actions">
+                    <div class="score-pill">
+                        <span class="score-pill-label">Score</span>
+                        <span class="score-pill-value">{{ display(overviewKpis?.overall_score ?? audit.overall_score) }}</span>
+                    </div>
                     <a :href="rerunUrl" class="btn-secondary">Re-run Audit</a>
                     <a :href="exportUrl" class="btn-primary">Export PDF</a>
                 </div>
@@ -1718,15 +1722,15 @@ onUnmounted(() => {
 
 <style scoped>
 .audit-shell {
-    background: #f6f8fb;
+    background: #f7f8fb;
     min-height: 100vh;
     color: #0f172a;
 }
 
 .audit-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 24px;
+    max-width: none;
+    margin: 0;
+    padding: 32px 36px;
 }
 
 .audit-header {
@@ -1734,7 +1738,7 @@ onUnmounted(() => {
     top: 0;
     z-index: 30;
     background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e7eaf2;
 }
 
 .header-grid {
@@ -1746,8 +1750,8 @@ onUnmounted(() => {
 }
 
 .audit-title {
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 26px;
+    font-weight: 700;
 }
 
 .audit-subtitle {
@@ -1770,6 +1774,29 @@ onUnmounted(() => {
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
+}
+
+.score-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.score-pill-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.score-pill-value {
+    font-size: 14px;
+    font-weight: 800;
 }
 
 .range-select {
@@ -1898,10 +1925,10 @@ onUnmounted(() => {
 
 .dashboard-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+    border: 1px solid #e7eaf2;
+    border-radius: 18px;
     padding: 20px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
     display: grid;
     gap: 16px;
 }
@@ -2212,5 +2239,3 @@ onUnmounted(() => {
     }
 }
 </style>
-
-
