@@ -28,14 +28,11 @@
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        
-        <!-- JSON-LD Schema -->
-        <script type="application/ld+json" v-html="schemaJson"></script>
     </Head>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { Head, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -132,4 +129,22 @@ const schemaJson = computed(() => {
     
     return JSON.stringify(schema);
 });
+
+// Inject JSON-LD script (Vue disallows <script> in templates)
+const JSON_LD_ID = 'marketing-head-jsonld';
+const injectJsonLd = () => {
+    let el = document.getElementById(JSON_LD_ID);
+    if (el) el.remove();
+    el = document.createElement('script');
+    el.id = JSON_LD_ID;
+    el.type = 'application/ld+json';
+    el.textContent = schemaJson.value;
+    document.head.appendChild(el);
+};
+onMounted(injectJsonLd);
+onBeforeUnmount(() => {
+    const el = document.getElementById(JSON_LD_ID);
+    if (el) el.remove();
+});
+watch(schemaJson, injectJsonLd);
 </script>

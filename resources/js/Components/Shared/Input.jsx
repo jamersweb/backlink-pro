@@ -17,17 +17,17 @@ export default function Input({
     const variants = {
         dark: {
             wrapper: '',
-            label: 'text-[#E5E7EB]',
-            input: `bg-[#0B0F14] border-white/10 text-white placeholder-[#6B7280] focus:border-[#2F6BFF] focus:ring-[#2F6BFF]/20`,
+            label: 'text-[var(--admin-text)]',
+            input: `bg-[var(--admin-bg)] border-[var(--admin-border)] text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] focus:border-[#2F6BFF] focus:ring-[#2F6BFF]/20`,
             error: 'text-[#F04438]',
-            help: 'text-[#6B7280]',
+            help: 'text-[var(--admin-text-dim)]',
         },
         light: {
             wrapper: '',
-            label: 'text-gray-700',
-            input: 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-200',
-            error: 'text-red-600',
-            help: 'text-gray-500',
+            label: 'text-[var(--admin-text)]',
+            input: 'bg-[var(--admin-surface)] border-[var(--admin-border)] text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] focus:border-[#2F6BFF] focus:ring-[#2F6BFF]/20',
+            error: 'text-[#F04438]',
+            help: 'text-[var(--admin-text-dim)]',
         },
     };
 

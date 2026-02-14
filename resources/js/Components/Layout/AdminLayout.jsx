@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import ThemeMenu from './ThemeMenu';
 
 export default function AdminLayout({ children, header }) {
     const { auth } = usePage().props;
@@ -58,10 +59,10 @@ export default function AdminLayout({ children, header }) {
             active: currentUrl === '/admin/dashboard',
         },
         {
-            name: 'SEO Audit',
-            href: '/audit',
+            name: 'Audit Report',
+            href: '/admin/audit-report',
             icon: 'bi-search',
-            active: currentUrl.startsWith('/audit'),
+            active: currentUrl.startsWith('/admin/audit-report'),
         },
         {
             name: 'Leads',
@@ -171,7 +172,7 @@ export default function AdminLayout({ children, header }) {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0B0F14] flex relative">
+        <div className="min-h-screen bg-[var(--admin-bg)] flex relative">
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
@@ -181,28 +182,28 @@ export default function AdminLayout({ children, header }) {
             )}
 
             {/* Sidebar */}
-            <aside className={`fixed lg:static inset-y-0 left-0 bg-[#111827] border-r border-white/10 transition-all duration-300 ease-in-out z-50 ${
+            <aside className={`fixed lg:static inset-y-0 left-0 bg-[var(--admin-surface)] border-r border-[var(--admin-border)] transition-all duration-300 ease-in-out z-50 ${
                 sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'
             } flex flex-col`}>
                 {/* Sidebar Header */}
-                <div className={`h-16 flex items-center border-b border-white/10 ${
+                <div className={`h-16 flex items-center border-b border-[var(--admin-border)] ${
                     sidebarOpen ? 'justify-between px-4' : 'justify-center px-2'
                 }`}>
                     {sidebarOpen ? (
                         <>
                             <Link href="/admin/dashboard" className="flex items-center space-x-3 group">
-                                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px] group-hover:shadow-lg group-hover:shadow-[#2F6BFF]/25 transition-all duration-300">
-                                    <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center">
+                                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px] group-hover:shadow-lg group-hover:shadow-[#2F6BFF]/25 transition-all duration-300">
+                                            <div className="w-full h-full rounded-[6px] bg-[var(--admin-surface)] flex items-center justify-center">
                                         <svg className="w-5 h-5 text-[#2F6BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                         </svg>
                                     </div>
                                 </div>
-                                <span className="text-lg font-bold text-[#E5E7EB] group-hover:text-white transition-colors">Admin</span>
+                                <span className="text-lg font-bold text-[var(--admin-text)] group-hover:text-[var(--admin-text)] transition-colors">Admin</span>
                             </Link>
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white"
+                                className="p-2 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-colors text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]"
                             >
                                 <i className="bi bi-chevron-left"></i>
                             </button>
@@ -210,10 +211,10 @@ export default function AdminLayout({ children, header }) {
                     ) : (
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 rounded-lg hover:bg-white/5 transition-colors w-full flex justify-center"
+                            className="p-2 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-colors w-full flex justify-center"
                         >
                             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px]">
-                                <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center">
+                                <div className="w-full h-full rounded-[6px] bg-[var(--admin-surface)] flex items-center justify-center">
                                     <svg className="w-5 h-5 text-[#2F6BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                     </svg>
@@ -240,7 +241,7 @@ export default function AdminLayout({ children, header }) {
                                             className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                                                 item.active
                                                     ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] text-white shadow-lg shadow-[#2F6BFF]/20'
-                                                    : 'text-[#9CA3AF] hover:bg-white/5 hover:text-white'
+                                                    : 'text-[var(--admin-text-muted)] hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)]'
                                             }`}
                                         >
                                             <i className={`bi ${item.icon} text-lg ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}></i>
@@ -263,7 +264,7 @@ export default function AdminLayout({ children, header }) {
                                             (item.name === 'Content' && contentDropdownOpen) ||
                                             (item.name === 'Access Control' && accessDropdownOpen)
                                         ) && (
-                                            <ul className="mt-1 ml-3 space-y-1 border-l border-white/10 pl-3">
+                                            <ul className="mt-1 ml-3 space-y-1 border-l border-[var(--admin-border)] pl-3">
                                                 {item.children.map((child, childIndex) => (
                                                     <li key={childIndex}>
                                                         <Link
@@ -271,7 +272,7 @@ export default function AdminLayout({ children, header }) {
                                                             className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                                                                 currentUrl === child.href || currentUrl.startsWith(child.href + '/')
                                                                     ? 'bg-[#2F6BFF]/20 text-[#5B8AFF] font-medium'
-                                                                    : 'text-[#6B7280] hover:bg-white/5 hover:text-[#E5E7EB]'
+                                                                    : 'text-[var(--admin-text-dim)] hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)]'
                                                             }`}
                                                         >
                                                             <i className={`bi ${child.icon} text-sm mr-3`}></i>
@@ -288,7 +289,7 @@ export default function AdminLayout({ children, header }) {
                                         className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
                                             item.active
                                                 ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] text-white shadow-lg shadow-[#2F6BFF]/20'
-                                                : 'text-[#9CA3AF] hover:bg-white/5 hover:text-white'
+                                                : 'text-[var(--admin-text-muted)] hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)]'
                                         }`}
                                         title={!sidebarOpen ? item.name : ''}
                                     >
@@ -302,43 +303,43 @@ export default function AdminLayout({ children, header }) {
                 </nav>
 
                 {/* Sidebar Footer */}
-                <div className="border-t border-white/10 p-4">
+                <div className="border-t border-[var(--admin-border)] p-4">
                     <div className="relative">
                         <button
                             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                            className={`w-full flex items-center px-3 py-2.5 rounded-lg hover:bg-white/5 transition-all duration-200 ${
+                            className={`w-full flex items-center px-3 py-2.5 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-all duration-200 ${
                                 sidebarOpen ? 'justify-start' : 'justify-center'
                             }`}
                         >
                             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px]">
-                                <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center text-white font-bold text-sm">
+                                <div className="w-full h-full rounded-[6px] bg-[var(--admin-surface)] flex items-center justify-center text-white font-bold text-sm">
                                     {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
                                 </div>
                             </div>
                             {sidebarOpen && (
                                 <div className="ml-3 flex-1 text-left">
-                                    <p className="text-sm font-medium text-[#E5E7EB]">{auth?.user?.name}</p>
-                                    <p className="text-xs text-[#6B7280] truncate">{auth?.user?.email}</p>
+                                    <p className="text-sm font-medium text-[var(--admin-text)]">{auth?.user?.name}</p>
+                                    <p className="text-xs text-[var(--admin-text-dim)] truncate">{auth?.user?.email}</p>
                                 </div>
                             )}
                         </button>
                         {profileDropdownOpen && (
-                            <div className="absolute bottom-full left-0 mb-2 w-full bg-[#1F2937] rounded-xl border border-white/10 py-2 z-50 shadow-xl shadow-black/40 animate-fadeIn">
+                            <div className="absolute bottom-full left-0 mb-2 w-full bg-[var(--admin-surface-2)] rounded-xl border border-[var(--admin-border)] py-2 z-50 shadow-xl shadow-[var(--admin-shadow-lg)] animate-fadeIn">
                                 <Link
                                     href="/"
-                                    className="flex items-center px-4 py-2.5 text-sm text-[#E5E7EB] hover:bg-white/5 transition-colors"
+                                    className="flex items-center px-4 py-2.5 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] transition-colors"
                                     onClick={() => setProfileDropdownOpen(false)}
                                 >
-                                    <i className="bi bi-house mr-3 text-[#9CA3AF]"></i>View Site
+                                    <i className="bi bi-house mr-3 text-[var(--admin-text-muted)]"></i>View Site
                                 </Link>
                                 <Link
                                     href="/profile"
-                                    className="flex items-center px-4 py-2.5 text-sm text-[#E5E7EB] hover:bg-white/5 transition-colors"
+                                    className="flex items-center px-4 py-2.5 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] transition-colors"
                                     onClick={() => setProfileDropdownOpen(false)}
                                 >
-                                    <i className="bi bi-person mr-3 text-[#9CA3AF]"></i>Profile
+                                    <i className="bi bi-person mr-3 text-[var(--admin-text-muted)]"></i>Profile
                                 </Link>
-                                <div className="border-t border-white/10 my-2"></div>
+                                <div className="border-t border-[var(--admin-border)] my-2"></div>
                                 <Link
                                     href="/logout"
                                     method="post"
@@ -356,29 +357,27 @@ export default function AdminLayout({ children, header }) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Top Header */}
-                <header className="h-16 bg-[#111827]/80 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 sticky top-0 z-30">
+                <header className="h-16 bg-[var(--admin-surface)]/80 backdrop-blur-xl border-b border-[var(--admin-border)] flex items-center justify-between px-6 sticky top-0 z-30">
                     <div className="flex items-center space-x-4">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white"
+                            className="lg:hidden p-2 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-colors text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]"
                         >
                             <i className="bi bi-list text-xl"></i>
                         </button>
                         {header && (
-                            <h1 className="text-xl font-bold text-white">{header}</h1>
+                            <h1 className="text-xl font-bold text-[var(--admin-text)]">{header}</h1>
                         )}
                     </div>
                     <div className="flex items-center space-x-4">
                         {/* Quick Actions */}
-                        <button className="p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white relative">
+                        <button className="p-2 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-colors text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] relative">
                             <i className="bi bi-bell text-lg"></i>
                             <span className="absolute top-1 right-1 w-2 h-2 bg-[#F04438] rounded-full"></span>
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-white/5 transition-colors text-[#9CA3AF] hover:text-white">
-                            <i className="bi bi-gear text-lg"></i>
-                        </button>
+                        <ThemeMenu />
                         <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px] lg:hidden">
-                            <div className="w-full h-full rounded-[6px] bg-[#111827] flex items-center justify-center text-white font-bold text-sm">
+                            <div className="w-full h-full rounded-[6px] bg-[var(--admin-surface)] flex items-center justify-center text-white font-bold text-sm">
                                 {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
                             </div>
                         </div>
@@ -386,7 +385,7 @@ export default function AdminLayout({ children, header }) {
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto bg-[#0B0F14] admin-scrollbar">
+                <main className="flex-1 overflow-y-auto bg-[var(--admin-bg)] admin-scrollbar">
                     <div className="p-6">
                         {children}
                     </div>

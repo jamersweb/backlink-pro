@@ -2,6 +2,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AuditReportController;
 use App\Http\Controllers\Admin\LeadsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\PlansController;
@@ -11,6 +12,10 @@ use App\Http\Controllers\ProfileController;
 // Note: prefix('admin'), middleware(['auth', 'role:admin']), and name('admin.') 
 // are already applied in bootstrap/app.php, so we don't need to add them here
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// Audit Report
+Route::get('/audit-report', [AuditReportController::class, 'index'])->name('audit-report.index');
+Route::post('/audit-report/run', [AuditReportController::class, 'runAudit'])->name('audit-report.run');
 
 // Leads Management
 Route::prefix('leads')->name('leads.')->group(function () {

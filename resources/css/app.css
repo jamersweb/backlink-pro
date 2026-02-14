@@ -13,20 +13,24 @@
 }
 
 /* ============================================
-   DARK ADMIN THEME - Matching Marketing Frontend
+   ADMIN THEME - Light & Dark Mode Support
    ============================================ */
 
-:root {
+/* Dark Theme (Default) */
+:root,
+:root.dark {
     /* Core Colors */
-    --admin-bg: #0B0F14;
-    --admin-surface: #111827;
-    --admin-surface-2: #1F2937;
-    --admin-surface-3: #374151;
+    --admin-bg: #0B1220;
+    --admin-surface: #111A2E;
+    --admin-surface-2: #0F1A2A;
+    --admin-surface-3: #1E2A42;
     --admin-text: #E5E7EB;
-    --admin-text-muted: #9CA3AF;
-    --admin-text-dim: #6B7280;
-    --admin-border: rgba(255, 255, 255, 0.10);
-    --admin-border-light: rgba(255, 255, 255, 0.05);
+    --admin-text-muted: #94A3B8;
+    --admin-text-dim: #64748B;
+    --admin-border: rgba(255, 255, 255, 0.06);
+    --admin-border-light: rgba(255, 255, 255, 0.04);
+    --admin-hover-bg: rgba(255, 255, 255, 0.05);
+    --admin-hover-border: rgba(255, 255, 255, 0.15);
     
     /* Brand Colors */
     --admin-primary: #2F6BFF;
@@ -44,6 +48,49 @@
     --admin-danger-light: #FEE2E2;
     --admin-info: #0EA5E9;
     --admin-info-light: #E0F2FE;
+    
+    /* Shadows */
+    --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --admin-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --admin-shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Light Theme */
+:root.light {
+    /* Core Colors - Clean neutral grays, no blue tint */
+    --admin-bg: #F6F7F9;
+    --admin-surface: #FFFFFF;
+    --admin-surface-2: #F1F5F9;
+    --admin-surface-3: #E2E8F0;
+    --admin-text: #0F172A;
+    --admin-text-muted: #64748B;
+    --admin-text-dim: #94A3B8;
+    --admin-border: rgba(15, 23, 42, 0.10);
+    --admin-border-light: rgba(15, 23, 42, 0.06);
+    --admin-hover-bg: rgba(15, 23, 42, 0.04);
+    --admin-hover-border: rgba(15, 23, 42, 0.20);
+    
+    /* Brand Colors */
+    --admin-primary: #2F6BFF;
+    --admin-primary-hover: #2457D6;
+    --admin-primary-light: #5B8AFF;
+    --admin-lime: #B6F400;
+    --admin-lime-hover: #A3DB00;
+    
+    /* Status Colors */
+    --admin-success: #12B76A;
+    --admin-success-light: #D1FAE5;
+    --admin-warning: #F79009;
+    --admin-warning-light: #FEF3C7;
+    --admin-danger: #F04438;
+    --admin-danger-light: #FEE2E2;
+    --admin-info: #0EA5E9;
+    --admin-info-light: #E0F2FE;
+    
+    /* Shadows */
+    --admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --admin-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --admin-shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.10);
 }
 
 /* Apply Google Fonts globally */
@@ -53,6 +100,16 @@
 
 body {
     font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }
 
 /* ============================================
@@ -81,8 +138,8 @@ body {
 }
 
 .admin-card-hover:hover {
-    border-color: var(--admin-border);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-color: var(--admin-hover-border);
+    box-shadow: var(--admin-shadow-md);
 }
 
 /* ============================================
@@ -164,7 +221,7 @@ body {
 }
 
 .admin-btn-ghost:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--admin-hover-bg);
     border-color: var(--admin-border);
 }
 
@@ -241,7 +298,7 @@ body {
 }
 
 .admin-table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--admin-hover-bg);
 }
 
 /* ============================================
@@ -312,9 +369,9 @@ body {
 }
 
 .admin-stat-card:hover {
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--admin-hover-border);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--admin-shadow-md);
 }
 
 .admin-stat-icon {
@@ -361,7 +418,7 @@ body {
 }
 
 .admin-nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--admin-hover-bg);
     color: var(--admin-text);
 }
 
@@ -382,7 +439,7 @@ body {
     background-color: var(--admin-surface);
     border: 1px solid var(--admin-border);
     border-radius: 0.75rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--admin-shadow-lg);
 }
 
 .admin-dropdown-item {
@@ -393,7 +450,7 @@ body {
 }
 
 .admin-dropdown-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--admin-hover-bg);
 }
 
 /* ============================================
@@ -470,6 +527,16 @@ body {
 
 .admin-text-primary {
     color: var(--admin-primary-light);
+}
+
+/* Link styles */
+a.admin-link {
+    color: var(--admin-primary-light);
+    transition: color 0.2s;
+}
+
+a.admin-link:hover {
+    color: var(--admin-primary);
 }
 
 .admin-text-success {
