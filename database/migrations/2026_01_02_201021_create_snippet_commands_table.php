@@ -55,12 +55,14 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('snippet_commands', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('domain_id')->index();
             $table->enum('command', ['ping', 'refresh_meta', 'verify'])->index();
             $table->enum('status', ['queued', 'delivered', 'completed', 'expired'])->default('queued')->index();
             $table->json('payload_json')->nullable();
             $table->timestamps();
 
+            $table->foreign('domain_id', 'snippet_commands_domain_id_foreign')
+                ->references('id')->on('domains')->onDelete('cascade');
             $table->index(['domain_id', 'status', 'created_at']);
         });
     }

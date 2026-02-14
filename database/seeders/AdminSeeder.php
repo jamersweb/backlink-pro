@@ -21,8 +21,8 @@ class AdminSeeder extends Seeder
         // Get admin role
         $adminRole = Role::where('name', 'admin')->where('guard_name', 'web')->first();
         
-        // Create admin user if it doesn't exist
-        $admin = User::firstOrCreate(
+        // Create or update admin user so password is always correct when seeder runs
+        $admin = User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin User',

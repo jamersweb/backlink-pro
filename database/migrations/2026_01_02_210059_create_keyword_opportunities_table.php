@@ -55,7 +55,7 @@ return new class extends Migration
         // Table doesn't exist or was dropped, create it
         Schema::create('keyword_opportunities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('domain_id')->index();
             $table->date('date_range_start');
             $table->date('date_range_end');
             $table->string('query')->index();
@@ -69,6 +69,8 @@ return new class extends Migration
             $table->enum('status', ['new', 'brief_created', 'ignored'])->default('new')->index();
             $table->timestamps();
 
+            $table->foreign('domain_id', 'keyword_opportunities_domain_id_foreign')
+                ->references('id')->on('domains')->onDelete('cascade');
             $table->unique(['domain_id', 'date_range_start', 'date_range_end', 'query', 'page_hash'], 'unique_opportunity');
         });
     }

@@ -142,7 +142,7 @@ class AuditController extends Controller
             $defaultCrawlDepth = $planSnapshot['limits']['crawl_depth'] ?? 2;
         }
 
-        // Create audit
+        // Create audit (share_token allows creator to view after redirect from marketing form)
         $audit = Audit::create([
             'user_id' => auth()->id(),
             'organization_id' => $organization?->id,
@@ -156,6 +156,7 @@ class AuditController extends Controller
             'is_gated' => true,
             'pages_limit' => $defaultPagesLimit,
             'crawl_depth' => $defaultCrawlDepth,
+            'share_token' => Str::random(32),
         ]);
 
         if ($lead) {
@@ -192,7 +193,7 @@ class AuditController extends Controller
             RunSeoAuditJob::dispatch($audit->id);
         }
 
-        return redirect()->route('audit.show', $audit);
+        return redirect()->route('audit.show', ['audit' => $audit, 'token' => $audit->share_token]);
     }
 
     /**
