@@ -75,9 +75,17 @@ export default function BacklinksShow({ domain, run, backlinks, refDomains, anch
                         </p>
                     </div>
                     {run.status === 'completed' && (
-                        <Link href={`/domains/${domain.id}/backlinks/${run.id}/export`}>
-                            <Button variant="outline">📥 Export CSV</Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                            <Link href={`/domains/${domain.id}/backlinks/quality`}>
+                                <Button variant="secondary">Quality</Button>
+                            </Link>
+                            <Link href={`/domains/${domain.id}/backlinks/disavow`}>
+                                <Button variant="secondary">Disavow</Button>
+                            </Link>
+                            <Link href={`/domains/${domain.id}/backlinks/${run.id}/export`}>
+                                <Button variant="outline">📥 Export CSV</Button>
+                            </Link>
+                        </div>
                     )}
                 </div>
 

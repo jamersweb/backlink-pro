@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SiteAccount;
+use App\Models\Campaign;
+use App\Jobs\WaitForVerificationEmailJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -33,7 +35,23 @@ class SiteAccountController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $siteAccount = SiteAccount::create($validator->validated());
+        $data = $validator->validated();
+        $campaign = Campaign::findOrFail($data['campaign_id']);
+        if (empty($data['user_id'])) {
+            $data['user_id'] = $campaign->user_id;
+        }
+
+        $siteAccount = SiteAccount::create($data);
+
+        if ($campaign->requires_email_verification && $campaign->gmailAccount) {
+            $siteAccount->update([
+                'status' => SiteAccount::STATUS_WAITING_EMAIL,
+                'email_verification_status' => SiteAccount::EMAIL_STATUS_PENDING,
+                'last_verification_check_at' => now(),
+            ]);
+
+            WaitForVerificationEmailJob::dispatch($siteAccount, $campaign->id);
+        }
 
         return response()->json([
             'message' => 'Site account created successfully',

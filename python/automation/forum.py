@@ -133,6 +133,11 @@ class ForumAutomation(BaseAutomation):
                 self.human_type(self.page, password_field, site_account.get('password', ''))
                 
                 # Submit
+                try:
+                    self.solve_captcha_if_present()
+                except Exception as e:
+                    logger.debug(f"Captcha solve attempt failed: {e}")
+
                 submit_button = login_form.locator('button[type="submit"], input[type="submit"]').first
                 submit_button.click()
                 
@@ -176,12 +181,17 @@ class ForumAutomation(BaseAutomation):
             title_field = self.page.locator('input[name*="title"], input[name*="subject"]').first
             content_field = self.page.locator('textarea, div[contenteditable="true"]').first
             
-            if title_field.is_visible() and content_field.is_visible():
-                keyword = keywords[0] if keywords else "Discussion"
-                self.human_type(self.page, title_field, f"Discussion about {keyword}")
-                self.human_type(self.page, content_field, f"I'd like to discuss {keyword}...")
+                if title_field.is_visible() and content_field.is_visible():
+                    keyword = keywords[0] if keywords else "Discussion"
+                    self.human_type(self.page, title_field, f"Discussion about {keyword}")
+                    self.human_type(self.page, content_field, f"I'd like to discuss {keyword}...")
                 
                 # Submit
+                try:
+                    self.solve_captcha_if_present()
+                except Exception as e:
+                    logger.debug(f"Captcha solve attempt failed: {e}")
+
                 submit_button = self.page.locator('button[type="submit"], button:has-text("Post")').first
                 submit_button.click()
                 self.random_delay(2, 4)
@@ -205,6 +215,11 @@ class ForumAutomation(BaseAutomation):
                 self.human_type(self.page, textarea, post_text)
                 
                 # Submit
+                try:
+                    self.solve_captcha_if_present()
+                except Exception as e:
+                    logger.debug(f"Captcha solve attempt failed: {e}")
+
                 submit_button = reply_form.locator('button[type="submit"], button:has-text("Post")').first
                 submit_button.click()
                 self.random_delay(2, 4)

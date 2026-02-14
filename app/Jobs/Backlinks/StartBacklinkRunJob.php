@@ -5,10 +5,12 @@ namespace App\Jobs\Backlinks;
 use App\Models\Domain;
 use App\Models\DomainBacklinkRun;
 use App\Models\DomainBacklink;
+use App\Models\BacklinkRefDomain;
 use App\Models\DomainRefDomain;
 use App\Models\DomainAnchorSummary;
 use App\Models\DomainBacklinkDelta;
 use App\Services\Backlinks\BacklinkProviderFactory;
+use App\Services\Backlinks\BacklinkScoringEngine;
 use App\Services\Backlinks\RiskHeuristics;
 use App\Services\System\ActivityLogger;
 use Illuminate\Bus\Queueable;
@@ -84,6 +86,9 @@ class StartBacklinkRunJob implements ShouldQueue
 
             // Fetch and store anchors
             $this->fetchAndStoreAnchors($run, $provider, $host, $limitAnchors);
+
+            // Compute quality/toxicity scores and ref domain aggregates (Feature 19)
+            $this->processQualityScoring($run, $domain);
 
             // Compute risk heuristics
             $riskScore = RiskHeuristics::computeRunRiskScore($run);
@@ -371,5 +376,88 @@ class StartBacklinkRunJob implements ShouldQueue
             'new_ref_domains' => count($newDomains),
             'lost_ref_domains' => count($lostDomains),
         ]);
+    }
+
+    /**
+     * Compute backlink quality/risk scores and ref domain aggregates
+     */
+    protected function processQualityScoring(DomainBacklinkRun $run, Domain $domain): void
+    {
+        $scoringEngine = app(BacklinkScoringEngine::class);
+
+        // Build ref domain aggregates from backlinks in this run
+        $refDomainStats = DomainBacklink::where('run_id', $run->id)
+            ->select(
+                'source_domain',
+                DB::raw('MIN(first_seen) as first_seen_at'),
+                DB::raw('MAX(last_seen) as last_seen_at'),
+                DB::raw('COUNT(*) as links_count'),
+                DB::raw("SUM(CASE WHEN rel = 'follow' THEN 1 ELSE 0 END) as follow_links_count")
+            )
+            ->groupBy('source_domain')
+            ->get();
+
+        foreach ($refDomainStats as $stat) {
+            if (!$stat->source_domain) {
+                continue;
+            }
+
+            BacklinkRefDomain::updateOrCreate(
+                [
+                    'domain_id' => $domain->id,
+                    'ref_domain' => $stat->source_domain,
+                ],
+                [
+                    'first_seen_at' => $stat->first_seen_at,
+                    'last_seen_at' => $stat->last_seen_at,
+                    'links_count' => (int) $stat->links_count,
+                    'follow_links_count' => (int) $stat->follow_links_count,
+                ]
+            );
+        }
+
+        // Attach ref_domain_id and score backlinks
+        DomainBacklink::where('run_id', $run->id)
+            ->orderBy('id')
+            ->chunkById(200, function ($backlinks) use ($domain, $scoringEngine) {
+                $domains = $backlinks->pluck('source_domain')->filter()->unique()->values();
+                $refMap = BacklinkRefDomain::where('domain_id', $domain->id)
+                    ->whereIn('ref_domain', $domains)
+                    ->pluck('id', 'ref_domain');
+
+                foreach ($backlinks as $backlink) {
+                    $refId = $refMap[$backlink->source_domain] ?? null;
+                    $scores = $scoringEngine->scoreBacklink($backlink, []);
+
+                    $actionStatus = $backlink->action_status;
+                    if (!$actionStatus) {
+                        if ($scores['risk_score'] >= 80) {
+                            $actionStatus = DomainBacklink::ACTION_DISAVOW;
+                        } elseif ($scores['risk_score'] >= 55) {
+                            $actionStatus = DomainBacklink::ACTION_REVIEW;
+                        } else {
+                            $actionStatus = DomainBacklink::ACTION_KEEP;
+                        }
+                    }
+
+                    $backlink->update([
+                        'ref_domain_id' => $refId,
+                        'risk_score' => $scores['risk_score'],
+                        'quality_score' => $scores['quality_score'],
+                        'flags_json' => $scores['flags'],
+                        'action_status' => $actionStatus,
+                    ]);
+                }
+            });
+
+        // Score ref domains
+        BacklinkRefDomain::where('domain_id', $domain->id)
+            ->orderBy('id')
+            ->chunkById(200, function ($refDomains) use ($scoringEngine) {
+                foreach ($refDomains as $refDomain) {
+                    $scores = $scoringEngine->scoreRefDomain($refDomain);
+                    $refDomain->update($scores);
+                }
+            });
     }
 }

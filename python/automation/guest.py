@@ -66,6 +66,11 @@ class GuestPostAutomation(BaseAutomation):
             self._fill_submission_form(form_data, pitch, task)
             
             # Submit form
+            try:
+                self.solve_captcha_if_present()
+            except Exception as e:
+                logger.debug(f"Captcha solve attempt failed: {e}")
+
             submit_button = self.page.locator('button[type="submit"], button:has-text("Submit"), button:has-text("Send")').first
             submit_button.click()
             

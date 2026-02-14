@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SiteAccount;
 use App\Models\Campaign;
+use App\Jobs\WaitForVerificationEmailJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -68,7 +69,7 @@ class SiteAccountController extends Controller
         ]);
 
         // Verify campaign belongs to user
-        Campaign::where('user_id', Auth::id())
+        $campaign = Campaign::where('user_id', Auth::id())
             ->findOrFail($validated['campaign_id']);
 
         $siteAccount = SiteAccount::create([
@@ -80,6 +81,16 @@ class SiteAccountController extends Controller
             'password' => $validated['password'] ?? null,
             'status' => $validated['status'] ?? SiteAccount::STATUS_CREATED,
         ]);
+
+        if ($campaign->requires_email_verification && $campaign->gmailAccount) {
+            $siteAccount->update([
+                'status' => SiteAccount::STATUS_WAITING_EMAIL,
+                'email_verification_status' => SiteAccount::EMAIL_STATUS_PENDING,
+                'last_verification_check_at' => now(),
+            ]);
+
+            WaitForVerificationEmailJob::dispatch($siteAccount, $campaign->id);
+        }
 
         return redirect()->route('site-accounts.index')
             ->with('success', 'Site account created successfully');

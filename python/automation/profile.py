@@ -72,6 +72,12 @@ class ProfileAutomation(BaseAutomation):
             # Wait a bit for form to be ready
             self.random_delay(1, 2)
             
+            # Attempt to solve captcha before submit
+            try:
+                self.solve_captcha_if_present()
+            except Exception as e:
+                logger.debug(f"Captcha solve attempt failed: {e}")
+
             # Submit form with better error handling
             submit_success = self._submit_registration_form()
             if not submit_success:
@@ -529,4 +535,3 @@ class ProfileAutomation(BaseAutomation):
         from urllib.parse import urlparse
         parsed = urlparse(url)
         return parsed.netloc
-
