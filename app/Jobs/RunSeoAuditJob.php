@@ -41,52 +41,111 @@ class RunSeoAuditJob implements ShouldQueue
      */
     public function handle(): void
     {
+        Log::info('RunSeoAuditJob started', ['audit_id' => $this->auditId]);
+        
         $audit = Audit::find($this->auditId);
         
         if (!$audit) {
-            Log::warning("Audit not found: {$this->auditId}");
+            Log::error("Audit not found: {$this->auditId}");
             return;
         }
 
-        $organization = $audit->organization;
-        $hasSharedKey = (bool) config('services.google.pagespeed_api_key');
-        $hasByokKey = $organization
-            && $organization->pagespeed_byok_enabled
-            && $organization->pagespeed_last_key_verified_at
-            && $organization->pagespeed_api_key_encrypted;
-
-        if ($hasSharedKey || $hasByokKey) {
-            $shouldRunSync = app()->environment('local') || config('queue.default') === 'sync';
-            if ($shouldRunSync) {
-                RunPageSpeedJob::dispatchSync($audit->id, $audit->normalized_url);
-            } else {
-                RunPageSpeedJob::dispatch($audit->id, $audit->normalized_url)
-                    ->onQueue('integrations');
-            }
-        }
-
-        $cruxService = new CruxService();
-        $cruxKeyInfo = $cruxService->resolveKey($organization);
-        if ($cruxKeyInfo['key']) {
-            $shouldRunSync = app()->environment('local') || config('queue.default') === 'sync';
-            if ($shouldRunSync) {
-                RunCruxJob::dispatchSync($audit->id, $audit->normalized_url);
-            } else {
-                RunCruxJob::dispatch($audit->id, $audit->normalized_url)
-                    ->onQueue('integrations');
-            }
-        }
-
-        // Check if this is a Phase 1 single-page audit
-        $pagesLimit = $audit->pages_limit ?? 25;
-        $crawlDepth = $audit->crawl_depth ?? 2;
+        // Update to running status immediately
+        $audit->status = Audit::STATUS_RUNNING;
+        $audit->progress_percent = 10;
+        $audit->save();
         
-        if ($pagesLimit === 1 && $crawlDepth === 0) {
-            // Phase 1: Single page audit
-            $this->handleSinglePage($audit);
-        } else {
-            // Phase 2: Multi-page crawl - dispatch pipeline
-            StartAuditPipelineJob::dispatch($this->auditId);
+        Log::info('Audit status updated to running', ['audit_id' => $audit->id]);
+
+        try {
+            $organization = $audit->organization; // May be null for personal audits
+            
+            // Optional: Run PageSpeed Insights (skip if no key configured)
+            $hasSharedKey = (bool) config('services.google.pagespeed_api_key');
+            $hasByokKey = $organization
+                && $organization->pagespeed_byok_enabled
+                && $organization->pagespeed_last_key_verified_at
+                && !empty($organization->pagespeed_api_key_encrypted);
+
+            if ($hasSharedKey || $hasByokKey) {
+                Log::info('Running PageSpeed audit', ['audit_id' => $audit->id]);
+                try {
+                    RunPageSpeedJob::dispatchSync($audit->id, $audit->normalized_url);
+                    $audit->progress_percent = 30;
+                    $audit->save();
+                } catch (\Exception $e) {
+                    Log::warning('PageSpeed job failed, continuing audit', [
+                        'audit_id' => $audit->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Optional: Run CrUX (skip if no key)
+            try {
+                $cruxService = new CruxService();
+                $cruxKeyInfo = $cruxService->resolveKey($organization);
+            } catch (\Exception $e) {
+                Log::warning('CrUX service initialization failed', [
+                    'audit_id' => $audit->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $cruxKeyInfo = ['key' => null];
+            }
+            
+            if (!empty($cruxKeyInfo['key'])) {
+                Log::info('Running CrUX audit', ['audit_id' => $audit->id]);
+                try {
+                    RunCruxJob::dispatchSync($audit->id, $audit->normalized_url);
+                    $audit->progress_percent = 50;
+                    $audit->save();
+                } catch (\Exception $e) {
+                    Log::warning('CrUX job failed, continuing audit', [
+                        'audit_id' => $audit->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Check if this is a Phase 1 single-page audit
+            $pagesLimit = $audit->pages_limit ?? 25;
+            $crawlDepth = $audit->crawl_depth ?? 2;
+            
+            Log::info('Determining audit type', [
+                'audit_id' => $audit->id,
+                'pages_limit' => $pagesLimit,
+                'crawl_depth' => $crawlDepth,
+            ]);
+            
+            if ($pagesLimit === 1 && $crawlDepth === 0) {
+                // Phase 1: Single page audit (FAST)
+                Log::info('Running single-page audit', ['audit_id' => $audit->id]);
+                $this->handleSinglePage($audit);
+            } else {
+                // Phase 2: Multi-page crawl - dispatch pipeline
+                Log::info('Dispatching multi-page crawl pipeline', ['audit_id' => $audit->id]);
+                StartAuditPipelineJob::dispatch($this->auditId);
+            }
+            
+            Log::info('RunSeoAuditJob completed', [
+                'audit_id' => $audit->id,
+                'status' => $audit->fresh()->status,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('RunSeoAuditJob failed with exception', [
+                'audit_id' => $this->auditId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Ensure audit is marked as failed
+            $audit->status = Audit::STATUS_FAILED;
+            $audit->error = 'Job execution failed: ' . $e->getMessage();
+            $audit->finished_at = now();
+            $audit->save();
+            
+            throw $e;
         }
     }
 
@@ -96,8 +155,11 @@ class RunSeoAuditJob implements ShouldQueue
     protected function handleSinglePage(Audit $audit): void
     {
         try {
+            Log::info('handleSinglePage started', ['audit_id' => $audit->id, 'url' => $audit->normalized_url]);
+            
             // Update status to running
             $audit->status = Audit::STATUS_RUNNING;
+            $audit->progress_percent = 60;
             $audit->started_at = now();
             $audit->error = null;
             $audit->save();
@@ -187,19 +249,32 @@ class RunSeoAuditJob implements ShouldQueue
             $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
 
             $audit->status = Audit::STATUS_COMPLETED;
+            $audit->progress_percent = 100;
             $audit->finished_at = now();
             $audit->save();
+            
+            Log::info('Single-page audit completed successfully', [
+                'audit_id' => $audit->id,
+                'score' => $audit->overall_score,
+                'issues_count' => $audit->issues()->count(),
+            ]);
 
         } catch (\Exception $e) {
             Log::error("SEO Audit failed: {$e->getMessage()}", [
                 'audit_id' => $this->auditId,
-                'exception' => $e,
+                'url' => $audit->normalized_url,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             $audit->status = Audit::STATUS_FAILED;
-            $audit->error = $e->getMessage();
+            $audit->error = 'Audit failed: ' . $e->getMessage();
+            $audit->progress_percent = 0;
             $audit->finished_at = now();
             $audit->save();
+            
+            // Re-throw to ensure proper error handling
+            throw $e;
         }
     }
 

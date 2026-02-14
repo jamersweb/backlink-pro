@@ -51,6 +51,8 @@ use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditExportController;
+use App\Http\Controllers\AuditReportController;
+use App\Http\Controllers\GoogleOAuthController;
 use Inertia\Inertia;
 
 
@@ -215,6 +217,22 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
     // dashboard stays at /dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Audit Report (User Panel)
+    Route::prefix('audit-report')->name('audit-report.')->group(function() {
+        Route::get('/', [AuditReportController::class, 'index'])->name('index');
+        Route::post('/', [AuditReportController::class, 'create'])->name('create');
+        Route::get('/{id}', [AuditReportController::class, 'show'])->name('show');
+        Route::get('/{id}/status', [AuditReportController::class, 'status'])->name('status');
+    });
+
+    // Google OAuth for Audit Report (User Panel)
+    Route::prefix('google-seo')->name('google-seo.')->group(function() {
+        Route::get('/connect', [GoogleOAuthController::class, 'connect'])->name('connect');
+        Route::get('/callback', [GoogleOAuthController::class, 'callback'])->name('callback');
+        Route::post('/disconnect', [GoogleOAuthController::class, 'disconnect'])->name('disconnect');
+        Route::get('/status', [GoogleOAuthController::class, 'status'])->name('status');
+    });
 
     // Gmail OAuth routes
     Route::prefix('gmail')

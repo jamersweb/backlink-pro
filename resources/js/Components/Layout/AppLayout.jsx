@@ -102,8 +102,8 @@ export default function AppLayout({ children, header, flush = false, bodyClass =
                                     Reports
                                 </Link>
                                 <Link
-                                    href="/Backlink/auditreport"
-                                    className={navLinkClass(isActive('/Backlink/auditreport'))}
+                                    href="/audit-report"
+                                    className={navLinkClass(isActive('/audit-report'))}
                                 >
                                     Audit Report
                                 </Link>

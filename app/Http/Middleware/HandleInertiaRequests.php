@@ -29,8 +29,13 @@ class HandleInertiaRequests extends Middleware
             return 'app-marketing';
         }
 
-        // Audit and public report pages are Vue (use marketing app shell)
-        if ($request->routeIs('audit.*') || $request->is('audit*') || $request->is('r/*')) {
+        // User Audit Report (auth required) uses React app
+        if ($request->routeIs('audit-report.*') || $request->is('audit-report') || $request->is('audit-report/*')) {
+            return parent::rootView($request);
+        }
+        
+        // Public audit pages are Vue (use marketing app shell)
+        if ($request->routeIs('audit.*') || $request->is('audit/*') || $request->is('r/*')) {
             return 'app-marketing';
         }
         
