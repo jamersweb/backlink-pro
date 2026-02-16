@@ -5,6 +5,7 @@ import ThemeMenu from './ThemeMenu';
 export default function AdminLayout({ children, header }) {
     const { auth } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
     const currentUrl = window.location.pathname;
     const isLeadsActive = currentUrl.startsWith('/admin/leads');
     const isSystemActive = currentUrl.startsWith('/admin/proxies') ||
@@ -24,18 +25,63 @@ export default function AdminLayout({ children, header }) {
     const [accessDropdownOpen, setAccessDropdownOpen] = useState(isAccessActive);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
-    // Close dropdowns when clicking outside
+    // Mock notifications data (replace with API later)
+    const notifications = [
+        {
+            id: 1,
+            type: 'success',
+            title: 'Campaign Created',
+            message: 'New campaign "SEO 2026" was created successfully',
+            time: '2 minutes ago',
+            read: false,
+        },
+        {
+            id: 2,
+            type: 'info',
+            title: 'New User Registration',
+            message: 'John Doe has registered an account',
+            time: '1 hour ago',
+            read: false,
+        },
+        {
+            id: 3,
+            type: 'warning',
+            title: 'System Update',
+            message: 'Scheduled maintenance tonight at 10 PM',
+            time: '3 hours ago',
+            read: true,
+        },
+    ];
+
+    const unreadCount = notifications.filter(n => !n.read).length;
+
+    // Close dropdowns when clicking outside or pressing Esc
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (profileDropdownOpen && !event.target.closest('.relative')) {
                 setProfileDropdownOpen(false);
             }
+            if (notificationsOpen && !event.target.closest('.notifications-container')) {
+                setNotificationsOpen(false);
+            }
         };
-        if (profileDropdownOpen) {
+        
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                setNotificationsOpen(false);
+                setProfileDropdownOpen(false);
+            }
+        };
+
+        if (profileDropdownOpen || notificationsOpen) {
             document.addEventListener('click', handleClickOutside);
+            document.addEventListener('keydown', handleEscape);
         }
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, [profileDropdownOpen]);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [profileDropdownOpen, notificationsOpen]);
 
     // Close sidebar on mobile when clicking outside
     useEffect(() => {
@@ -258,19 +304,26 @@ export default function AdminLayout({ children, header }) {
                                             (item.name === 'Content' && contentDropdownOpen) ||
                                             (item.name === 'Access Control' && accessDropdownOpen)
                                         ) && (
-                                            <ul className="mt-1 ml-3 space-y-1 border-l border-[var(--admin-border)] pl-3">
+                                            <ul className="mt-2 ml-2 space-y-0.5 border-l-2 border-[var(--admin-border)] pl-4">
                                                 {item.children.map((child, childIndex) => (
                                                     <li key={childIndex}>
                                                         <Link
                                                             href={child.href}
-                                                            className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+                                                            className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-150 group ${
                                                                 currentUrl === child.href || currentUrl.startsWith(child.href + '/')
-                                                                    ? 'bg-[#2F6BFF]/20 text-[#5B8AFF] font-medium'
-                                                                    : 'text-[var(--admin-text-dim)] hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)]'
+                                                                    ? 'bg-gradient-to-r from-[#2F6BFF]/15 to-[#2F6BFF]/5 text-[#2F6BFF] dark:text-[#5B8AFF] font-medium border border-[#2F6BFF]/20'
+                                                                    : 'text-[var(--admin-text-dim)] hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)] hover:border-[var(--admin-border)] border border-transparent'
                                                             }`}
                                                         >
-                                                            <i className={`bi ${child.icon} text-sm mr-3`}></i>
-                                                            <span className="text-sm">{child.name}</span>
+                                                            <i className={`bi ${child.icon} text-base mr-3 ${
+                                                                currentUrl === child.href || currentUrl.startsWith(child.href + '/')
+                                                                    ? 'text-[#2F6BFF]'
+                                                                    : 'text-[var(--admin-text-muted)] group-hover:text-[var(--admin-text)]'
+                                                            }`}></i>
+                                                            <span className="text-sm font-medium">{child.name}</span>
+                                                            {(currentUrl === child.href || currentUrl.startsWith(child.href + '/')) && (
+                                                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#2F6BFF]"></div>
+                                                            )}
                                                         </Link>
                                                     </li>
                                                 ))}
@@ -364,11 +417,123 @@ export default function AdminLayout({ children, header }) {
                         )}
                     </div>
                     <div className="flex items-center space-x-4">
-                        {/* Quick Actions */}
-                        <button className="p-2 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-colors text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] relative">
-                            <i className="bi bi-bell text-lg"></i>
-                            <span className="absolute top-1 right-1 w-2 h-2 bg-[#F04438] rounded-full"></span>
-                        </button>
+                        {/* Notifications */}
+                        <div className="relative notifications-container">
+                            <button 
+                                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                                className="p-2 rounded-lg hover:bg-[var(--admin-hover-bg)] transition-colors text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] relative"
+                            >
+                                <i className="bi bi-bell text-lg"></i>
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] bg-[#F04438] text-white text-[10px] font-bold rounded-full px-1">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Notifications Dropdown */}
+                            {notificationsOpen && (
+                                <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-2xl z-[100] overflow-hidden">
+                                    {/* Header */}
+                                    <div className="p-4 border-b border-[var(--admin-border)] bg-[var(--admin-surface-2)]">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-base font-semibold text-[var(--admin-text)]">Notifications</h3>
+                                                {unreadCount > 0 && (
+                                                    <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#F04438]/15 text-[#F04438]">
+                                                        {unreadCount} new
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => setNotificationsOpen(false)}
+                                                className="p-1 rounded-lg hover:bg-[var(--admin-hover-bg)] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] transition-colors"
+                                            >
+                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Notifications List */}
+                                    <div className="max-h-[400px] overflow-y-auto admin-scrollbar">
+                                        {notifications.length > 0 ? (
+                                            <div className="divide-y divide-[var(--admin-border)]">
+                                                {notifications.map((notification) => (
+                                                    <div
+                                                        key={notification.id}
+                                                        className={`p-4 hover:bg-[var(--admin-hover-bg)] transition-colors cursor-pointer ${
+                                                            !notification.read ? 'bg-[#2F6BFF]/5' : ''
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            <div className={`flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0 ${
+                                                                notification.type === 'success' 
+                                                                    ? 'bg-[#12B76A]/15'
+                                                                    : notification.type === 'warning'
+                                                                        ? 'bg-[#F79009]/15'
+                                                                        : notification.type === 'error'
+                                                                            ? 'bg-[#F04438]/15'
+                                                                            : 'bg-[#2F6BFF]/15'
+                                                            }`}>
+                                                                <svg className={`h-5 w-5 ${
+                                                                    notification.type === 'success' 
+                                                                        ? 'text-[#12B76A]'
+                                                                        : notification.type === 'warning'
+                                                                            ? 'text-[#F79009]'
+                                                                            : notification.type === 'error'
+                                                                                ? 'text-[#F04438]'
+                                                                                : 'text-[#5B8AFF]'
+                                                                }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    {notification.type === 'success' ? (
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    ) : notification.type === 'warning' ? (
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                                    ) : notification.type === 'error' ? (
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    ) : (
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    )}
+                                                                </svg>
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-semibold text-[var(--admin-text)]">{notification.title}</p>
+                                                                <p className="text-sm text-[var(--admin-text-muted)] mt-1">{notification.message}</p>
+                                                                <p className="text-xs text-[var(--admin-text-dim)] mt-2">{notification.time}</p>
+                                                            </div>
+                                                            {!notification.read && (
+                                                                <div className="w-2 h-2 bg-[#2F6BFF] rounded-full flex-shrink-0 mt-1.5"></div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12">
+                                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--admin-surface-2)] mb-4">
+                                                    <svg className="h-8 w-8 text-[var(--admin-text-dim)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-[var(--admin-text-muted)] font-medium">No notifications</p>
+                                                <p className="text-[var(--admin-text-dim)] text-sm mt-1">You're all caught up!</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Footer */}
+                                    {notifications.length > 0 && (
+                                        <div className="p-3 border-t border-[var(--admin-border)] bg-[var(--admin-surface-2)]">
+                                            <button className="w-full text-sm font-medium text-[#2F6BFF] hover:text-[#5B8AFF] transition-colors py-1">
+                                                View all notifications
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
                         <ThemeMenu />
                         <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#2F6BFF] to-[#B6F400] p-[2px] lg:hidden">
                             <div className="w-full h-full rounded-[6px] bg-[var(--admin-surface)] flex items-center justify-center text-white font-bold text-sm">

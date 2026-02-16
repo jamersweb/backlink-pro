@@ -60,6 +60,63 @@ class CampaignController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        $users = User::select('id', 'name', 'email')->orderBy('name')->get();
+        $domains = Domain::select('id', 'name')->orderBy('name')->get();
+        $categories = \App\Models\Category::where('status', 'active')
+            ->whereNull('parent_id')
+            ->with(['children' => function($query) {
+                $query->where('status', 'active')->orderBy('name');
+            }])
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('Admin/Campaigns/Create', [
+            'users' => $users,
+            'domains' => $domains,
+            'categories' => $categories,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'user_id' => 'required|exists:users,id',
+            'domain_id' => 'nullable|exists:domains,id',
+            'web_name' => 'nullable|string|max:255',
+            'web_url' => 'nullable|url|max:500',
+            'web_keyword' => 'nullable|string|max:500',
+            'web_about' => 'nullable|string',
+            'status' => 'required|in:active,inactive,paused,completed,error',
+            'daily_limit' => 'nullable|integer|min:1|max:1000',
+            'total_limit' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after:start_date',
+            'category_id' => 'nullable|exists:categories,id',
+            'subcategory_id' => 'nullable|exists:categories,id',
+            'settings' => 'nullable|array',
+        ]);
+
+        $campaign = Campaign::create($validated);
+
+        // Create tasks if campaign is active
+        if ($campaign->status === Campaign::STATUS_ACTIVE) {
+            try {
+                $this->createTasksForCampaign($campaign);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create tasks for new campaign', [
+                    'campaign_id' => $campaign->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.campaigns.show', $campaign)
+            ->with('success', 'Campaign created successfully.');
+    }
+
     public function show(Campaign $campaign)
     {
         $campaign->load([
