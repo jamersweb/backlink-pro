@@ -134,8 +134,8 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                 {/* Header Actions */}
                 <div className="flex justify-between items-center">
                     <div>
-                        <h2 className="text-lg font-semibold text-gray-900">Manage Access Control</h2>
-                        <p className="text-sm text-gray-600">Create roles and assign permissions to control what users can access.</p>
+                        <h2 className="text-lg font-semibold text-[var(--admin-text)]">Manage Access Control</h2>
+                        <p className="text-sm text-[var(--admin-text-muted)]">Create roles and assign permissions to control what users can access.</p>
                     </div>
                     <div className="flex gap-3">
                         <Link href="/admin/roles-permissions/users">
@@ -152,29 +152,27 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                 {/* Roles Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {roles.map((role) => (
-                        <Card key={role.id} className="p-6 bg-white border border-gray-200 shadow-md">
+                        <Card key={role.id} variant="elevated">
                             <div className="flex items-start justify-between mb-4">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900 capitalize">{role.name}</h3>
-                                    <p className="text-sm text-gray-500">{role.users_count} users</p>
+                                    <h3 className="text-lg font-semibold text-[var(--admin-text)] capitalize">{role.name}</h3>
+                                    <p className="text-sm text-[var(--admin-text-muted)]">{role.users_count} users</p>
                                 </div>
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${
-                                    role.name === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                                }`}>
+                                <span className={`admin-badge ${role.name === 'admin' ? 'admin-badge-primary' : 'admin-badge-info'}`}>
                                     {role.permissions.length} permissions
                                 </span>
                             </div>
                             
                             <div className="mb-4">
-                                <p className="text-xs text-gray-500 mb-2">Sample permissions:</p>
+                                <p className="text-xs text-[var(--admin-text-muted)] mb-2">Sample permissions:</p>
                                 <div className="flex flex-wrap gap-1">
                                     {role.permissions.slice(0, 5).map((perm) => (
-                                        <span key={perm} className="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
+                                        <span key={perm} className="admin-badge admin-badge-neutral">
                                             {perm.split('.').pop()}
                                         </span>
                                     ))}
                                     {role.permissions.length > 5 && (
-                                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                        <span className="admin-badge admin-badge-neutral">
                                             +{role.permissions.length - 5} more
                                         </span>
                                     )}
@@ -206,11 +204,11 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
 
                 {/* Edit/Create Modal */}
                 {(selectedRole || showCreateModal) && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-                            <div className="p-6 border-b border-gray-200">
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-[var(--admin-shadow-lg)] w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                            <div className="p-6 border-b border-[var(--admin-border)]">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-gray-900">
+                                    <h3 className="text-lg font-semibold text-[var(--admin-text)]">
                                         {selectedRole ? `Edit Role: ${selectedRole.name}` : 'Create New Role'}
                                     </h3>
                                     <button 
@@ -219,7 +217,7 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                                             setShowCreateModal(false);
                                             reset();
                                         }}
-                                        className="text-gray-400 hover:text-gray-600"
+                                        className="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]"
                                     >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -233,14 +231,14 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                                     {/* Role Name */}
                                     {!selectedRole && (
                                         <div className="mb-6">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium text-[var(--admin-text)] mb-2">
                                                 Role Name
                                             </label>
                                             <input
                                                 type="text"
                                                 value={data.name}
                                                 onChange={(e) => setData('name', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className="admin-input w-full px-3 py-2 rounded-lg"
                                                 placeholder="e.g., editor, manager, viewer"
                                             />
                                             {errors.name && (
@@ -251,14 +249,14 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
 
                                     {/* Permissions by Module */}
                                     <div className="space-y-4">
-                                        <h4 className="text-sm font-semibold text-gray-900">Permissions</h4>
+                                        <h4 className="text-sm font-semibold text-[var(--admin-text)]">Permissions</h4>
                                         
                                         {Object.entries(permissions).map(([module, modulePerms]) => (
-                                            <div key={module} className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <div key={module} className="border border-[var(--admin-border)] rounded-lg overflow-hidden">
                                                 <button
                                                     type="button"
                                                     onClick={() => toggleModule(module)}
-                                                    className="w-full px-4 py-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                                                    className="w-full px-4 py-3 bg-[var(--admin-surface-2)] flex items-center justify-between hover:bg-[var(--admin-hover-bg)] transition-colors"
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <input
@@ -266,17 +264,17 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                                                             checked={modulePerms.every(p => data.permissions.includes(p.name))}
                                                             onChange={() => toggleAllInModule(modulePerms)}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                            className="h-4 w-4 rounded border-[var(--admin-border)] text-[var(--admin-primary)] focus:ring-[var(--admin-primary)]"
                                                         />
-                                                        <span className="font-medium text-gray-900">
+                                                        <span className="font-medium text-[var(--admin-text)]">
                                                             {getModuleLabel(module)}
                                                         </span>
-                                                        <span className="text-xs text-gray-500">
+                                                        <span className="text-xs text-[var(--admin-text-muted)]">
                                                             ({modulePerms.filter(p => data.permissions.includes(p.name)).length}/{modulePerms.length})
                                                         </span>
                                                     </div>
                                                     <svg 
-                                                        className={`w-5 h-5 text-gray-500 transition-transform ${expandedModules[module] ? 'rotate-180' : ''}`}
+                                                        className={`w-5 h-5 text-[var(--admin-text-muted)] transition-transform ${expandedModules[module] ? 'rotate-180' : ''}`}
                                                         fill="none" 
                                                         stroke="currentColor" 
                                                         viewBox="0 0 24 24"
@@ -293,9 +291,9 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                                                                     type="checkbox"
                                                                     checked={data.permissions.includes(perm.name)}
                                                                     onChange={() => togglePermission(perm.name)}
-                                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                                    className="h-4 w-4 rounded border-[var(--admin-border)] text-[var(--admin-primary)] focus:ring-[var(--admin-primary)]"
                                                                 />
-                                                                <span className="text-sm text-gray-700">{perm.label}</span>
+                                                                <span className="text-sm text-[var(--admin-text)]">{perm.label}</span>
                                                             </label>
                                                         ))}
                                                     </div>
@@ -305,7 +303,7 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                                     </div>
                                 </div>
 
-                                <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                                <div className="p-6 border-t border-[var(--admin-border)] bg-[var(--admin-surface-2)] flex justify-end gap-3">
                                     <Button 
                                         type="button" 
                                         variant="secondary"
@@ -327,16 +325,16 @@ export default function RolesPermissionsIndex({ roles, permissions, permissionsL
                 )}
 
                 {/* Info Card */}
-                <Card className="p-6 bg-blue-50 border border-blue-200">
+                <Card className="p-6 bg-[#0EA5E9]/10 border border-[#0EA5E9]/30">
                     <div className="flex items-start gap-4">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="p-2 rounded-lg bg-[#0EA5E9]/20">
+                            <svg className="w-6 h-6 text-[#0EA5E9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-blue-900">About Roles & Permissions</h4>
-                            <p className="text-sm text-blue-700 mt-1">
+                            <h4 className="font-semibold text-[#0EA5E9]">About Roles & Permissions</h4>
+                            <p className="text-sm text-[var(--admin-text-muted)] mt-1">
                                 Roles are collections of permissions that can be assigned to users. 
                                 The <strong>admin</strong> role has all permissions and cannot be modified.
                                 Users can also have direct permissions assigned in addition to their role permissions.

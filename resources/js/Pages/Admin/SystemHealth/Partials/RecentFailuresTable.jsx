@@ -3,15 +3,15 @@ import Button from '@/Components/Shared/Button';
 
 export default function RecentFailuresTable({ failures }) {
     const getFeatureBadge = (feature) => {
-        const colors = {
-            audits: 'bg-blue-100 text-blue-800',
-            backlinks: 'bg-purple-100 text-purple-800',
-            meta: 'bg-green-100 text-green-800',
-            google: 'bg-yellow-100 text-yellow-800',
-            insights: 'bg-indigo-100 text-indigo-800',
+        const classes = {
+            audits: 'admin-badge admin-badge-info',
+            backlinks: 'admin-badge admin-badge-primary',
+            meta: 'admin-badge admin-badge-success',
+            google: 'admin-badge admin-badge-warning',
+            insights: 'admin-badge admin-badge-primary',
         };
         return (
-            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${colors[feature] || 'bg-gray-100 text-gray-800'}`}>
+            <span className={classes[feature] || 'admin-badge admin-badge-neutral'}>
                 {feature}
             </span>
         );
@@ -46,38 +46,38 @@ export default function RecentFailuresTable({ failures }) {
     };
 
     if (!failures || failures.length === 0) {
-        return <p className="text-sm text-gray-500 text-center py-4">No failures in the last 24 hours</p>;
+        return <p className="text-sm text-[var(--admin-text-muted)] text-center py-4">No failures in the last 24 hours</p>;
     }
 
     return (
         <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <table className="admin-table min-w-full">
+                <thead>
                     <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Feature</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Run Ref</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Domain</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th>Time</th>
+                        <th>Feature</th>
+                        <th>Run Ref</th>
+                        <th>Domain</th>
+                        <th>Error</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                     {failures.map((failure) => (
                         <tr key={failure.id}>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="text-sm text-[var(--admin-text-muted)]">
                                 {new Date(failure.failed_at).toLocaleString()}
                             </td>
-                            <td className="px-4 py-3 text-sm">
+                            <td className="text-sm">
                                 {getFeatureBadge(failure.feature)}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="text-sm text-[var(--admin-text)]">
                                 {failure.run_ref || 'N/A'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="text-sm text-[var(--admin-text-muted)]">
                                 {failure.domain?.host || 'N/A'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-700 max-w-md truncate">
+                            <td className="text-sm text-[var(--admin-text)] max-w-md truncate">
                                 {failure.exception_message || 'N/A'}
                             </td>
                             <td className="px-4 py-3 text-sm">

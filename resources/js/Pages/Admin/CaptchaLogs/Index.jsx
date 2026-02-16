@@ -45,65 +45,89 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
             <div className="space-y-6">
                 {/* Success Message */}
                 {flash?.success && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800">{flash.success}</p>
+                    <div className="p-4 rounded-lg bg-[#12B76A]/10 border border-[#12B76A]/30">
+                        <p className="text-sm text-[#12B76A] font-medium">{flash.success}</p>
                     </div>
                 )}
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Total</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
+                {/* Stats Cards - Dashboard-like 4×2 grid */}
+                <div className="stats-grid stats-grid-captcha">
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Total</p>
+                            <p className="stat-value">{stats?.total || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-green-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-green-600 text-xs font-medium mb-1">Solved</p>
-                            <p className="text-2xl font-bold text-green-900">{stats?.solved || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-red-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-red-600 text-xs font-medium mb-1">Failed</p>
-                            <p className="text-2xl font-bold text-red-900">{stats?.failed || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Solved</p>
+                            <p className="stat-value stat-value-success">{stats?.solved || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-yellow-600 text-xs font-medium mb-1">Pending</p>
-                            <p className="text-2xl font-bold text-yellow-900">{stats?.pending || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-success">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-blue-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-blue-600 text-xs font-medium mb-1">Total Cost</p>
-                            <p className="text-xl font-bold text-blue-900">{formatCurrency(stats?.total_cost || 0)}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Failed</p>
+                            <p className="stat-value stat-value-danger">{stats?.failed || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Today</p>
-                            <p className="text-xl font-bold text-gray-900">{formatCurrency(stats?.today_cost || 0)}</p>
+                        <div className="stat-iconWrap stat-iconWrap-danger">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">This Week</p>
-                            <p className="text-xl font-bold text-gray-900">{formatCurrency(stats?.this_week_cost || 0)}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Pending</p>
+                            <p className="stat-value stat-value-warning">{stats?.pending || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">This Month</p>
-                            <p className="text-xl font-bold text-gray-900">{formatCurrency(stats?.this_month_cost || 0)}</p>
+                        <div className="stat-iconWrap stat-iconWrap-warning">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                    </Card>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Total Cost</p>
+                            <p className="stat-value stat-value-info text-xl">{formatCurrency(stats?.total_cost || 0)}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-info">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Today</p>
+                            <p className="stat-value text-xl">{formatCurrency(stats?.today_cost || 0)}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">This Week</p>
+                            <p className="stat-value text-xl">{formatCurrency(stats?.this_week_cost || 0)}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">This Month</p>
+                            <p className="stat-value text-xl">{formatCurrency(stats?.this_month_cost || 0)}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Filters */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     <div className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4">
                             <div className="md:col-span-2">
@@ -119,7 +143,7 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Statuses</option>
                                     <option value="pending">Pending</option>
@@ -131,7 +155,7 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
                                 <select
                                     value={typeFilter}
                                     onChange={(e) => setTypeFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Types</option>
                                     <option value="image">Image</option>
@@ -144,7 +168,7 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
                                 <select
                                     value={serviceFilter}
                                     onChange={(e) => setServiceFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Services</option>
                                     <option value="2captcha">2Captcha</option>
@@ -155,7 +179,7 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
                                 <select
                                     value={campaignFilter}
                                     onChange={(e) => setCampaignFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Campaigns</option>
                                     {campaigns?.map((campaign) => (
@@ -191,51 +215,51 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
                 </Card>
 
                 {/* Logs Table */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     {logs?.data && logs.data.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                            <table className="admin-table min-w-full">
+                                <thead>
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Campaign</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">User</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Site Domain</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Type</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Service</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Cost</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Order ID</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Created</th>
+                                        <th>Campaign</th>
+                                        <th>User</th>
+                                        <th>Site Domain</th>
+                                        <th>Type</th>
+                                        <th>Service</th>
+                                        <th>Status</th>
+                                        <th>Cost</th>
+                                        <th>Order ID</th>
+                                        <th>Created</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody>
                                     {logs.data.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <a href={`/admin/campaigns/${log.campaign_id}`} className="text-sm text-blue-600 hover:text-blue-900">
+                                        <tr key={log.id}>
+                                            <td className="whitespace-nowrap">
+                                                <a href={`/admin/campaigns/${log.campaign_id}`} className="admin-link text-sm">
                                                     {log.campaign?.name || 'N/A'}
                                                 </a>
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text)]">
                                                 {log.campaign?.user?.name || 'N/A'}
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{log.site_domain}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 capitalize">{log.captcha_type}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{log.service}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    log.status === 'solved' ? 'bg-green-100 text-green-800' :
-                                                    log.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                                    'bg-yellow-100 text-yellow-800'
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">{log.site_domain}</td>
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)] capitalize">{log.captcha_type}</td>
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">{log.service}</td>
+                                            <td className="whitespace-nowrap">
+                                                <span className={`admin-badge ${
+                                                    log.status === 'solved' ? 'admin-badge-success' :
+                                                    log.status === 'failed' ? 'admin-badge-danger' :
+                                                    'admin-badge-warning'
                                                 }`}>
                                                     {log.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                            <td className="whitespace-nowrap text-sm font-semibold text-[var(--admin-text)]">
                                                 {formatCurrency(log.estimated_cost || 0)}
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{log.order_id || '-'}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">{log.order_id || '-'}</td>
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">
                                                 {new Date(log.created_at).toLocaleDateString()}
                                             </td>
                                         </tr>
@@ -245,30 +269,28 @@ export default function AdminCaptchaLogsIndex({ logs, stats, campaigns, users, f
                         </div>
                     ) : (
                         <div className="text-center py-16">
-                            <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
+                            <div className="inline-block p-6 rounded-full mb-4 bg-[var(--admin-hover-bg)]">
                                 <span className="text-5xl">🧩</span>
                             </div>
-                            <p className="text-gray-500 font-medium">No captcha logs found</p>
-                            <p className="text-gray-400 text-sm mt-2">Captcha logs will appear here once captchas are solved</p>
+                            <p className="text-[var(--admin-text)] font-medium">No captcha logs found</p>
+                            <p className="text-[var(--admin-text-muted)] text-sm mt-2">Captcha logs will appear here once captchas are solved</p>
                         </div>
                     )}
 
                     {/* Pagination */}
                     {logs?.links && logs.links.length > 3 && (
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                        <div className="px-6 py-4 border-t border-[var(--admin-border)] bg-[var(--admin-surface-2)]">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{logs.from || 0}</span> to <span className="font-medium">{logs.to || 0}</span> of <span className="font-medium">{logs.total || 0}</span> results
+                                <div className="text-sm text-[var(--admin-text-muted)]">
+                                    Showing <span className="font-medium text-[var(--admin-text)]">{logs.from || 0}</span> to <span className="font-medium text-[var(--admin-text)]">{logs.to || 0}</span> of <span className="font-medium text-[var(--admin-text)]">{logs.total || 0}</span> results
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {logs.links.map((link, index) => (
                                         <a
                                             key={index}
                                             href={link.url || '#'}
-                                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                                link.active
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                                link.active ? 'bg-[var(--admin-primary)] text-white' : 'bg-[var(--admin-surface)] text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)]'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />

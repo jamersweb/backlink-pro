@@ -54,35 +54,35 @@ export default function AdminBlockedSitesIndex({ blockedSites, stats, filters })
             <div className="space-y-6">
                 {/* Flash Messages */}
                 {flash?.success && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800">{flash.success}</p>
+                    <div className="p-4 rounded-lg bg-[#12B76A]/10 border border-[#12B76A]/30">
+                        <p className="text-sm text-[#12B76A] font-medium">{flash.success}</p>
                     </div>
                 )}
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <Card className="bg-white border border-gray-200 shadow-md">
+                    <Card variant="elevated">
                         <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Total Blocked</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
+                            <p className="text-[var(--admin-text-muted)] text-xs font-medium mb-1">Total Blocked</p>
+                            <p className="text-2xl font-bold text-[var(--admin-text)]">{stats?.total || 0}</p>
                         </div>
                     </Card>
-                    <Card className="bg-white border border-red-200 shadow-md">
+                    <Card variant="elevated">
                         <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Active Blocks</p>
-                            <p className="text-2xl font-bold text-red-600">{stats?.active || 0}</p>
+                            <p className="text-red-600 dark:text-red-400 text-xs font-medium mb-1">Active Blocks</p>
+                            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats?.active || 0}</p>
                         </div>
                     </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
+                    <Card variant="elevated">
                         <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Inactive</p>
-                            <p className="text-2xl font-bold text-gray-600">{stats?.inactive || 0}</p>
+                            <p className="text-[var(--admin-text-muted)] text-xs font-medium mb-1">Inactive</p>
+                            <p className="text-2xl font-bold text-[var(--admin-text-muted)]">{stats?.inactive || 0}</p>
                         </div>
                     </Card>
                 </div>
 
                 {/* Filters and Add Button */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <Input
@@ -93,11 +93,11 @@ export default function AdminBlockedSitesIndex({ blockedSites, stats, filters })
                                 placeholder="Search domain, reason..."
                             />
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Status</label>
                                 <select
                                     value={localFilters.is_active || ''}
                                     onChange={(e) => handleFilterChange('is_active', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All</option>
                                     <option value="1">Active</option>
@@ -127,7 +127,7 @@ export default function AdminBlockedSitesIndex({ blockedSites, stats, filters })
 
                     {/* Add Form */}
                     {showAddForm && (
-                        <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+                        <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-[var(--admin-border)] space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <Input
                                     label="Domain"
@@ -171,52 +171,46 @@ export default function AdminBlockedSitesIndex({ blockedSites, stats, filters })
                 </Card>
 
                 {/* Blocked Sites Table */}
-                <Card className="bg-white border border-gray-200 shadow-md">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Blocked Sites</h3>
+                <Card variant="elevated">
+                    <h3 className="text-lg font-bold text-[var(--admin-text)] mb-4">Blocked Sites</h3>
                     {blockedSites?.data && blockedSites.data.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                            <table className="admin-table min-w-full">
+                                <thead>
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Domain</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Reason</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Blocked By</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Created</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                                        <th>Domain</th>
+                                        <th>Reason</th>
+                                        <th>Blocked By</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody>
                                     {blockedSites.data.map((site) => (
                                         <tr key={site.id} className={!site.is_active ? 'opacity-60' : ''}>
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{site.domain}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">{site.reason || 'N/A'}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">{site.blocked_by || 'System'}</td>
-                                            <td className="px-4 py-3 text-sm">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    site.is_active ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                                                }`}>
+                                            <td className="text-sm font-medium text-[var(--admin-text)]">{site.domain}</td>
+                                            <td className="text-sm text-[var(--admin-text-muted)]">{site.reason || 'N/A'}</td>
+                                            <td className="text-sm text-[var(--admin-text-muted)]">{site.blocked_by || 'System'}</td>
+                                            <td className="text-sm">
+                                                <span className={`admin-badge ${site.is_active ? 'admin-badge-danger' : 'admin-badge-neutral'}`}>
                                                     {site.is_active ? 'Active' : 'Inactive'}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">
+                                            <td className="text-sm text-[var(--admin-text-muted)]">
                                                 {new Date(site.created_at).toLocaleDateString()}
                                             </td>
-                                            <td className="px-4 py-3 text-sm">
+                                            <td className="text-sm">
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleToggle(site.id)}
-                                                        className={`px-2 py-1 text-xs rounded ${
-                                                            site.is_active 
-                                                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
-                                                                : 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                        }`}
+                                                        className={`admin-badge cursor-pointer ${site.is_active ? 'admin-badge-warning' : 'admin-badge-success'}`}
                                                     >
                                                         {site.is_active ? 'Deactivate' : 'Activate'}
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(site.id)}
-                                                        className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200"
+                                                        className="admin-badge admin-badge-danger cursor-pointer"
                                                     >
                                                         Delete
                                                     </button>
@@ -228,14 +222,14 @@ export default function AdminBlockedSitesIndex({ blockedSites, stats, filters })
                             </table>
                         </div>
                     ) : (
-                        <p className="text-gray-500 text-center py-8">No blocked sites found.</p>
+                        <p className="text-[var(--admin-text-muted)] text-center py-8">No blocked sites found.</p>
                     )}
 
                     {/* Pagination */}
                     {blockedSites?.links && blockedSites.links.length > 3 && (
-                        <div className="mt-6 pt-4 border-t border-gray-200">
+                        <div className="mt-6 pt-4 border-t border-[var(--admin-border)]">
                             <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-[var(--admin-text-muted)]">
                                     Showing {blockedSites.from} to {blockedSites.to} of {blockedSites.total} results
                                 </div>
                                 <div className="flex gap-2">
@@ -244,10 +238,10 @@ export default function AdminBlockedSitesIndex({ blockedSites, stats, filters })
                                             key={index}
                                             onClick={() => link.url && router.get(link.url)}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
-                                            className={`px-3 py-1 text-sm rounded-md ${
+                                            className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                                                 link.active 
-                                                    ? 'bg-blue-500 text-white' 
-                                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                                    ? 'bg-[var(--admin-primary)] text-white' 
+                                                    : 'bg-[var(--admin-surface)] text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)]'
                                             } ${!link.url ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                             disabled={!link.url}
                                         />

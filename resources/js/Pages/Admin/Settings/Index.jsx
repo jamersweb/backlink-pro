@@ -157,7 +157,7 @@ export default function AdminSettingsIndex({
                                 onClick={setLightMode}
                                 className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-150 flex items-center gap-2 ${
                                     theme === 'light'
-                                        ? 'bg-white text-gray-900 shadow-md'
+                                        ? 'bg-[var(--admin-surface)] text-[var(--admin-text)] shadow-md'
                                         : 'text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]'
                                 }`}
                             >

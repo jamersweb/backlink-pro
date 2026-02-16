@@ -25,20 +25,20 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'healthy': return 'bg-green-100 text-green-800';
-            case 'warning': return 'bg-yellow-100 text-yellow-800';
-            case 'error': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'healthy': return 'admin-badge-success';
+            case 'warning': return 'admin-badge-warning';
+            case 'error': return 'admin-badge-danger';
+            default: return 'admin-badge-neutral';
         }
     };
 
     const getLogLevelColor = (level) => {
         switch (level?.toLowerCase()) {
-            case 'error': return 'text-red-600 bg-red-50';
-            case 'warning': return 'text-yellow-600 bg-yellow-50';
-            case 'info': return 'text-blue-600 bg-blue-50';
-            case 'debug': return 'text-gray-600 bg-gray-50';
-            default: return 'text-gray-600 bg-gray-50';
+            case 'error': return 'admin-badge admin-badge-danger';
+            case 'warning': return 'admin-badge admin-badge-warning';
+            case 'info': return 'admin-badge admin-badge-info';
+            case 'debug': return 'admin-badge admin-badge-neutral';
+            default: return 'admin-badge admin-badge-neutral';
         }
     };
 
@@ -46,8 +46,8 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
         <AdminLayout header="System Configuration">
             <div className="space-y-6">
                 {/* Quick Actions */}
-                <Card>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <Card variant="elevated">
+                    <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">Quick Actions</h3>
                     <div className="flex flex-wrap gap-3">
                         <Button
                             size="sm"
@@ -87,8 +87,8 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
                 {/* System Info & Services Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* System Information */}
-                    <Card>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">System Information</h3>
+                    <Card variant="elevated">
+                        <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">System Information</h3>
                         <div className="space-y-3">
                             <InfoRow label="PHP Version" value={system?.php_version} />
                             <InfoRow label="Laravel Version" value={system?.laravel_version} />
@@ -100,13 +100,13 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
                         </div>
                         
                         {/* Storage */}
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                            <h4 className="font-medium text-gray-700 mb-3">Storage</h4>
+                        <div className="mt-6 pt-4 border-t border-[var(--admin-border)]">
+                            <h4 className="font-medium text-[var(--admin-text)] mb-3">Storage</h4>
                             <div className="mb-2 flex justify-between text-sm">
-                                <span className="text-gray-600">{system?.storage?.disk_free} free of {system?.storage?.disk_total}</span>
-                                <span className="font-medium">{system?.storage?.disk_usage_percent}%</span>
+                                <span className="text-[var(--admin-text-muted)]">{system?.storage?.disk_free} free of {system?.storage?.disk_total}</span>
+                                <span className="font-medium text-[var(--admin-text)]">{system?.storage?.disk_usage_percent}%</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div className="w-full bg-[var(--admin-surface-3)] rounded-full h-2.5">
                                 <div 
                                     className={`h-2.5 rounded-full ${
                                         system?.storage?.disk_usage_percent > 90 ? 'bg-red-500' :
@@ -119,16 +119,16 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
                     </Card>
 
                     {/* Service Status */}
-                    <Card>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Status</h3>
+                    <Card variant="elevated">
+                        <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">Service Status</h3>
                         <div className="space-y-3">
                             {Object.entries(services || {}).map(([name, service]) => (
-                                <div key={name} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                                <div key={name} className="flex items-center justify-between py-2 border-b border-[var(--admin-border-light)] last:border-0">
                                     <div>
-                                        <span className="font-medium text-gray-900 capitalize">{name}</span>
-                                        <p className="text-xs text-gray-500">{service.driver || service.host}</p>
+                                        <span className="font-medium text-[var(--admin-text)] capitalize">{name}</span>
+                                        <p className="text-xs text-[var(--admin-text-muted)]">{service.driver || service.host}</p>
                                     </div>
-                                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusColor(service.status)}`}>
+                                    <span className={`admin-badge ${getStatusColor(service.status)}`}>
                                         {service.status}
                                     </span>
                                 </div>
@@ -140,21 +140,21 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
                 {/* Queue & Cache Stats */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Queue Information */}
-                    <Card>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Queue Status</h3>
+                    <Card variant="elevated">
+                        <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">Queue Status</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <StatBox label="Pending Jobs" value={queue?.pending_jobs || 0} color="blue" />
                             <StatBox label="Failed Jobs" value={queue?.failed_jobs || 0} color={queue?.failed_jobs > 0 ? 'red' : 'green'} />
                             <StatBox label="Batches" value={queue?.batches || 0} color="purple" />
                         </div>
-                        <p className="mt-4 text-sm text-gray-500">
-                            Queue Connection: <span className="font-medium">{queue?.connection}</span>
+                        <p className="mt-4 text-sm text-[var(--admin-text-muted)]">
+                            Queue Connection: <span className="font-medium text-[var(--admin-text)]">{queue?.connection}</span>
                         </p>
                     </Card>
 
                     {/* Cache Information */}
-                    <Card>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Cache Status (Redis)</h3>
+                    <Card variant="elevated">
+                        <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">Cache Status (Redis)</h3>
                         {cache?.error ? (
                             <p className="text-red-600">{cache.error}</p>
                         ) : (
@@ -180,30 +180,30 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
                 </div>
 
                 {/* Recent Logs */}
-                <Card>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Logs</h3>
+                <Card variant="elevated">
+                    <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">Recent Logs</h3>
                     {logs && logs.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                            <table className="admin-table min-w-full">
+                                <thead>
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Time</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Level</th>
-                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Message</th>
+                                        <th>Time</th>
+                                        <th>Level</th>
+                                        <th>Message</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody>
                                     {logs.map((log, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
+                                        <tr key={index}>
+                                            <td className="whitespace-nowrap text-xs text-[var(--admin-text-muted)]">
                                                 {log.timestamp}
                                             </td>
-                                            <td className="px-4 py-2 whitespace-nowrap">
-                                                <span className={`px-2 py-0.5 text-xs font-medium rounded ${getLogLevelColor(log.level)}`}>
+                                            <td className="whitespace-nowrap">
+                                                <span className={`admin-badge ${getLogLevelColor(log.level)}`}>
                                                     {log.level}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-2 text-xs text-gray-700 max-w-md truncate">
+                                            <td className="text-xs text-[var(--admin-text)] max-w-md truncate">
                                                 {log.message}
                                             </td>
                                         </tr>
@@ -212,7 +212,7 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
                             </table>
                         </div>
                     ) : (
-                        <p className="text-gray-500 text-center py-8">No recent logs found</p>
+                        <p className="text-[var(--admin-text-muted)] text-center py-8">No recent logs found</p>
                     )}
                 </Card>
             </div>
@@ -221,40 +221,40 @@ export default function SystemConfigIndex({ system, services, cache, queue, logs
 }
 
 function InfoRow({ label, value, badge = false, badgeColor = 'default' }) {
-    const badgeColors = {
-        default: 'bg-gray-100 text-gray-800',
-        success: 'bg-green-100 text-green-800',
-        warning: 'bg-yellow-100 text-yellow-800',
-        danger: 'bg-red-100 text-red-800',
+    const badgeClasses = {
+        default: 'admin-badge-neutral',
+        success: 'admin-badge-success',
+        warning: 'admin-badge-warning',
+        danger: 'admin-badge-danger',
     };
 
     return (
         <div className="flex justify-between items-center py-1">
-            <span className="text-gray-600 text-sm">{label}</span>
+            <span className="text-[var(--admin-text-muted)] text-sm">{label}</span>
             {badge ? (
-                <span className={`px-2 py-0.5 text-xs font-medium rounded ${badgeColors[badgeColor]}`}>
+                <span className={`admin-badge ${badgeClasses[badgeColor]}`}>
                     {value}
                 </span>
             ) : (
-                <span className="font-medium text-gray-900 text-sm">{value}</span>
+                <span className="font-medium text-[var(--admin-text)] text-sm">{value}</span>
             )}
         </div>
     );
 }
 
 function StatBox({ label, value, color = 'blue' }) {
-    const colors = {
-        blue: 'bg-blue-50 text-blue-700',
-        green: 'bg-green-50 text-green-700',
-        red: 'bg-red-50 text-red-700',
-        purple: 'bg-purple-50 text-purple-700',
-        yellow: 'bg-yellow-50 text-yellow-700',
+    const colorClasses = {
+        blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        green: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        red: 'bg-red-500/10 text-red-600 dark:text-red-400',
+        purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+        yellow: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
     };
 
     return (
-        <div className={`rounded-lg p-4 text-center ${colors[color]}`}>
+        <div className={`rounded-lg p-4 text-center ${colorClasses[color] || colorClasses.blue}`}>
             <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs mt-1">{label}</p>
+            <p className="text-xs mt-1 opacity-90">{label}</p>
         </div>
     );
 }

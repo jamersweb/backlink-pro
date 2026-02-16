@@ -88,64 +88,85 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
             <div className="space-y-6">
                 {/* Success/Error Messages */}
                 {flash?.success && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800">{flash.success}</p>
+                    <div className="p-4 rounded-lg bg-[#12B76A]/10 border border-[#12B76A]/30">
+                        <p className="text-sm text-[#12B76A] font-medium">{flash.success}</p>
                     </div>
                 )}
                 {flash?.error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-800">{flash.error}</p>
+                    <div className="p-4 rounded-lg bg-[#F04438]/10 border border-[#F04438]/30">
+                        <p className="text-sm text-[#F04438] font-medium">{flash.error}</p>
                     </div>
                 )}
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Total</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
+                {/* Stats Cards - Dashboard-like compact 4×2 (7 cards) */}
+                <div className="stats-grid stats-grid-tasks">
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Total</p>
+                            <p className="stat-value">{stats?.total || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-yellow-600 text-xs font-medium mb-1">Pending</p>
-                            <p className="text-2xl font-bold text-yellow-900">{stats?.pending || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-blue-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-blue-600 text-xs font-medium mb-1">Running</p>
-                            <p className="text-2xl font-bold text-blue-900">{stats?.running || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Pending</p>
+                            <p className="stat-value stat-value-warning">{stats?.pending || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-green-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-green-600 text-xs font-medium mb-1">Success</p>
-                            <p className="text-2xl font-bold text-green-900">{stats?.success || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-warning">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-red-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-red-600 text-xs font-medium mb-1">Failed</p>
-                            <p className="text-2xl font-bold text-red-900">{stats?.failed || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Running</p>
+                            <p className="stat-value stat-value-info">{stats?.running || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Today</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.today || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-info">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">This Week</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.this_week || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Success</p>
+                            <p className="stat-value stat-value-success">{stats?.success || 0}</p>
                         </div>
-                    </Card>
+                        <div className="stat-iconWrap stat-iconWrap-success">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Failed</p>
+                            <p className="stat-value stat-value-danger">{stats?.failed || 0}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-danger">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Today</p>
+                            <p className="stat-value">{stats?.today || 0}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">This Week</p>
+                            <p className="stat-value">{stats?.this_week || 0}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Filters */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     <div className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4">
                             <div className="md:col-span-2">
@@ -161,7 +182,7 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Statuses</option>
                                     <option value="pending">Pending</option>
@@ -175,7 +196,7 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                 <select
                                     value={typeFilter}
                                     onChange={(e) => setTypeFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Types</option>
                                     <option value="comment">Comment</option>
@@ -189,7 +210,7 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                 <select
                                     value={campaignFilter}
                                     onChange={(e) => setCampaignFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Campaigns</option>
                                     {campaigns?.map((campaign) => (
@@ -203,7 +224,7 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                 <select
                                     value={userFilter}
                                     onChange={(e) => setUserFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                 >
                                     <option value="">All Users</option>
                                     {users?.map((user) => (
@@ -239,102 +260,101 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                 </Card>
 
                 {/* Tasks Table */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     {tasks?.data && tasks.data.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                            <table className="admin-table min-w-full">
+                                <thead>
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ID</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Campaign</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">User</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Type</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Worker</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Retries</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Error</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Created</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                                        <th>ID</th>
+                                        <th>Campaign</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Worker</th>
+                                        <th>Retries</th>
+                                        <th>Error</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody>
                                     {sortedGroups.map((group) => (
                                         <Fragment key={`group-${group.campaignId || 'none'}`}>
-                                            <tr className="bg-gray-100">
+                                            <tr className="bg-[var(--admin-surface-2)]">
                                                 <td colSpan={10} className="px-4 py-3">
                                                     <div className="flex flex-wrap items-center gap-3 justify-between">
                                                         <div className="flex items-center gap-3">
-                                                            <span className="text-sm font-semibold text-gray-800">{group.label}</span>
-                                                            <span className="text-xs text-gray-600">User: {group.userName}</span>
+                                                            <span className="text-sm font-semibold text-[var(--admin-text)]">{group.label}</span>
+                                                            <span className="text-xs text-[var(--admin-text-muted)]">User: {group.userName}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2 text-xs">
-                                                            <span className="px-2 py-1 rounded-full bg-gray-200 text-gray-800">Total {group.counts.total}</span>
+                                                            <span className="admin-badge admin-badge-neutral">Total {group.counts.total}</span>
                                                             {group.counts.pending > 0 && (
-                                                                <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">Pending {group.counts.pending}</span>
+                                                                <span className="admin-badge admin-badge-warning">Pending {group.counts.pending}</span>
                                                             )}
                                                             {group.counts.running > 0 && (
-                                                                <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800">Running {group.counts.running}</span>
+                                                                <span className="admin-badge admin-badge-info">Running {group.counts.running}</span>
                                                             )}
                                                             {group.counts.success > 0 && (
-                                                                <span className="px-2 py-1 rounded-full bg-green-100 text-green-800">Success {group.counts.success}</span>
+                                                                <span className="admin-badge admin-badge-success">Success {group.counts.success}</span>
                                                             )}
                                                             {group.counts.failed > 0 && (
-                                                                <span className="px-2 py-1 rounded-full bg-red-100 text-red-800">Failed {group.counts.failed}</span>
+                                                                <span className="admin-badge admin-badge-danger">Failed {group.counts.failed}</span>
                                                             )}
                                                             {group.counts.cancelled > 0 && (
-                                                                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-800">Cancelled {group.counts.cancelled}</span>
+                                                                <span className="admin-badge admin-badge-neutral">Cancelled {group.counts.cancelled}</span>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
                                             </tr>
                                             {group.items.map((task) => (
-                                                <tr key={task.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                        <Link href={`/admin/automation-tasks/${task.id}`} className="text-gray-900 hover:text-gray-700 font-medium">
+                                                <tr key={task.id}>
+                                                    <td className="whitespace-nowrap text-sm">
+                                                        <Link href={`/admin/automation-tasks/${task.id}`} className="admin-link font-medium">
                                                             #{task.id}
                                                         </Link>
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                        <Link href={`/admin/campaigns/${task.campaign_id}`} className="text-sm text-blue-600 hover:text-blue-900">
+                                                    <td className="whitespace-nowrap">
+                                                        <Link href={`/admin/campaigns/${task.campaign_id}`} className="admin-link text-sm">
                                                             {task.campaign?.name || 'N/A'}
                                                         </Link>
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                    <td className="whitespace-nowrap text-sm text-[var(--admin-text)]">
                                                         {task.campaign?.user?.name || 'N/A'}
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 capitalize">{task.type}</td>
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                            task.status === 'success' ? 'bg-green-100 text-green-800' :
-                                                            task.status === 'running' ? 'bg-blue-100 text-blue-800' :
-                                                            task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            task.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                    <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)] capitalize">{task.type}</td>
+                                                    <td className="whitespace-nowrap">
+                                                        <span className={`admin-badge ${
+                                                            task.status === 'success' ? 'admin-badge-success' :
+                                                            task.status === 'running' ? 'admin-badge-info' :
+                                                            task.status === 'pending' ? 'admin-badge-warning' :
+                                                            task.status === 'failed' ? 'admin-badge-danger' :
+                                                            'admin-badge-neutral'
                                                         }`}>
                                                             {task.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                    <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">
                                                         {task.locked_by || '-'}
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                    <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">
                                                         {task.retry_count || 0} / {task.max_retries || 3}
                                                     </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
+                                                    <td className="text-sm max-w-xs">
                                                         {task.error_message ? (
                                                             <div className="group relative">
-                                                                <span className="text-red-600 cursor-help underline decoration-dotted">
+                                                                <span className="admin-text-danger cursor-help underline decoration-dotted">
                                                                     {task.error_message.substring(0, 50)}...
                                                                 </span>
-                                                                {/* Tooltip with full error */}
-                                                                <div className="hidden group-hover:block absolute z-50 w-96 p-3 mt-2 bg-gray-900 text-white text-xs rounded shadow-lg pointer-events-none">
+                                                                <div className="hidden group-hover:block absolute z-50 w-96 p-3 mt-2 bg-[var(--admin-surface-3)] border border-[var(--admin-border)] text-[var(--admin-text)] text-xs rounded-lg shadow-[var(--admin-shadow-lg)] pointer-events-none">
                                                                     <div className="font-semibold mb-1">Error Details:</div>
-                                                                    <pre className="whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                                                                    <pre className="whitespace-pre-wrap break-words max-h-64 overflow-y-auto text-[var(--admin-text-muted)]">
                                                                         {task.error_message}
                                                                     </pre>
                                                                     {task.retry_count > 0 && (
-                                                                        <div className="mt-2 pt-2 border-t border-gray-700">
+                                                                        <div className="mt-2 pt-2 border-t border-[var(--admin-border)]">
                                                                             Retries: {task.retry_count}/{task.max_retries}
                                                                         </div>
                                                                     )}
@@ -342,15 +362,15 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                                             </div>
                                                         ) : '-'}
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                                    <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">
                                                         {new Date(task.created_at).toLocaleDateString()}
                                                     </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                                    <td className="whitespace-nowrap text-sm">
                                                         <div className="flex items-center gap-2">
                                                             {task.status === 'failed' && (
                                                                 <button
                                                                     onClick={() => handleRetry(task.id)}
-                                                                    className="text-green-600 hover:text-green-900"
+                                                                    className="admin-text-success hover:opacity-80"
                                                                     title="Retry"
                                                                 >
                                                                     🔄
@@ -359,7 +379,7 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                                                             {(task.status === 'pending' || task.status === 'running') && (
                                                                 <button
                                                                     onClick={() => handleCancel(task.id)}
-                                                                    className="text-red-600 hover:text-red-900"
+                                                                    className="admin-text-danger hover:opacity-80"
                                                                     title="Cancel"
                                                                 >
                                                                     ❌
@@ -376,30 +396,30 @@ export default function AdminAutomationTasksIndex({ tasks, stats, campaigns, use
                         </div>
                     ) : (
                         <div className="text-center py-16">
-                            <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
+                            <div className="inline-block p-6 rounded-full mb-4 bg-[var(--admin-hover-bg)]">
                                 <span className="text-5xl">⚙️</span>
                             </div>
-                            <p className="text-gray-500 font-medium">No automation tasks found</p>
-                            <p className="text-gray-400 text-sm mt-2">Tasks will appear here once campaigns are active</p>
+                            <p className="text-[var(--admin-text)] font-medium">No automation tasks found</p>
+                            <p className="text-[var(--admin-text-muted)] text-sm mt-2">Tasks will appear here once campaigns are active</p>
                         </div>
                     )}
 
                     {/* Pagination */}
                     {tasks?.links && tasks.links.length > 3 && (
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                        <div className="px-6 py-4 border-t border-[var(--admin-border)] bg-[var(--admin-surface-2)]">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{tasks.from || 0}</span> to <span className="font-medium">{tasks.to || 0}</span> of <span className="font-medium">{tasks.total || 0}</span> results
+                                <div className="text-sm text-[var(--admin-text-muted)]">
+                                    Showing <span className="font-medium text-[var(--admin-text)]">{tasks.from || 0}</span> to <span className="font-medium text-[var(--admin-text)]">{tasks.to || 0}</span> of <span className="font-medium text-[var(--admin-text)]">{tasks.total || 0}</span> results
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {tasks.links.map((link, index) => (
                                         <Link
                                             key={index}
                                             href={link.url || '#'}
-                                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                                                 link.active
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                                    ? 'bg-[var(--admin-primary)] text-white'
+                                                    : 'bg-[var(--admin-surface)] text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)]'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />

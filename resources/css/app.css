@@ -28,6 +28,7 @@
     --admin-text-muted: #94A3B8;
     --admin-text-dim: #64748B;
     --admin-border: rgba(255, 255, 255, 0.06);
+    --admin-border-hover: rgba(255, 255, 255, 0.15);
     --admin-border-light: rgba(255, 255, 255, 0.04);
     --admin-hover-bg: rgba(255, 255, 255, 0.05);
     --admin-hover-border: rgba(255, 255, 255, 0.15);
@@ -66,6 +67,7 @@
     --admin-text-muted: #64748B;
     --admin-text-dim: #94A3B8;
     --admin-border: rgba(15, 23, 42, 0.10);
+    --admin-border-hover: rgba(15, 23, 42, 0.20);
     --admin-border-light: rgba(15, 23, 42, 0.06);
     --admin-hover-bg: rgba(15, 23, 42, 0.04);
     --admin-hover-border: rgba(15, 23, 42, 0.20);
@@ -402,6 +404,120 @@ body {
     background: rgba(182, 244, 0, 0.15);
     color: var(--admin-lime);
 }
+
+/* ============================================
+   STATS GRID + STAT CARD (Dashboard-like, compact)
+   ============================================ */
+
+.stats-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.stats-grid-proxy {
+    grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+    .stats-grid-proxy { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+    .stats-grid-proxy { grid-template-columns: repeat(3, 1fr); }
+}
+
+.stats-grid-captcha {
+    grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+    .stats-grid-captcha { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+    .stats-grid-captcha { grid-template-columns: repeat(4, 1fr); }
+}
+
+.stats-grid-tasks {
+    grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+    .stats-grid-tasks { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+    .stats-grid-tasks { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 1280px) {
+    .stats-grid-tasks { grid-template-columns: repeat(7, 1fr); }
+}
+
+.stat-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background-color: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 0.75rem;
+    box-shadow: var(--admin-shadow-sm);
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    border-color: var(--admin-border-hover);
+}
+
+.stat-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--admin-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--admin-text);
+}
+
+.stat-iconWrap {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-iconWrap-neutral {
+    background-color: var(--admin-hover-bg);
+    color: var(--admin-text-muted);
+}
+
+.stat-iconWrap-success {
+    background-color: rgba(18, 183, 106, 0.15);
+    color: var(--admin-success);
+}
+
+.stat-iconWrap-warning {
+    background-color: rgba(247, 144, 9, 0.15);
+    color: var(--admin-warning);
+}
+
+.stat-iconWrap-danger {
+    background-color: rgba(240, 68, 56, 0.15);
+    color: var(--admin-danger);
+}
+
+.stat-iconWrap-info {
+    background-color: rgba(14, 165, 233, 0.15);
+    color: var(--admin-info);
+}
+
+.stat-value-success { color: var(--admin-success); }
+.stat-value-warning { color: var(--admin-warning); }
+.stat-value-danger { color: var(--admin-danger); }
+.stat-value-info { color: var(--admin-info); }
 
 /* ============================================
    ADMIN SIDEBAR NAV

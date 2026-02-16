@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import AdminLayout from '@/Components/Layout/AdminLayout';
 import Card from '@/Components/Shared/Card';
-import Button from '@/Components/Shared/Button';
-import Input from '@/Components/Shared/Input';
 import { Link, router, usePage } from '@inertiajs/react';
 
 export default function AdminBacklinksIndex({ backlinks, stats, campaigns, users, filters = {} }) {
@@ -14,27 +12,6 @@ export default function AdminBacklinksIndex({ backlinks, stats, campaigns, users
     const [userFilter, setUserFilter] = useState(filters.user_id || '');
     const [dateFrom, setDateFrom] = useState(filters.date_from || '');
     const [dateTo, setDateTo] = useState(filters.date_to || '');
-    
-    // Modal states
-    const [showModal, setShowModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('single'); // 'single' or 'bulk'
-    
-    // Single add form
-    const [singleForm, setSingleForm] = useState({
-        url: '',
-        type: 'comment',
-        keyword: '',
-        anchor_text: '',
-        pa: '',
-        da: '',
-        status: 'pending',
-    });
-    
-    // Bulk import form
-    const [bulkForm, setBulkForm] = useState({
-        csv_file: null,
-    });
-    const [uploading, setUploading] = useState(false);
 
     const handleFilter = () => {
         router.get('/admin/backlinks', {
@@ -51,6 +28,20 @@ export default function AdminBacklinksIndex({ backlinks, stats, campaigns, users
         });
     };
 
+    const handleReset = () => {
+        setSearch('');
+        setStatusFilter('');
+        setTypeFilter('');
+        setCampaignFilter('');
+        setUserFilter('');
+        setDateFrom('');
+        setDateTo('');
+        router.get('/admin/backlinks', {}, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
     const handleExport = () => {
         const params = new URLSearchParams({
             ...(statusFilter && { status: statusFilter }),
@@ -61,75 +52,24 @@ export default function AdminBacklinksIndex({ backlinks, stats, campaigns, users
         window.open(`/admin/backlinks/export?${params.toString()}`, '_blank');
     };
 
-    const handleSingleSubmit = (e) => {
-        e.preventDefault();
-        router.post('/admin/backlinks', singleForm, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setShowModal(false);
-                setSingleForm({
-                    url: '',
-                    type: 'comment',
-                    keyword: '',
-                    anchor_text: '',
-                    pa: '',
-                    da: '',
-                    status: 'pending',
-                });
-            },
-        });
-    };
-
-    const handleBulkSubmit = (e) => {
-        e.preventDefault();
-        if (!bulkForm.csv_file) {
-            alert('Please select a CSV file');
-            return;
-        }
-
-        setUploading(true);
-        const formData = new FormData();
-        formData.append('csv_file', bulkForm.csv_file);
-
-        router.post('/admin/backlinks/bulk-import', formData, {
-            preserveScroll: true,
-            forceFormData: true,
-            onSuccess: () => {
-                setShowModal(false);
-                setBulkForm({ csv_file: null });
-                setUploading(false);
-            },
-            onError: () => {
-                setUploading(false);
-            },
-        });
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setBulkForm({ ...bulkForm, csv_file: file });
-        }
-    };
-
     return (
         <AdminLayout header="Backlinks Management">
             <div className="space-y-6">
                 {/* Success/Error Messages */}
                 {flash?.success && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800">{flash.success}</p>
+                    <div className="p-4 rounded-lg bg-[#12B76A]/10 border border-[#12B76A]/30">
+                        <p className="text-sm text-[#12B76A] font-medium">{flash.success}</p>
                     </div>
                 )}
                 {flash?.error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-800">{flash.error}</p>
+                    <div className="p-4 rounded-lg bg-[#F04438]/10 border border-[#F04438]/30">
+                        <p className="text-sm text-[#F04438] font-medium">{flash.error}</p>
                     </div>
                 )}
                 {flash?.import_errors && flash.import_errors.length > 0 && (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-sm font-semibold text-yellow-800 mb-2">Import Warnings:</p>
-                        <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                    <div className="p-4 rounded-lg bg-[#F79009]/10 border border-[#F79009]/30">
+                        <p className="text-sm font-semibold text-[#F79009] mb-2">Import Warnings:</p>
+                        <ul className="list-disc list-inside text-sm text-[#F79009]/90 space-y-1">
                             {flash.import_errors.slice(0, 10).map((error, index) => (
                                 <li key={index}>{error}</li>
                             ))}
@@ -140,495 +80,382 @@ export default function AdminBacklinksIndex({ backlinks, stats, campaigns, users
                     </div>
                 )}
 
-                {/* Action Bar */}
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-900">Backlinks</h2>
-                    <Button variant="primary" onClick={() => setShowModal(true)}>
-                        ➕ Add Link
-                    </Button>
+                {/* Page Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-[var(--admin-text)]">Backlinks</h1>
+                        <p className="text-sm text-[var(--admin-text-muted)] mt-1">Manage and track backlink status</p>
+                    </div>
+                    <Link href="/admin/backlinks/create">
+                        <button className="px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] rounded-lg shadow-lg shadow-[#2F6BFF]/20 transition-all">
+                            <svg className="inline-block w-4 h-4 mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Link
+                        </button>
+                    </Link>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Total</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
+                {/* KPI Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Total */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Total</p>
+                                <p className="text-2xl font-semibold text-[var(--admin-text)]">{stats?.total || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#6366F1]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#6366F1]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-green-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-green-600 text-xs font-medium mb-1">Verified</p>
-                            <p className="text-2xl font-bold text-green-900">{stats?.verified || 0}</p>
+                    </div>
+
+                    {/* Verified */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Verified</p>
+                                <p className="text-2xl font-semibold text-[#12B76A]">{stats?.verified || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#12B76A]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#12B76A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-yellow-600 text-xs font-medium mb-1">Pending</p>
-                            <p className="text-2xl font-bold text-yellow-900">{stats?.pending || 0}</p>
+                    </div>
+
+                    {/* Pending */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Pending</p>
+                                <p className="text-2xl font-semibold text-[#F79009]">{stats?.pending || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#F79009]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#F79009]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-blue-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-blue-600 text-xs font-medium mb-1">Submitted</p>
-                            <p className="text-2xl font-bold text-blue-900">{stats?.submitted || 0}</p>
+                    </div>
+
+                    {/* Submitted */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Submitted</p>
+                                <p className="text-2xl font-semibold text-[#5B8AFF]">{stats?.submitted || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#5B8AFF]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#5B8AFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-red-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-red-600 text-xs font-medium mb-1">Error</p>
-                            <p className="text-2xl font-bold text-red-900">{stats?.error || 0}</p>
+                    </div>
+
+                    {/* Error */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Error</p>
+                                <p className="text-2xl font-semibold text-[#F04438]">{stats?.error || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#F04438]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#F04438]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Today</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.today || 0}</p>
+                    </div>
+
+                    {/* Today */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Today</p>
+                                <p className="text-2xl font-semibold text-[var(--admin-text)]">{stats?.today || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#7F56D9]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#7F56D9]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">This Week</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.this_week || 0}</p>
+                    </div>
+
+                    {/* This Week */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">This Week</p>
+                                <p className="text-2xl font-semibold text-[var(--admin-text)]">{stats?.this_week || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#10B981]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#10B981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">This Month</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.this_month || 0}</p>
+                    </div>
+
+                    {/* This Month */}
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">This Month</p>
+                                <p className="text-2xl font-semibold text-[var(--admin-text)]">{stats?.this_month || 0}</p>
+                            </div>
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#F59E0B]/15 flex-shrink-0">
+                                <svg className="h-5 w-5 text-[#F59E0B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
                         </div>
-                    </Card>
+                    </div>
                 </div>
 
-                {/* Filters */}
-                <Card className="bg-white border border-gray-200 shadow-md">
-                    <div className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4">
-                            <div className="md:col-span-2">
-                                <Input
-                                    type="text"
-                                    placeholder="Search URLs, keywords..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
-                                />
+                {/* Filters Toolbar */}
+                <Card variant="elevated">
+                    <div className="p-6">
+                        <div className="space-y-4">
+                            {/* Row 1: Search and Main Filters */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                                <div className="lg:col-span-2">
+                                    <div className="relative">
+                                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--admin-text-dim)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            placeholder="Search URLs, keywords..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] placeholder-[var(--admin-text-muted)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                    >
+                                        <option value="">All Statuses</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="submitted">Submitted</option>
+                                        <option value="verified">Verified</option>
+                                        <option value="error">Error</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <select
+                                        value={typeFilter}
+                                        onChange={(e) => setTypeFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                    >
+                                        <option value="">All Types</option>
+                                        <option value="comment">Comment</option>
+                                        <option value="profile">Profile</option>
+                                        <option value="forum">Forum</option>
+                                        <option value="guestposting">Guest Post</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <select
+                                        value={campaignFilter}
+                                        onChange={(e) => setCampaignFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                    >
+                                        <option value="">All Campaigns</option>
+                                        {campaigns?.map((campaign) => (
+                                            <option key={campaign.id} value={campaign.id}>
+                                                {campaign.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <select
+                                        value={userFilter}
+                                        onChange={(e) => setUserFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                    >
+                                        <option value="">All Users</option>
+                                        {users?.map((user) => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                >
-                                    <option value="">All Statuses</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="submitted">Submitted</option>
-                                    <option value="verified">Verified</option>
-                                    <option value="error">Error</option>
-                                </select>
+
+                            {/* Row 2: Date Range and Actions */}
+                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <input
+                                        type="date"
+                                        placeholder="From Date"
+                                        value={dateFrom}
+                                        onChange={(e) => setDateFrom(e.target.value)}
+                                        className="flex-1 px-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                    />
+                                    <span className="text-[var(--admin-text-muted)]">to</span>
+                                    <input
+                                        type="date"
+                                        placeholder="To Date"
+                                        value={dateTo}
+                                        onChange={(e) => setDateTo(e.target.value)}
+                                        className="flex-1 px-4 py-2.5 bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg text-[var(--admin-text)] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/50 focus:border-[#2F6BFF] transition-all"
+                                    />
+                                </div>
+                                <div className="flex gap-3 w-full sm:w-auto">
+                                    <button
+                                        onClick={handleReset}
+                                        className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-[var(--admin-text)] bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg hover:bg-[var(--admin-hover-bg)] transition-all"
+                                    >
+                                        Reset
+                                    </button>
+                                    <button
+                                        onClick={handleExport}
+                                        className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-[var(--admin-text)] bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg hover:bg-[var(--admin-hover-bg)] transition-all"
+                                    >
+                                        <svg className="inline-block w-4 h-4 mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        Export CSV
+                                    </button>
+                                    <button
+                                        onClick={handleFilter}
+                                        className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] rounded-lg shadow-lg shadow-[#2F6BFF]/20 transition-all"
+                                    >
+                                        <svg className="inline-block w-4 h-4 mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        Apply Filters
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <select
-                                    value={typeFilter}
-                                    onChange={(e) => setTypeFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                >
-                                    <option value="">All Types</option>
-                                    <option value="comment">Comment</option>
-                                    <option value="profile">Profile</option>
-                                    <option value="forum">Forum</option>
-                                    <option value="guestposting">Guest Post</option>
-                                </select>
-                            </div>
-                            <div>
-                                <select
-                                    value={campaignFilter}
-                                    onChange={(e) => setCampaignFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                >
-                                    <option value="">All Campaigns</option>
-                                    {campaigns?.map((campaign) => (
-                                        <option key={campaign.id} value={campaign.id}>
-                                            {campaign.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <select
-                                    value={userFilter}
-                                    onChange={(e) => setUserFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                >
-                                    <option value="">All Users</option>
-                                    {users?.map((user) => (
-                                        <option key={user.id} value={user.id}>
-                                            {user.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <Input
-                                    type="date"
-                                    placeholder="From Date"
-                                    value={dateFrom}
-                                    onChange={(e) => setDateFrom(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <Input
-                                    type="date"
-                                    placeholder="To Date"
-                                    value={dateTo}
-                                    onChange={(e) => setDateTo(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                            <Button variant="primary" onClick={handleFilter} className="flex-1">
-                                🔍 Filter
-                            </Button>
-                            <Button variant="secondary" onClick={handleExport}>
-                                📥 Export CSV
-                            </Button>
                         </div>
                     </div>
                 </Card>
 
                 {/* Backlinks Table */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     {backlinks?.data && backlinks.data.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ID</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Campaign</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">User</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">URL</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Type</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Keyword</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">PA</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">DA</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Created</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {backlinks.data.map((backlink) => (
-                                        <tr key={backlink.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">#{backlink.id}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <Link href={`/admin/campaigns/${backlink.campaign_id}`} className="text-sm text-gray-900 hover:text-gray-700">
-                                                    {backlink.campaign?.name || 'N/A'}
-                                                </Link>
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                                {backlink.campaign?.user?.name || 'N/A'}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm">
-                                                <a href={backlink.url} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:text-gray-700 break-all max-w-xs truncate block">
-                                                    {backlink.url}
-                                                </a>
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 capitalize">{backlink.type}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{backlink.keyword || 'N/A'}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{backlink.pa !== null ? backlink.pa : 'N/A'}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{backlink.da !== null ? backlink.da : 'N/A'}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    backlink.status === 'verified' ? 'bg-green-100 text-green-800' :
-                                                    backlink.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    backlink.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-red-100 text-red-800'
-                                                }`}>
-                                                    {backlink.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {new Date(backlink.created_at).toLocaleDateString()}
-                                            </td>
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-[var(--admin-border)]">
+                                    <thead className="bg-[var(--admin-surface-2)]">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">ID</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">Campaign</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">User</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">URL</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">Type</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">Keyword</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">PA</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">DA</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--admin-text)] uppercase tracking-wider">Created</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="text-center py-16">
-                            <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
-                                <span className="text-5xl">🔗</span>
+                                    </thead>
+                                    <tbody className="bg-[var(--admin-surface)] divide-y divide-[var(--admin-border)]">
+                                        {backlinks.data.map((backlink) => (
+                                            <tr key={backlink.id} className="hover:bg-[var(--admin-hover-bg)] transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text-muted)]">#{backlink.id}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <Link href={`/admin/campaigns/${backlink.campaign_id}`} className="text-sm text-[#5B8AFF] hover:text-[#2F6BFF] font-medium transition-colors">
+                                                        {backlink.campaign?.name || 'N/A'}
+                                                    </Link>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text)]">
+                                                    {backlink.campaign?.user?.name || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm max-w-xs">
+                                                    <a href={backlink.url} target="_blank" rel="noopener noreferrer" className="text-[#5B8AFF] hover:text-[#2F6BFF] break-all truncate block transition-colors">
+                                                        {backlink.url}
+                                                    </a>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text)] capitalize">{backlink.type}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text)]">{backlink.keyword || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text)]">{backlink.pa !== null ? backlink.pa : 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text)]">{backlink.da !== null ? backlink.da : 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                                        backlink.status === 'verified' 
+                                                            ? 'bg-[#12B76A]/15 text-[#12B76A]' 
+                                                            : backlink.status === 'pending' 
+                                                                ? 'bg-[#F79009]/15 text-[#F79009]' 
+                                                                : backlink.status === 'submitted' 
+                                                                    ? 'bg-[#5B8AFF]/15 text-[#5B8AFF]' 
+                                                                    : 'bg-[#F04438]/15 text-[#F04438]'
+                                                    }`}>
+                                                        {backlink.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--admin-text-muted)]">
+                                                    {new Date(backlink.created_at).toLocaleDateString()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                            <p className="text-gray-500 font-medium">No backlinks found</p>
-                            <p className="text-gray-400 text-sm mt-2">Backlinks will appear here once created</p>
-                        </div>
-                    )}
 
-                    {/* Pagination */}
-                    {backlinks?.links && backlinks.links.length > 3 && (
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{backlinks.from || 0}</span> to <span className="font-medium">{backlinks.to || 0}</span> of <span className="font-medium">{backlinks.total || 0}</span> results
+                            {/* Pagination */}
+                            {backlinks.links && backlinks.links.length > 3 && (
+                                <div className="px-6 py-4 border-t border-[var(--admin-border)] bg-[var(--admin-surface-2)]">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="text-sm text-[var(--admin-text)]">
+                                            Showing <span className="font-semibold">{backlinks.from || 0}</span> to <span className="font-semibold">{backlinks.to || 0}</span> of <span className="font-semibold">{backlinks.total || 0}</span> results
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {backlinks.links.map((link, index) => (
+                                                <Link
+                                                    key={index}
+                                                    href={link.url || '#'}
+                                                    className={`px-3.5 py-2 text-sm font-medium rounded-lg transition-all ${
+                                                        link.active
+                                                            ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] text-white shadow-lg shadow-[#2F6BFF]/20'
+                                                            : 'bg-[var(--admin-surface)] text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)]'
+                                                    }`}
+                                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {backlinks.links.map((link, index) => (
-                                        <Link
-                                            key={index}
-                                            href={link.url || '#'}
-                                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                                link.active
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                                            }`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
-                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="text-center py-20">
+                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-[var(--admin-surface-2)] mb-6">
+                                <svg className="h-10 w-10 text-[var(--admin-text-dim)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
                             </div>
+                            <p className="text-[var(--admin-text)] font-semibold text-lg">No backlinks found</p>
+                            <p className="text-[var(--admin-text-muted)] text-sm mt-2 mb-6">Backlinks will appear here once created</p>
+                            <Link href="/admin/backlinks/create">
+                                <button className="px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] rounded-lg shadow-lg shadow-[#2F6BFF]/20 transition-all">
+                                    <svg className="inline-block w-4 h-4 mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add Your First Backlink
+                                </button>
+                            </Link>
                         </div>
                     )}
                 </Card>
             </div>
 
-            {/* Add Link Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            {/* Modal Header */}
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-900">Add Backlink</h3>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <i className="bi bi-x-lg text-xl"></i>
-                                </button>
-                            </div>
-
-                            {/* Tabs */}
-                            <div className="flex border-b border-gray-200 mb-6">
-                                <button
-                                    onClick={() => setActiveTab('single')}
-                                    className={`px-4 py-2 font-medium text-sm ${
-                                        activeTab === 'single'
-                                            ? 'border-b-2 border-gray-900 text-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                                >
-                                    Single Add
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('bulk')}
-                                    className={`px-4 py-2 font-medium text-sm ${
-                                        activeTab === 'bulk'
-                                            ? 'border-b-2 border-gray-900 text-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                                >
-                                    Bulk Import (CSV)
-                                </button>
-                            </div>
-
-                            {/* Single Add Form */}
-                            {activeTab === 'single' && (
-                                <form onSubmit={handleSingleSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            URL <span className="text-red-500">*</span>
-                                        </label>
-                                        <Input
-                                            type="url"
-                                            required
-                                            value={singleForm.url}
-                                            onChange={(e) => setSingleForm({ ...singleForm, url: e.target.value })}
-                                            placeholder="https://example.com/page"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Type <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                required
-                                                value={singleForm.type}
-                                                onChange={(e) => setSingleForm({ ...singleForm, type: e.target.value })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
-                                            >
-                                                <option value="comment">Comment</option>
-                                                <option value="profile">Profile</option>
-                                                <option value="forum">Forum</option>
-                                                <option value="guestposting">Guest Post</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Status
-                                            </label>
-                                            <select
-                                                value={singleForm.status}
-                                                onChange={(e) => setSingleForm({ ...singleForm, status: e.target.value })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900"
-                                            >
-                                                <option value="pending">Pending</option>
-                                                <option value="submitted">Submitted</option>
-                                                <option value="verified">Verified</option>
-                                                <option value="error">Error</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Keyword
-                                        </label>
-                                        <Input
-                                            type="text"
-                                            value={singleForm.keyword}
-                                            onChange={(e) => setSingleForm({ ...singleForm, keyword: e.target.value })}
-                                            placeholder="Target keyword"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Anchor Text
-                                        </label>
-                                        <Input
-                                            type="text"
-                                            value={singleForm.anchor_text}
-                                            onChange={(e) => setSingleForm({ ...singleForm, anchor_text: e.target.value })}
-                                            placeholder="Anchor text"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                PA (Page Authority)
-                                            </label>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                value={singleForm.pa}
-                                                onChange={(e) => setSingleForm({ ...singleForm, pa: e.target.value })}
-                                                placeholder="0-100"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                DA (Domain Authority)
-                                            </label>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                value={singleForm.da}
-                                                onChange={(e) => setSingleForm({ ...singleForm, da: e.target.value })}
-                                                placeholder="0-100"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3 pt-4">
-                                        <Button type="submit" variant="primary" className="flex-1">
-                                            Add Backlink
-                                        </Button>
-                                        <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </form>
-                            )}
-
-                            {/* Bulk Import Form */}
-                            {activeTab === 'bulk' && (
-                                <form onSubmit={handleBulkSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            CSV File <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
-                                            <div className="space-y-1 text-center">
-                                                {bulkForm.csv_file ? (
-                                                    <div>
-                                                        <i className="bi bi-file-earmark-spreadsheet text-4xl text-gray-400"></i>
-                                                        <p className="text-sm text-gray-600 mt-2">{bulkForm.csv_file.name}</p>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setBulkForm({ ...bulkForm, csv_file: null })}
-                                                            className="text-sm text-gray-900 hover:text-gray-700 mt-1"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <i className="bi bi-cloud-upload text-4xl text-gray-400"></i>
-                                                        <div className="flex text-sm text-gray-600">
-                                                            <label className="relative cursor-pointer bg-white rounded-md font-medium text-gray-900 hover:text-gray-700">
-                                                                <span>Upload CSV file</span>
-                                                                <input
-                                                                    type="file"
-                                                                    accept=".csv,.txt"
-                                                                    className="sr-only"
-                                                                    onChange={handleFileChange}
-                                                                    required
-                                                                />
-                                                            </label>
-                                                            <p className="pl-1">or drag and drop</p>
-                                                        </div>
-                                                        <p className="text-xs text-gray-500">CSV, TXT up to 10MB</p>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
-                                        <p className="text-xs text-blue-800">
-                                            <i className="bi bi-info-circle mr-1"></i>
-                                            <strong>Note:</strong> This imports actual backlinks. For bulk importing backlink opportunities (sites), use <strong>Backlink Opportunities</strong> page.
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-gray-50 p-4 rounded-md">
-                                        <p className="text-sm font-medium text-gray-900 mb-2">CSV Format:</p>
-                                        <p className="text-xs text-gray-600 mb-2">Required columns: <strong>url</strong></p>
-                                        <p className="text-xs text-gray-600 mb-2">Optional columns: <strong>type</strong>, <strong>keyword</strong>, <strong>anchor_text</strong>, <strong>pa</strong>, <strong>da</strong>, <strong>status</strong></p>
-                                        <p className="text-xs text-gray-500 mt-2">Example:</p>
-                                        <pre className="text-xs bg-white p-2 rounded border border-gray-200 mt-1">
-{`url,type,keyword,anchor_text,pa,da,status
-https://example.com/page,comment,seo keyword,click here,45,60,pending`}
-                                        </pre>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            <strong>Column names:</strong> Use lowercase (url, pa, da) or mixed case (PA, DA) - both work.
-                                        </p>
-                                    </div>
-
-                                    <div className="flex gap-3 pt-4">
-                                        <Button 
-                                            type="submit" 
-                                            variant="primary" 
-                                            className="flex-1"
-                                            disabled={uploading}
-                                        >
-                                            {uploading ? 'Uploading...' : 'Import CSV'}
-                                        </Button>
-                                        <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </form>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
         </AdminLayout>
     );
 }

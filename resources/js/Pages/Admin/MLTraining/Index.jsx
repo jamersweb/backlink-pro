@@ -139,9 +139,9 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Training Controls */}
                     <div className="lg:col-span-2">
-                        <Card className="bg-white border border-gray-200 shadow-md">
+                        <Card variant="elevated">
                             <div className="p-6">
-                                <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-[var(--admin-text)] mb-6 flex items-center gap-2">
                                     <i className="bi bi-cpu text-violet-600"></i>
                                     Train Model
                                 </h3>
@@ -149,13 +149,13 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                 <div className="space-y-5">
                                     {/* Model Type Selection */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-[var(--admin-text)] mb-2">
                                             Model Type
                                         </label>
                                         <select
                                             value={formData.model_type}
                                             onChange={(e) => setFormData({ ...formData, model_type: e.target.value })}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                            className="admin-select w-full px-4 py-2.5 rounded-lg"
                                             disabled={isTraining}
                                         >
                                             <option value="">Auto (Best Available)</option>
@@ -163,14 +163,14 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                             <option value="lightgbm">LightGBM (Fast)</option>
                                             <option value="randomforest">Random Forest (Baseline)</option>
                                         </select>
-                                        <p className="mt-1.5 text-xs text-gray-500">
+                                        <p className="mt-1.5 text-xs text-[var(--admin-text-muted)]">
                                             XGBoost typically gives best results. LightGBM is faster for large datasets.
                                         </p>
                                     </div>
 
                                     {/* Training Period */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-[var(--admin-text)] mb-2">
                                             Training Data Period (days)
                                         </label>
                                         <input
@@ -179,21 +179,21 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                             max="365"
                                             value={formData.since_days}
                                             onChange={(e) => setFormData({ ...formData, since_days: parseInt(e.target.value) || 7 })}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                            className="admin-input w-full px-4 py-2.5 rounded-lg"
                                             disabled={isTraining}
                                         />
-                                        <p className="mt-1.5 text-xs text-gray-500">
+                                        <p className="mt-1.5 text-xs text-[var(--admin-text-muted)]">
                                             Number of days to look back for collecting training feedback data.
                                         </p>
                                     </div>
 
                                     {/* Auto Deploy Toggle */}
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="flex items-center justify-between p-4 bg-[var(--admin-surface-2)] rounded-lg border border-[var(--admin-border)]">
                                         <div>
-                                            <label className="text-sm font-medium text-gray-900">
+                                            <label className="text-sm font-medium text-[var(--admin-text)]">
                                                 Auto-deploy if better
                                             </label>
-                                            <p className="text-xs text-gray-500 mt-0.5">
+                                            <p className="text-xs text-[var(--admin-text-muted)] mt-0.5">
                                                 Automatically deploy new model if it outperforms the current one
                                             </p>
                                         </div>
@@ -246,8 +246,8 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                     {trainResult && (
                                         <div className={`mt-4 p-4 rounded-lg border ${
                                             trainResult.success 
-                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-                                                : 'bg-red-50 border-red-200 text-red-800'
+                                                ? 'bg-[#12B76A]/10 border-[#12B76A]/30 text-[#12B76A]' 
+                                                : 'bg-[#F04438]/10 border-[#F04438]/30 text-[#F04438]'
                                         }`}>
                                             <div className="flex items-start gap-3">
                                                 <i className={`bi ${trainResult.success ? 'bi-check-circle-fill text-emerald-500' : 'bi-x-circle-fill text-red-500'} text-xl`}></i>
@@ -256,7 +256,7 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                                     
                                                     {/* Show error location if available */}
                                                     {!trainResult.success && trainResult.result?.error_location && (
-                                                        <div className="mt-2 p-2 bg-red-100 rounded text-xs font-mono">
+                                                        <div className="mt-2 p-2 bg-[#F04438]/10 rounded text-xs font-mono">
                                                             <p className="font-semibold mb-1">Error Location:</p>
                                                             <pre className="whitespace-pre-wrap">{trainResult.result.error_location}</pre>
                                                         </div>
@@ -268,7 +268,7 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                                             <summary className="cursor-pointer text-sm font-semibold hover:underline">
                                                                 Show Detailed Error
                                                             </summary>
-                                                            <pre className="mt-2 text-xs bg-white/50 p-3 rounded overflow-x-auto max-h-60 whitespace-pre-wrap">
+                                                            <pre className="mt-2 text-xs bg-[var(--admin-surface)]/50 p-3 rounded overflow-x-auto max-h-60 whitespace-pre-wrap">
                                                                 {trainResult.result.error_details}
                                                             </pre>
                                                         </details>
@@ -280,7 +280,7 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                                             <summary className="cursor-pointer text-sm font-semibold hover:underline">
                                                                 Show Output
                                                             </summary>
-                                                            <pre className="mt-2 text-xs bg-white/50 p-2 rounded overflow-x-auto max-h-40">
+                                                            <pre className="mt-2 text-xs bg-[var(--admin-surface)]/50 p-2 rounded overflow-x-auto max-h-40">
                                                                 {trainResult.result.output.slice(-1000)}
                                                             </pre>
                                                         </details>
@@ -297,42 +297,42 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                     {/* Model Info Sidebar */}
                     <div className="space-y-6">
                         {/* Current Model Card */}
-                        <Card className="bg-white border border-gray-200 shadow-md">
+                        <Card variant="elevated">
                             <div className="p-6">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-[var(--admin-text)] mb-4 flex items-center gap-2">
                                     <i className="bi bi-box text-violet-600"></i>
                                     Current Model
                                 </h3>
 
                                 {currentModelInfo?.model_exists ? (
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                            <span className="text-sm text-gray-500">Status</span>
+                                        <div className="flex justify-between items-center py-2 border-b border-[var(--admin-border-light)]">
+                                            <span className="text-sm text-[var(--admin-text-muted)]">Status</span>
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                                                 <span className="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>
                                                 Active
                                             </span>
                                         </div>
                                         {currentModelInfo.current_version && (
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                                <span className="text-sm text-gray-500">Version</span>
-                                                <span className="text-sm font-mono font-medium text-gray-900">{currentModelInfo.current_version}</span>
+                                            <div className="flex justify-between items-center py-2 border-b border-[var(--admin-border-light)]">
+                                                <span className="text-sm text-[var(--admin-text-muted)]">Version</span>
+                                                <span className="text-sm font-mono font-medium text-[var(--admin-text)]">{currentModelInfo.current_version}</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                            <span className="text-sm text-gray-500">Last Updated</span>
-                                            <span className="text-sm text-gray-900">{currentModelInfo.last_modified || 'N/A'}</span>
+                                        <div className="flex justify-between items-center py-2 border-b border-[var(--admin-border-light)]">
+                                            <span className="text-sm text-[var(--admin-text-muted)]">Last Updated</span>
+                                            <span className="text-sm text-[var(--admin-text)]">{currentModelInfo.last_modified || 'N/A'}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-2">
-                                            <span className="text-sm text-gray-500">File Size</span>
-                                            <span className="text-sm text-gray-900">{currentModelInfo.file_size || 'N/A'}</span>
+                                            <span className="text-sm text-[var(--admin-text-muted)]">File Size</span>
+                                            <span className="text-sm text-[var(--admin-text)]">{currentModelInfo.file_size || 'N/A'}</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="text-center py-6">
                                         <i className="bi bi-exclamation-triangle text-4xl text-amber-500"></i>
-                                        <p className="mt-2 text-sm text-gray-600">No model trained yet</p>
-                                        <p className="text-xs text-gray-400 mt-1">Train a model to get started</p>
+                                        <p className="mt-2 text-sm text-[var(--admin-text-muted)]">No model trained yet</p>
+                                        <p className="text-xs text-[var(--admin-text-dim)] mt-1">Train a model to get started</p>
                                     </div>
                                 )}
                             </div>
@@ -340,9 +340,9 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
 
                         {/* Version History */}
                         {currentModelInfo?.versions?.length > 0 && (
-                            <Card className="bg-white border border-gray-200 shadow-md">
+                            <Card variant="elevated">
                                 <div className="p-6">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <h3 className="text-lg font-bold text-[var(--admin-text)] mb-4 flex items-center gap-2">
                                         <i className="bi bi-clock-history text-violet-600"></i>
                                         Version History
                                     </h3>
@@ -350,8 +350,8 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                         {currentModelInfo.versions.map((version, idx) => (
                                             <div key={idx} className={`p-3 rounded-lg border ${
                                                 version.version === currentModelInfo.current_version 
-                                                    ? 'bg-violet-50 border-violet-200' 
-                                                    : 'bg-gray-50 border-gray-200'
+                                                    ? 'bg-violet-500/10 border-violet-500/30' 
+                                                    : 'bg-[var(--admin-surface-2)] border-[var(--admin-border)]'
                                             }`}>
                                                 <div className="flex items-center justify-between">
                                                     <span className="font-mono text-sm font-medium">{version.version}</span>
@@ -360,7 +360,7 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                                     )}
                                                 </div>
                                                 {version.accuracy && (
-                                                    <p className="text-xs text-gray-500 mt-1">
+                                                    <p className="text-xs text-[var(--admin-text-muted)] mt-1">
                                                         Accuracy: {(version.accuracy * 100).toFixed(1)}%
                                                     </p>
                                                 )}
@@ -375,26 +375,26 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
 
                 {/* Training Logs */}
                 {trainingLogs?.length > 0 && (
-                    <Card className="bg-white border border-gray-200 shadow-md">
+                    <Card variant="elevated">
                         <div className="p-6">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-[var(--admin-text)] mb-4 flex items-center gap-2">
                                 <i className="bi bi-journal-text text-violet-600"></i>
                                 Recent Training Logs
                             </h3>
                             <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
+                                <table className="admin-table min-w-full">
                                     <thead>
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Triggered By</th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                                            <th>Timestamp</th>
+                                            <th>Status</th>
+                                            <th>Triggered By</th>
+                                            <th>Details</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-200">
+                                    <tbody>
                                         {trainingLogs.map((log, idx) => (
-                                            <tr key={idx} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3 text-sm text-gray-900">
+                                            <tr key={idx}>
+                                                <td className="text-sm text-[var(--admin-text)]">
                                                     {new Date(log.timestamp).toLocaleString()}
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -406,16 +406,16 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                                                         {log.success ? 'Success' : 'Failed'}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-gray-600">
+                                                <td className="text-sm text-[var(--admin-text-muted)]">
                                                     {log.triggered_by || 'manual'}
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-gray-600">
+                                                <td className="text-sm">
                                                     {log.error ? (
-                                                        <span className="text-red-600 truncate block max-w-xs" title={log.error}>
+                                                        <span className="admin-text-danger truncate block max-w-xs" title={log.error}>
                                                             {log.error.substring(0, 50)}...
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-400">—</span>
+                                                        <span className="text-[var(--admin-text-dim)]">—</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -428,37 +428,37 @@ export default function MLTrainingIndex({ stats, modelInfo, trainingLogs }) {
                 )}
 
                 {/* Help Section */}
-                <Card className="bg-gradient-to-br from-slate-800 to-slate-900 text-white">
+                <Card className="bg-gradient-to-br from-[var(--admin-surface-2)] to-[var(--admin-surface-3)] border border-[var(--admin-border)]">
                     <div className="p-6">
-                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                            <i className="bi bi-info-circle"></i>
+                        <h3 className="text-lg font-bold text-[var(--admin-text)] mb-4 flex items-center gap-2">
+                            <i className="bi bi-info-circle text-[var(--admin-primary)]"></i>
                             How Model Training Works
                         </h3>
                         <div className="grid md:grid-cols-3 gap-6 text-sm">
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold">1</span>
-                                    <span className="font-medium">Collect Data</span>
+                                    <span className="w-6 h-6 rounded-full bg-[var(--admin-primary)] flex items-center justify-center text-xs font-bold text-white">1</span>
+                                    <span className="font-medium text-[var(--admin-text)]">Collect Data</span>
                                 </div>
-                                <p className="text-slate-300 ml-8">
+                                <p className="text-[var(--admin-text-muted)] ml-8">
                                     Gathers historical task outcomes (success/failure) from your automation campaigns.
                                 </p>
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold">2</span>
-                                    <span className="font-medium">Train Model</span>
+                                    <span className="w-6 h-6 rounded-full bg-[var(--admin-primary)] flex items-center justify-center text-xs font-bold text-white">2</span>
+                                    <span className="font-medium text-[var(--admin-text)]">Train Model</span>
                                 </div>
-                                <p className="text-slate-300 ml-8">
+                                <p className="text-[var(--admin-text-muted)] ml-8">
                                     Uses ML algorithms to learn patterns and predict the best action type for each backlink.
                                 </p>
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold">3</span>
-                                    <span className="font-medium">Evaluate & Deploy</span>
+                                    <span className="w-6 h-6 rounded-full bg-[var(--admin-primary)] flex items-center justify-center text-xs font-bold text-white">3</span>
+                                    <span className="font-medium text-[var(--admin-text)]">Evaluate & Deploy</span>
                                 </div>
-                                <p className="text-slate-300 ml-8">
+                                <p className="text-[var(--admin-text-muted)] ml-8">
                                     Compares new model accuracy with current one. Deploys automatically if improved.
                                 </p>
                             </div>

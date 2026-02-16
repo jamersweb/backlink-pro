@@ -66,15 +66,15 @@ export default function SubscriptionsIndex({ subscriptions, stats, filters }) {
                 </div>
 
                 {/* KPI Stats - Compact Dashboard Style */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Total */}
-                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-3 hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
-                        <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-[var(--admin-text-muted)] text-xs font-medium">Total</p>
-                                <p className="text-2xl font-bold text-[var(--admin-text)]">{stats.total || 0}</p>
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Total</p>
+                                <p className="text-2xl font-semibold text-[var(--admin-text)]">{stats.total || 0}</p>
                             </div>
-                            <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-[var(--admin-hover-bg)] flex-shrink-0">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--admin-hover-bg)] flex-shrink-0">
                                 <svg className="h-5 w-5 text-[var(--admin-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
@@ -83,13 +83,13 @@ export default function SubscriptionsIndex({ subscriptions, stats, filters }) {
                     </div>
 
                     {/* Active */}
-                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-3 hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
-                        <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-[var(--admin-text-muted)] text-xs font-medium">Active</p>
-                                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.active || 0}</p>
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Active</p>
+                                <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{stats.active || 0}</p>
                             </div>
-                            <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-emerald-500/10 flex-shrink-0">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-emerald-500/10 flex-shrink-0">
                                 <svg className="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -98,13 +98,13 @@ export default function SubscriptionsIndex({ subscriptions, stats, filters }) {
                     </div>
 
                     {/* Pending */}
-                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-3 hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
-                        <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-[var(--admin-text-muted)] text-xs font-medium">Pending</p>
-                                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending || 0}</p>
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Pending</p>
+                                <p className="text-2xl font-semibold text-amber-600 dark:text-amber-400">{stats.pending || 0}</p>
                             </div>
-                            <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-amber-500/10 flex-shrink-0">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-amber-500/10 flex-shrink-0">
                                 <svg className="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -113,13 +113,13 @@ export default function SubscriptionsIndex({ subscriptions, stats, filters }) {
                     </div>
 
                     {/* Canceled */}
-                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-3 hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
-                        <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-[var(--admin-text-muted)] text-xs font-medium">Canceled</p>
-                                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.canceled || 0}</p>
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Canceled</p>
+                                <p className="text-2xl font-semibold text-red-600 dark:text-red-400">{stats.canceled || 0}</p>
                             </div>
-                            <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-red-500/10 flex-shrink-0">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-red-500/10 flex-shrink-0">
                                 <svg className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -128,13 +128,13 @@ export default function SubscriptionsIndex({ subscriptions, stats, filters }) {
                     </div>
 
                     {/* Past Due */}
-                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-3 hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
-                        <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-[var(--admin-text-muted)] text-xs font-medium">Past Due</p>
-                                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.past_due || 0}</p>
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">Past Due</p>
+                                <p className="text-2xl font-semibold text-orange-600 dark:text-orange-400">{stats.past_due || 0}</p>
                             </div>
-                            <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-orange-500/10 flex-shrink-0">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-orange-500/10 flex-shrink-0">
                                 <svg className="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
@@ -143,13 +143,13 @@ export default function SubscriptionsIndex({ subscriptions, stats, filters }) {
                     </div>
 
                     {/* First Time */}
-                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-3 hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
-                        <div className="relative flex items-center justify-between gap-3">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-[var(--admin-text-muted)] text-xs font-medium">First Time</p>
-                                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.first_time || 0}</p>
+                    <div className="group relative overflow-hidden rounded-xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-4 min-h-[100px] hover:border-[var(--admin-border-hover)] transition-all duration-300 shadow-[var(--admin-shadow-sm)]">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium text-[var(--admin-text-muted)]">First Time</p>
+                                <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">{stats.first_time || 0}</p>
                             </div>
-                            <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-purple-500/10 flex-shrink-0">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-purple-500/10 flex-shrink-0">
                                 <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                 </svg>

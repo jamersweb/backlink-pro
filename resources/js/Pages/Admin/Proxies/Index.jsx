@@ -106,52 +106,71 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
             <div className="space-y-6">
                 {/* Success/Error Messages */}
                 {flash?.success && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800">{flash.success}</p>
+                    <div className="p-4 rounded-lg bg-[#12B76A]/10 border border-[#12B76A]/30">
+                        <p className="text-sm text-[#12B76A] font-medium">{flash.success}</p>
                     </div>
                 )}
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-gray-600 text-xs font-medium mb-1">Total</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats?.total || 0}</p>
+                {/* Stats Cards - Dashboard-like 3×2 grid */}
+                <div className="stats-grid stats-grid-proxy">
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Total</p>
+                            <p className="stat-value">{stats?.total || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-green-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-green-600 text-xs font-medium mb-1">Active</p>
-                            <p className="text-2xl font-bold text-green-900">{stats?.active || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-neutral">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-yellow-600 text-xs font-medium mb-1">Disabled</p>
-                            <p className="text-2xl font-bold text-yellow-900">{stats?.disabled || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Active</p>
+                            <p className="stat-value stat-value-success">{stats?.active || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-red-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-red-600 text-xs font-medium mb-1">Blacklisted</p>
-                            <p className="text-2xl font-bold text-red-900">{stats?.blacklisted || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-success">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-green-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-green-600 text-xs font-medium mb-1">Healthy</p>
-                            <p className="text-2xl font-bold text-green-900">{stats?.healthy || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Disabled</p>
+                            <p className="stat-value stat-value-warning">{stats?.disabled || 0}</p>
                         </div>
-                    </Card>
-                    <Card className="bg-white border border-red-200 shadow-md">
-                        <div className="p-4">
-                            <p className="text-red-600 text-xs font-medium mb-1">Unhealthy</p>
-                            <p className="text-2xl font-bold text-red-900">{stats?.unhealthy || 0}</p>
+                        <div className="stat-iconWrap stat-iconWrap-warning">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                         </div>
-                    </Card>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Blacklisted</p>
+                            <p className="stat-value stat-value-danger">{stats?.blacklisted || 0}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-danger">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Healthy</p>
+                            <p className="stat-value stat-value-success">{stats?.healthy || 0}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-success">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div>
+                            <p className="stat-title">Unhealthy</p>
+                            <p className="stat-value stat-value-danger">{stats?.unhealthy || 0}</p>
+                        </div>
+                        <div className="stat-iconWrap stat-iconWrap-danger">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Filters & Add Button */}
+                {/* Filters & Add Button - Panel card */}
+                <Card variant="elevated">
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Input
@@ -164,7 +183,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            className="admin-select px-3 py-2 rounded-lg"
                         >
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
@@ -174,7 +193,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                         <select
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            className="admin-select px-3 py-2 rounded-lg"
                         >
                             <option value="">All Types</option>
                             <option value="http">HTTP</option>
@@ -184,7 +203,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                         <select
                             value={countryFilter}
                             onChange={(e) => setCountryFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            className="admin-select px-3 py-2 rounded-lg"
                         >
                             <option value="">All Countries</option>
                             {countries?.map((country) => (
@@ -197,88 +216,64 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                         <Button variant="primary" onClick={() => handleOpenModal()}>➕ Add Proxy</Button>
                     </div>
                 </div>
+                </Card>
 
                 {/* Proxies Table */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card variant="elevated">
                     {proxies?.data && proxies.data.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                            <table className="admin-table min-w-full">
+                                <thead>
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Host:Port</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Type</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Country</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Errors</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Last Used</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                                        <th>Host:Port</th>
+                                        <th>Type</th>
+                                        <th>Country</th>
+                                        <th>Status</th>
+                                        <th>Errors</th>
+                                        <th>Last Used</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody>
                                     {proxies.data.map((proxy) => (
-                                        <tr key={proxy.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{proxy.host}:{proxy.port}</div>
+                                        <tr key={proxy.id}>
+                                            <td className="whitespace-nowrap">
+                                                <div className="text-sm font-medium text-[var(--admin-text)]">{proxy.host}:{proxy.port}</div>
                                                 {proxy.username && (
-                                                    <div className="text-xs text-gray-500">{proxy.username}</div>
+                                                    <div className="text-xs text-[var(--admin-text-muted)]">{proxy.username}</div>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 uppercase">{proxy.type}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{proxy.country || '-'}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                    proxy.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                    proxy.status === 'disabled' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)] uppercase">{proxy.type}</td>
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">{proxy.country || '-'}</td>
+                                            <td className="whitespace-nowrap">
+                                                <span className={`admin-badge ${
+                                                    proxy.status === 'active' ? 'admin-badge-success' :
+                                                    proxy.status === 'disabled' ? 'admin-badge-warning' :
+                                                    'admin-badge-danger'
                                                 }`}>
                                                     {proxy.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
+                                            <td className="whitespace-nowrap">
                                                 <span className={`text-sm font-semibold ${
-                                                    proxy.error_count >= 10 ? 'text-red-600' :
-                                                    proxy.error_count >= 3 ? 'text-yellow-600' :
-                                                    'text-green-600'
+                                                    proxy.error_count >= 10 ? 'admin-text-danger' :
+                                                    proxy.error_count >= 3 ? 'admin-text-warning' :
+                                                    'admin-text-success'
                                                 }`}>
                                                     {proxy.error_count || 0}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                                            <td className="whitespace-nowrap text-sm text-[var(--admin-text-muted)]">
                                                 {proxy.last_used_at ? new Date(proxy.last_used_at).toLocaleDateString() : 'Never'}
                                             </td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                            <td className="whitespace-nowrap text-sm">
                                                 <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenModal(proxy)}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                        title="Edit"
-                                                    >
-                                                        ✏️
-                                                    </button>
+                                                    <button onClick={() => handleOpenModal(proxy)} className="admin-link" title="Edit">✏️</button>
                                                     {proxy.error_count > 0 && (
-                                                        <button
-                                                            onClick={() => handleResetErrors(proxy.id)}
-                                                            className="text-green-600 hover:text-green-900"
-                                                            title="Reset Errors"
-                                                        >
-                                                            🔄
-                                                        </button>
+                                                        <button onClick={() => handleResetErrors(proxy.id)} className="admin-text-success hover:opacity-80" title="Reset Errors">🔄</button>
                                                     )}
-                                                    <button
-                                                        onClick={() => handleTest(proxy.id)}
-                                                        className="text-purple-600 hover:text-purple-900"
-                                                        title="Test"
-                                                    >
-                                                        🧪
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(proxy.id)}
-                                                        disabled={deletingId === proxy.id}
-                                                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                                                        title="Delete"
-                                                    >
-                                                        🗑️
-                                                    </button>
+                                                    <button onClick={() => handleTest(proxy.id)} className="text-purple-600 dark:text-purple-400 hover:opacity-80" title="Test">🧪</button>
+                                                    <button onClick={() => handleDelete(proxy.id)} disabled={deletingId === proxy.id} className="admin-text-danger hover:opacity-80 disabled:opacity-50" title="Delete">🗑️</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -288,30 +283,28 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                         </div>
                     ) : (
                         <div className="text-center py-16">
-                            <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
+                            <div className="inline-block p-6 rounded-full mb-4 bg-[var(--admin-hover-bg)]">
                                 <span className="text-5xl">🔌</span>
                             </div>
-                            <p className="text-gray-500 font-medium">No proxies found</p>
-                            <p className="text-gray-400 text-sm mt-2">Add your first proxy to get started</p>
+                            <p className="text-[var(--admin-text)] font-medium">No proxies found</p>
+                            <p className="text-[var(--admin-text-muted)] text-sm mt-2">Add your first proxy to get started</p>
                         </div>
                     )}
 
                     {/* Pagination */}
                     {proxies?.links && proxies.links.length > 3 && (
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                        <div className="px-6 py-4 border-t border-[var(--admin-border)] bg-[var(--admin-surface-2)]">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{proxies.from || 0}</span> to <span className="font-medium">{proxies.to || 0}</span> of <span className="font-medium">{proxies.total || 0}</span> results
+                                <div className="text-sm text-[var(--admin-text-muted)]">
+                                    Showing <span className="font-medium text-[var(--admin-text)]">{proxies.from || 0}</span> to <span className="font-medium text-[var(--admin-text)]">{proxies.to || 0}</span> of <span className="font-medium text-[var(--admin-text)]">{proxies.total || 0}</span> results
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {proxies.links.map((link, index) => (
                                         <a
                                             key={index}
                                             href={link.url || '#'}
-                                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                                link.active
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                                link.active ? 'bg-[var(--admin-primary)] text-white' : 'bg-[var(--admin-surface)] text-[var(--admin-text)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)]'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
@@ -325,13 +318,13 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                 {/* Add/Edit Modal */}
                 <Modal show={showModal} onClose={() => setShowModal(false)}>
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">
+                        <h3 className="text-lg font-bold text-[var(--admin-text)] mb-4">
                             {editingProxy ? 'Edit Proxy' : 'Add New Proxy'}
                         </h3>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Host *</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Host *</label>
                                 <Input
                                     type="text"
                                     value={formData.host}
@@ -340,7 +333,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Port *</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Port *</label>
                                 <Input
                                     type="number"
                                     min="1"
@@ -354,7 +347,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Username</label>
                                 <Input
                                     type="text"
                                     value={formData.username}
@@ -362,7 +355,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Password</label>
                                 <Input
                                     type="password"
                                     value={formData.password}
@@ -374,11 +367,11 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Type *</label>
                                 <select
                                     value={formData.type}
                                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    className="admin-select w-full px-3 py-2 rounded-lg"
                                     required
                                 >
                                     <option value="http">HTTP</option>
@@ -387,7 +380,7 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                                <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Country</label>
                                 <Input
                                     type="text"
                                     value={formData.country}
@@ -398,11 +391,11 @@ export default function AdminProxiesIndex({ proxies, stats, countries, filters =
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                            <label className="block text-sm font-medium text-[var(--admin-text)] mb-1">Status *</label>
                             <select
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="admin-select w-full px-3 py-2 rounded-lg"
                                 required
                             >
                                 <option value="active">Active</option>

@@ -5,6 +5,22 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <script>
+            (function() {
+                var root = document.documentElement;
+                root.classList.remove('light', 'dark');
+                var theme = localStorage.getItem('admin_theme');
+                if (theme === 'light') {
+                    root.classList.add('light');
+                } else if (theme === 'dark') {
+                    root.classList.add('dark');
+                } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                    root.classList.add('light');
+                } else {
+                    root.classList.add('dark');
+                }
+            })();
+        </script>
         <!-- Google Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
