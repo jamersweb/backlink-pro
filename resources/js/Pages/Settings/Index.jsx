@@ -42,10 +42,10 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
     };
 
     const tabs = [
-        { id: 'profile', label: '👤 Profile', icon: '👤' },
-        { id: 'password', label: '🔒 Password', icon: '🔒' },
-        { id: 'plan', label: '💳 Plan & Billing', icon: '💳' },
-        { id: 'accounts', label: '🔐 Connected Accounts', icon: '🔐' },
+        { id: 'profile', label: 'Profile', icon: <i className="bi bi-person"></i> },
+        { id: 'password', label: 'Password', icon: <i className="bi bi-lock"></i> },
+        { id: 'plan', label: 'Plan & Billing', icon: <i className="bi bi-credit-card"></i> },
+        { id: 'accounts', label: 'Connected Accounts', icon: <i className="bi bi-shield-lock"></i> },
     ];
 
     return (
@@ -112,7 +112,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
 
                                     <div className="pt-4 border-t border-gray-200">
                                         <Button type="submit" variant="primary" disabled={profileForm.processing}>
-                                            {profileForm.processing ? 'Updating...' : '💾 Update Profile'}
+                                            {profileForm.processing ? 'Updating...' : <><i className="bi bi-check-lg"></i> Update Profile</>}
                                         </Button>
                                     </div>
                                 </form>
@@ -121,7 +121,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
                                     <h4 className="text-sm font-medium text-gray-700 mb-2">Account Information</h4>
                                     <div className="space-y-1 text-sm text-gray-600">
                                         <p><strong>Member since:</strong> {new Date(user.created_at).toLocaleDateString()}</p>
-                                        <p><strong>Email verified:</strong> {user.email_verified_at ? '✅ Yes' : '❌ No'}</p>
+                                        <p><strong>Email verified:</strong> {user.email_verified_at ? <><i className="bi bi-check-circle-fill" style={{color: 'var(--bp-success)' }}></i> Yes</> : <><i className="bi bi-x-circle-fill" style={{color: 'var(--bp-danger)' }}></i> No</>}</p>
                                     </div>
                                 </div>
                             </div>
@@ -164,7 +164,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
 
                                     <div className="pt-4 border-t border-gray-200">
                                         <Button type="submit" variant="primary" disabled={passwordForm.processing}>
-                                            {passwordForm.processing ? 'Updating...' : '🔒 Update Password'}
+                                            {passwordForm.processing ? 'Updating...' : <><i className="bi bi-lock"></i> Update Password</>}
                                         </Button>
                                     </div>
                                 </form>
@@ -199,10 +199,10 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
 
                                         <div className="flex gap-4">
                                             <Link href="/subscription/manage">
-                                                <Button variant="primary">⚙️ Manage Subscription</Button>
+                                                <Button variant="primary"><i className="bi bi-gear"></i> Manage Subscription</Button>
                                             </Link>
                                             <Link href="/plans">
-                                                <Button variant="secondary">💳 View Plans</Button>
+                                                <Button variant="secondary"><i className="bi bi-credit-card"></i> View Plans</Button>
                                             </Link>
                                         </div>
                                     </div>
@@ -210,7 +210,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
                                     <div className="text-center py-8">
                                         <p className="text-gray-600 mb-4">You don't have an active plan.</p>
                                         <Link href="/plans">
-                                            <Button variant="primary">💳 Choose a Plan</Button>
+                                            <Button variant="primary"><i className="bi bi-credit-card"></i> Choose a Plan</Button>
                                         </Link>
                                     </div>
                                 )}
@@ -231,7 +231,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-gray-900">Connected Gmail Accounts</h3>
                                     <Link href="/gmail/oauth/connect">
-                                        <Button variant="primary" size="sm">➕ Connect Gmail</Button>
+                                        <Button variant="primary" size="sm"><i className="bi bi-plus-lg"></i> Connect Gmail</Button>
                                     </Link>
                                 </div>
 
@@ -291,7 +291,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
 
                                 <div className="pt-4 border-t border-gray-200">
                                     <Link href="/gmail">
-                                        <Button variant="secondary">🔐 Manage All Gmail Accounts</Button>
+                                        <Button variant="secondary"><i className="bi bi-shield-lock"></i> Manage All Gmail Accounts</Button>
                                     </Link>
                                 </div>
                             </div>

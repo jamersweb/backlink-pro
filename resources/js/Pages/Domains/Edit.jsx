@@ -47,7 +47,7 @@ export default function DomainsEdit({ domain, platforms }) {
                     {urlChanged && (
                         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                             <p className="text-sm text-yellow-800">
-                                ⚠️ <strong>Warning:</strong> Changing the URL will reset the verification status. You'll need to verify the domain again.
+                                <i className="bi bi-exclamation-triangle"></i> <strong>Warning:</strong> Changing the URL will reset the verification status. You'll need to verify the domain again.
                             </p>
                         </div>
                     )}

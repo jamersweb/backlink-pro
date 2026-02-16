@@ -106,7 +106,7 @@ export default function SiteAccountsIndex({ siteAccounts, campaigns, filters }) 
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-gray-900">Filters</h3>
                         <Link href="/site-accounts/create">
-                            <Button variant="primary">➕ Add Site Account</Button>
+                            <Button variant="primary"><i className="bi bi-plus-lg"></i> Add Site Account</Button>
                         </Link>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

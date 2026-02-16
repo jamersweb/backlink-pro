@@ -190,10 +190,10 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                             Clear Filters
                         </Button>
                         <Button variant="secondary" onClick={() => handleExport('csv')}>
-                            📥 Export CSV
+                            <i className="bi bi-download"></i> Export CSV
                         </Button>
                         <Button variant="secondary" onClick={() => handleExport('json')}>
-                            📥 Export JSON
+                            <i className="bi bi-download"></i> Export JSON
                         </Button>
                     </div>
                 </Card>
@@ -251,7 +251,7 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                                                     size="sm"
                                                     onClick={() => handleRecheck(backlink.id)}
                                                 >
-                                                    🔄 Re-check
+                                                    <i className="bi bi-arrow-repeat"></i> Re-check
                                                 </Button>
                                             </td>
                                         </tr>

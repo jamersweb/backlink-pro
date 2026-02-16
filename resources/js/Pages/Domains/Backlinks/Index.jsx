@@ -41,7 +41,7 @@ export default function BacklinksIndex({ domain, runs, latestSummary }) {
                         <p className="text-sm text-gray-500 mt-1">Monitor and analyze backlinks for {domain.host || domain.name}</p>
                     </div>
                     <Button variant="primary" onClick={() => setShowModal(true)}>
-                        🔍 Fetch Backlinks
+                        <i className="bi bi-search"></i> Fetch Backlinks
                     </Button>
                 </div>
 

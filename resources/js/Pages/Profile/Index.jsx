@@ -28,13 +28,7 @@ export default function ProfileIndex({ user, plan, subscription, subscription_st
     };
 
     const getCardBrandIcon = (brand) => {
-        const icons = {
-            visa: '💳',
-            mastercard: '💳',
-            amex: '💳',
-            discover: '💳',
-        };
-        return icons[brand?.toLowerCase()] || '💳';
+        return <i className="bi bi-credit-card"></i>;
     };
 
     return (
@@ -157,7 +151,7 @@ export default function ProfileIndex({ user, plan, subscription, subscription_st
                                     <div className="md:col-span-2">
                                         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                                             <p className="text-sm text-yellow-800">
-                                                ⚠️ Your subscription will be cancelled on {formatDate(subscription.current_period_end)}
+                                                <i className="bi bi-exclamation-triangle"></i> Your subscription will be cancelled on {formatDate(subscription.current_period_end)}
                                             </p>
                                         </div>
                                     </div>
@@ -169,7 +163,7 @@ export default function ProfileIndex({ user, plan, subscription, subscription_st
                             <div className="pt-4 border-t">
                                 <label className="text-sm font-medium text-gray-500">Payment Method</label>
                                 <div className="mt-2 flex items-center space-x-3">
-                                    <span className="text-2xl">{getCardBrandIcon(payment_method.card?.brand)}</span>
+                                    <span className="text-2xl">{getCardBrandIcon()}</span>
                                     <div>
                                         <p className="text-lg font-semibold text-gray-900">
                                             {payment_method.card?.brand ? payment_method.card.brand.charAt(0).toUpperCase() + payment_method.card.brand.slice(1) : 'Card'} 

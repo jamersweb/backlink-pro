@@ -52,7 +52,7 @@ export default function AuditsIndex({ domain, audits }) {
                         <p className="text-sm text-gray-500 mt-1">SEO audits and website analysis for {domain.host || domain.name}</p>
                     </div>
                     <Button variant="primary" onClick={() => setShowModal(true)}>
-                        ➕ Run New Audit
+                        <i className="bi bi-plus-lg"></i> Run New Audit
                     </Button>
                 </div>
 

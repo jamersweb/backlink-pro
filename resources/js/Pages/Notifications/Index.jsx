@@ -36,12 +36,12 @@ export default function NotificationsIndex({ notifications, unreadCount, filters
 
     const getNotificationIcon = (type) => {
         const icons = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️',
+            success: <i className="bi bi-check-circle-fill"></i>,
+            error: <i className="bi bi-x-circle-fill"></i>,
+            warning: <i className="bi bi-exclamation-triangle-fill"></i>,
+            info: <i className="bi bi-info-circle-fill"></i>,
         };
-        return icons[type] || '📢';
+        return icons[type] || <i className="bi bi-bell-fill"></i>;
     };
 
     const getNotificationColor = (type, read) => {
@@ -188,7 +188,7 @@ export default function NotificationsIndex({ notifications, unreadCount, filters
                                                                 className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                                                                 title="Mark as read"
                                                             >
-                                                                ✓
+                                                                <i className="bi bi-check-lg"></i>
                                                             </button>
                                                         )}
                                                         <button

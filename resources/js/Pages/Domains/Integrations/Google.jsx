@@ -79,7 +79,7 @@ export default function GoogleIntegrations({ domain, integration, selectable, me
                     {integration && integration.status === 'connected' && (
                         <div className="flex gap-2">
                             <Button variant="primary" onClick={handleSyncNow}>
-                                🔄 Sync Now
+                                <i className="bi bi-arrow-repeat"></i> Sync Now
                             </Button>
                             <Button variant="outline" onClick={handleDisconnect}>
                                 Disconnect

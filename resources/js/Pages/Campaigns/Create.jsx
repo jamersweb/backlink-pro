@@ -149,7 +149,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                         ) : (
                             <div className="mb-5 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg">
                                 <div className="flex items-start gap-3">
-                                    <div className="text-2xl">📋</div>
+                                    <div className="text-2xl"><i className="bi bi-clipboard"></i></div>
                                     <div>
                                         <p className="text-sm font-semibold text-yellow-900 mb-2">
                                             No domains available
@@ -161,7 +161,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                                             href="/domains/create"
                                             className="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-800 transition-colors"
                                         >
-                                            <span className="mr-1">➕</span> Create Domain →
+                                            <span className="mr-1"><i className="bi bi-plus-lg"></i></span> Create Domain →
                                         </Link>
                                     </div>
                                 </div>
@@ -335,8 +335,8 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             required
                         >
                             <option value="">Select target</option>
-                            <option value="worldwide">🌍 Worldwide</option>
-                            <option value="specific_country">📍 Specific Country</option>
+                            <option value="worldwide">Worldwide</option>
+                            <option value="specific_country">Specific Country</option>
                         </Select>
                         {data.web_target === 'specific_country' && (
                             <Input
@@ -372,7 +372,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                         {plan && (
                             <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
                                 <p className="text-sm font-semibold text-blue-900 mb-2">
-                                    📋 Settings from your plan: <span className="text-blue-700">{plan.name}</span>
+                                    <i className="bi bi-clipboard"></i> Settings from your plan: <span className="text-blue-700">{plan.name}</span>
                                 </p>
                                 <div className="text-sm text-blue-800 space-y-1">
                                     <p>• Daily Limit: <strong>{plan.daily_backlink_limit === -1 ? 'Unlimited' : plan.daily_backlink_limit}</strong> backlinks/day</p>
@@ -396,7 +396,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                                                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                             <span className={`ml-2 text-sm capitalize ${isAllowed ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-                                                {type} {isAllowed && '✓'}
+                                                {type} {isAllowed && <i className="bi bi-check-lg"></i>}
                                             </span>
                                         </label>
                                     );
@@ -438,10 +438,10 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             value={data.content_tone}
                             onChange={(e) => setData('content_tone', e.target.value)}
                         >
-                            <option value="professional">💼 Professional</option>
-                            <option value="casual">😊 Casual</option>
-                            <option value="friendly">👋 Friendly</option>
-                            <option value="formal">🎩 Formal</option>
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="formal">Formal</option>
                         </Select>
                         <Select
                             label="Anchor Text Strategy"
@@ -449,9 +449,9 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             value={data.anchor_text_strategy}
                             onChange={(e) => setData('anchor_text_strategy', e.target.value)}
                         >
-                            <option value="variation">🔄 Variation</option>
-                            <option value="exact">🎯 Exact Match</option>
-                            <option value="branded">🏷️ Branded</option>
+                            <option value="variation">Variation</option>
+                            <option value="exact">Exact Match</option>
+                            <option value="branded">Branded</option>
                         </Select>
                     </div>
                 );
@@ -535,7 +535,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                         {data.gmail_account_id && (
                             <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                                 <p className="text-sm text-green-800">
-                                    ✓ Using connected account: {connectedAccounts?.find(a => a.id == data.gmail_account_id)?.email}
+                                    <i className="bi bi-check-lg"></i> Using connected account: {connectedAccounts?.find(a => a.id == data.gmail_account_id)?.email}
                                 </p>
                             </div>
                         )}

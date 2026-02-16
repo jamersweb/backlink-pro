@@ -86,7 +86,7 @@ export default function DomainsIndex({ domains, stats, filters }) {
                     <h1 className="text-2xl font-bold text-gray-900">Your Domains</h1>
                     <Link href="/domains/create">
                         <Button variant="primary" disabled={stats && !stats.can_add_more}>
-                            {stats && !stats.can_add_more ? 'Limit Reached' : '➕ Add Domain'}
+                            {stats && !stats.can_add_more ? 'Limit Reached' : <><i className="bi bi-plus-lg"></i> Add Domain</>}
                         </Button>
                     </Link>
                 </div>
@@ -125,7 +125,7 @@ export default function DomainsIndex({ domains, stats, filters }) {
                 {stats && !stats.can_add_more && (
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                         <p className="text-sm text-yellow-800">
-                            ⚠️ You've reached your plan's domain limit ({stats.max_domains}). Upgrade your plan to add more domains.
+                            <i className="bi bi-exclamation-triangle"></i> You've reached your plan's domain limit ({stats.max_domains}). Upgrade your plan to add more domains.
                         </p>
                     </div>
                 )}

@@ -72,7 +72,7 @@ export default function ReportsIndex({ overallStats, backlinksByType, backlinksB
                                 }}
                                 className="flex-1"
                             >
-                                📥 CSV
+                                <i className="bi bi-download"></i> CSV
                             </Button>
                             <Button
                                 variant="secondary"
@@ -86,7 +86,7 @@ export default function ReportsIndex({ overallStats, backlinksByType, backlinksB
                                 }}
                                 className="flex-1"
                             >
-                                📥 JSON
+                                <i className="bi bi-download"></i> JSON
                             </Button>
                         </div>
                     </div>

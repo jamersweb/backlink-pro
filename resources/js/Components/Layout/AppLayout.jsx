@@ -1,177 +1,143 @@
 import { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
-export default function AppLayout({ children, header, flush = false, bodyClass = '' }) {
+export default function AppLayout({ children, header, subtitle, flush = false, bodyClass = '', actions }) {
     const { auth } = usePage().props;
     const { url } = usePage();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-    
-    // Close dropdowns when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (profileDropdownOpen && !event.target.closest('.profile-dropdown')) {
-                setProfileDropdownOpen(false);
-            }
-        };
-        if (profileDropdownOpen) {
-            document.addEventListener('click', handleClickOutside);
-        }
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, [profileDropdownOpen]);
-
-    const isActive = (path) => url === path || url.startsWith(`${path}/`);
+    const [profileOpen, setProfileOpen] = useState(false);
 
     useEffect(() => {
-        if (!bodyClass) return undefined;
-        document.body.classList.add(bodyClass);
+        document.body.classList.add('bp-dark-dashboard-page');
+        if (bodyClass) document.body.classList.add(bodyClass);
         return () => {
-            document.body.classList.remove(bodyClass);
+            document.body.classList.remove('bp-dark-dashboard-page');
+            if (bodyClass) document.body.classList.remove(bodyClass);
         };
     }, [bodyClass]);
 
-    const navLinkClass = (active) =>
-        [
-            'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium',
-            active
-                ? 'border-indigo-500 text-gray-900'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-        ].join(' ');
+    useEffect(() => {
+        setSidebarOpen(false);
+    }, [url]);
 
-    const pageShellClass = flush ? 'min-h-screen bg-white' : 'min-h-screen bg-gray-100';
-    const headerContainerClass = flush
-        ? 'w-full px-4 sm:px-6 lg:px-8'
-        : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8';
-    const mainContainerClass = flush
-        ? 'w-full'
-        : 'max-w-7xl mx-auto py-6 sm:px-6 lg:px-8';
+    useEffect(() => {
+        if (!profileOpen) return;
+        const close = (e) => {
+            if (!e.target.closest('.bp-profile-dropdown')) setProfileOpen(false);
+        };
+        document.addEventListener('click', close);
+        return () => document.removeEventListener('click', close);
+    }, [profileOpen]);
+
+    const isActive = (path) => url === path || url.startsWith(`${path}/`);
+
+    const navItems = [
+        { href: '/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', iconActive: 'bi-grid-1x2-fill' },
+        { href: '/campaign', label: 'Campaigns', icon: 'bi-megaphone', iconActive: 'bi-megaphone-fill' },
+        { href: '/domains', label: 'Domains', icon: 'bi-globe2', iconActive: 'bi-globe2' },
+        { href: '/site-accounts', label: 'Site Accounts', icon: 'bi-person-badge', iconActive: 'bi-person-badge-fill' },
+        { href: '/gmail', label: 'Gmail', icon: 'bi-envelope', iconActive: 'bi-envelope-fill' },
+        { href: '/activity', label: 'Activity', icon: 'bi-activity', iconActive: 'bi-activity' },
+        { href: '/reports', label: 'Reports', icon: 'bi-bar-chart', iconActive: 'bi-bar-chart-fill' },
+        { href: '/audit-report', label: 'Audit Report', icon: 'bi-clipboard-check', iconActive: 'bi-clipboard-check-fill' },
+        { href: '/settings', label: 'Settings', icon: 'bi-gear', iconActive: 'bi-gear-fill' },
+    ];
 
     return (
-        <div className={pageShellClass}>
-            {/* Navigation */}
-            <nav className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex">
-                            <div className="flex-shrink-0 flex items-center">
-                                <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-                                    Backlink Pro
-                                </Link>
-                            </div>
-                            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                                <Link
-                                    href="/dashboard"
-                                    className={navLinkClass(isActive('/dashboard'))}
-                                >
-                                    Dashboard
-                                </Link>
-                                <Link
-                                    href="/campaign"
-                                    className={navLinkClass(isActive('/campaign'))}
-                                >
-                                    Campaigns
-                                </Link>
-                                <Link
-                                    href="/domains"
-                                    className={navLinkClass(isActive('/domains'))}
-                                >
-                                    Domains
-                                </Link>
-                                <Link
-                                    href="/site-accounts"
-                                    className={navLinkClass(isActive('/site-accounts'))}
-                                >
-                                    Site Accounts
-                                </Link>
-                                <Link
-                                    href="/gmail"
-                                    className={navLinkClass(isActive('/gmail'))}
-                                >
-                                    Gmail
-                                </Link>
-                                <Link
-                                    href="/activity"
-                                    className={navLinkClass(isActive('/activity'))}
-                                >
-                                    Activity
-                                </Link>
-                                <Link
-                                    href="/reports"
-                                    className={navLinkClass(isActive('/reports'))}
-                                >
-                                    Reports
-                                </Link>
-                                <Link
-                                    href="/audit-report"
-                                    className={navLinkClass(isActive('/audit-report'))}
-                                >
-                                    Audit Report
-                                </Link>
-                                <Link
-                                    href="/settings"
-                                    className={navLinkClass(isActive('/settings'))}
-                                >
-                                    Settings
-                                </Link>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            {/* Profile Dropdown */}
-                            <div className="relative profile-dropdown">
-                                <button
-                                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                                    className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded-lg p-1"
-                                >
-                                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg hover:bg-indigo-700 transition-colors">
-                                        {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-700 hidden md:block">{auth?.user?.name}</span>
-                                    <svg className="h-5 w-5 text-gray-700 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                                {profileDropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border-2 border-indigo-200 py-2 z-50">
-                                        <div className="px-4 py-3 border-b border-gray-200">
-                                            <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
-                                            <p className="text-sm text-gray-500">{auth?.user?.email}</p>
-                                        </div>
-                                        <Link
-                                            href="/profile"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                                            onClick={() => setProfileDropdownOpen(false)}
-                                        >
-                                            👤 View Profile
-                                        </Link>
-                                        <Link
-                                            href="/logout"
-                                            method="post"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                                            onClick={() => setProfileDropdownOpen(false)}
-                                        >
-                                            🚪 Logout
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            {/* Page Header */}
-            {header && (
-                <header className="bg-white shadow">
-                    <div className={headerContainerClass}>
-                        <h2 className="text-3xl font-bold text-gray-900">{header}</h2>
-                    </div>
-                </header>
+        <div className="bp-dark-dashboard">
+            {sidebarOpen && (
+                <div className="bp-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
             )}
 
-            {/* Page Content */}
-            <main className={mainContainerClass}>
-                {children}
-            </main>
+            {/* Sidebar */}
+            <aside className={`bp-sidebar ${sidebarOpen ? 'bp-sidebar-open' : ''}`}>
+                <div className="bp-sidebar-header">
+                    <Link href="/dashboard" className="bp-sidebar-logo">
+                        <div className="bp-logo-icon">
+                            <i className="bi bi-link-45deg"></i>
+                        </div>
+                        <span className="bp-logo-text">Backlink Pro</span>
+                    </Link>
+                </div>
+
+                <nav className="bp-sidebar-nav">
+                    {navItems.map((item) => {
+                        const active = isActive(item.href);
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`bp-nav-item ${active ? 'bp-nav-active' : ''}`}
+                            >
+                                <i className={`bi ${active ? item.iconActive : item.icon}`}></i>
+                                <span>{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                <div className="bp-sidebar-footer">
+                    <div className="bp-profile-dropdown" style={{ position: 'relative' }}>
+                        <button className="bp-sidebar-user" onClick={() => setProfileOpen(!profileOpen)}>
+                            <div className="bp-user-avatar">
+                                {auth?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                            <div className="bp-user-info">
+                                <span className="bp-user-name">{auth?.user?.name || 'User'}</span>
+                                <span className="bp-user-email">{auth?.user?.email || ''}</span>
+                            </div>
+                        </button>
+                        {profileOpen && (
+                            <div className="bp-profile-menu">
+                                <Link href="/profile" className="bp-profile-menu-item" onClick={() => setProfileOpen(false)}>
+                                    <i className="bi bi-person"></i> View Profile
+                                </Link>
+                                <Link href="/subscription/manage" className="bp-profile-menu-item" onClick={() => setProfileOpen(false)}>
+                                    <i className="bi bi-credit-card"></i> Subscription
+                                </Link>
+                                <Link href="/help" className="bp-profile-menu-item" onClick={() => setProfileOpen(false)}>
+                                    <i className="bi bi-question-circle"></i> Help & Support
+                                </Link>
+                                <div className="bp-profile-menu-divider"></div>
+                                <Link href="/logout" method="post" className="bp-profile-menu-item bp-profile-menu-danger" onClick={() => setProfileOpen(false)}>
+                                    <i className="bi bi-box-arrow-right"></i> Logout
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main area */}
+            <div className="bp-main">
+                <header className="bp-topbar">
+                    <div className="bp-topbar-left">
+                        <button
+                            className="bp-hamburger"
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            aria-label="Toggle sidebar"
+                        >
+                            <i className="bi bi-list"></i>
+                        </button>
+                        <div className="bp-topbar-titles">
+                            {header && <h1 className="bp-page-title">{header}</h1>}
+                            {subtitle && <p className="bp-page-subtitle">{subtitle}</p>}
+                        </div>
+                    </div>
+                    <div className="bp-topbar-actions">
+                        {actions || (
+                            <Link href="/notifications" className="bp-topbar-btn-secondary">
+                                <i className="bi bi-bell"></i>
+                                <span>Notifications</span>
+                            </Link>
+                        )}
+                    </div>
+                </header>
+
+                <main className={`bp-content ${flush ? 'bp-content-flush' : ''}`}>
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }

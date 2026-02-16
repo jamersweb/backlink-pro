@@ -100,7 +100,7 @@ export default function SubscriptionManage({ user, currentPlan, subscription, cu
                                         <div className="md:col-span-2">
                                             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                                                 <p className="text-sm text-yellow-800">
-                                                    ⚠️ Your subscription will be cancelled on {formatDate(subscription.current_period_end)}
+                                                    <i className="bi bi-exclamation-triangle"></i> Your subscription will be cancelled on {formatDate(subscription.current_period_end)}
                                                 </p>
                                             </div>
                                         </div>

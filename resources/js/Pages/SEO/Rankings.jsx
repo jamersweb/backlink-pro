@@ -147,7 +147,7 @@ export default function SeoRankings({ organization, projects }) {
                 ) : (
                     <Card>
                         <div className="text-center py-12">
-                            <div className="text-4xl mb-4">📈</div>
+                            <div className="text-4xl mb-4"><i className="bi bi-graph-up"></i></div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">No Rank Projects Yet</h3>
                             <p className="text-sm text-gray-500 mb-6">
                                 Create a rank tracking project to monitor keyword positions over time.

@@ -81,7 +81,7 @@ export default function SeoIntegrations({ organization, connection, gscSites, ga
                 {!connection ? (
                     <Card>
                         <div className="text-center py-12">
-                            <div className="text-5xl mb-4">🔗</div>
+                            <div className="text-5xl mb-4"><i className="bi bi-link-45deg"></i></div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">Not Connected</h3>
                             <p className="text-sm text-gray-500 mb-6">
                                 Connect your Google account to sync Search Console and GA4 data automatically.
@@ -197,7 +197,7 @@ export default function SeoIntegrations({ organization, connection, gscSites, ga
                         {/* Info Box */}
                         <Card>
                             <div className="p-6 bg-blue-50 border-l-4 border-blue-500">
-                                <h4 className="font-semibold text-gray-900 mb-2">💡 How It Works</h4>
+                                <h4 className="font-semibold text-gray-900 mb-2"><i className="bi bi-lightbulb"></i> How It Works</h4>
                                 <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
                                     <li>Data syncs automatically every day at 2:00 AM</li>
                                     <li>Historical data is retained based on your plan (Free: 90 days, Pro: 365 days, Agency: 730 days)</li>

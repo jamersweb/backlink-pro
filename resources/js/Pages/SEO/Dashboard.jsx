@@ -81,7 +81,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                             <option value="90">Last 90 days</option>
                         </select>
                         <Link href={route('integrations.google', { organization: organization.id })}>
-                            <Button variant="outline">⚙️ Integrations</Button>
+                            <Button variant="outline"><i className="bi bi-gear"></i> Integrations</Button>
                         </Link>
                     </div>
                 </div>
@@ -95,7 +95,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                                     <p className="text-sm font-medium text-gray-600">GSC Clicks</p>
                                     <p className="text-2xl font-bold text-gray-900 mt-1">{totalClicks.toLocaleString()}</p>
                                 </div>
-                                <div className="text-3xl">👆</div>
+                                <div className="text-3xl"><i className="bi bi-cursor"></i></div>
                             </div>
                         </div>
                     </Card>
@@ -107,7 +107,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                                     <p className="text-sm font-medium text-gray-600">GSC Impressions</p>
                                     <p className="text-2xl font-bold text-gray-900 mt-1">{totalImpressions.toLocaleString()}</p>
                                 </div>
-                                <div className="text-3xl">👁️</div>
+                                <div className="text-3xl"><i className="bi bi-eye"></i></div>
                             </div>
                         </div>
                     </Card>
@@ -119,7 +119,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                                     <p className="text-sm font-medium text-gray-600">Avg CTR</p>
                                     <p className="text-2xl font-bold text-gray-900 mt-1">{avgCTR.toFixed(2)}%</p>
                                 </div>
-                                <div className="text-3xl">📊</div>
+                                <div className="text-3xl"><i className="bi bi-bar-chart-line"></i></div>
                             </div>
                         </div>
                     </Card>
@@ -131,7 +131,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                                     <p className="text-sm font-medium text-gray-600">Avg Position</p>
                                     <p className="text-2xl font-bold text-gray-900 mt-1">{avgPosition.toFixed(1)}</p>
                                 </div>
-                                <div className="text-3xl">📍</div>
+                                <div className="text-3xl"><i className="bi bi-crosshair"></i></div>
                             </div>
                         </div>
                     </Card>
@@ -273,7 +273,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                 {(!gscMetrics || gscMetrics.length === 0) && (!ga4Metrics || ga4Metrics.length === 0) && (
                     <Card>
                         <div className="text-center py-12">
-                            <div className="text-4xl mb-4">📊</div>
+                            <div className="text-4xl mb-4"><i className="bi bi-bar-chart-line"></i></div>
                             <h3 className="text-lg font-medium text-gray-900 mb-2">No SEO Data Yet</h3>
                             <p className="text-sm text-gray-500 mb-6">
                                 Connect your Google Search Console and GA4 accounts to start tracking your SEO performance.

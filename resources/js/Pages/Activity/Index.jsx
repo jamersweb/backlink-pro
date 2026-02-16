@@ -24,22 +24,22 @@ export default function ActivityIndex({ activities, stats, actionTypes, filters 
 
     const getActionIcon = (action) => {
         const icons = {
-            'campaign.created': '➕',
-            'campaign.updated': '✏️',
-            'campaign.deleted': '🗑️',
-            'campaign.paused': '⏸️',
-            'campaign.resumed': '▶️',
-            'backlink.created': '🔗',
-            'backlink.verified': '✅',
-            'backlink.failed': '❌',
-            'domain.created': '🌐',
-            'domain.updated': '✏️',
-            'domain.deleted': '🗑️',
-            'user.login': '🔐',
-            'user.logout': '🚪',
-            'user.registered': '👤',
+            'campaign.created': <i className="bi bi-plus-circle"></i>,
+            'campaign.updated': <i className="bi bi-pencil"></i>,
+            'campaign.deleted': <i className="bi bi-trash3"></i>,
+            'campaign.paused': <i className="bi bi-pause-circle"></i>,
+            'campaign.resumed': <i className="bi bi-play-circle"></i>,
+            'backlink.created': <i className="bi bi-link-45deg"></i>,
+            'backlink.verified': <i className="bi bi-check-circle"></i>,
+            'backlink.failed': <i className="bi bi-x-circle"></i>,
+            'domain.created': <i className="bi bi-globe2"></i>,
+            'domain.updated': <i className="bi bi-pencil"></i>,
+            'domain.deleted': <i className="bi bi-trash3"></i>,
+            'user.login': <i className="bi bi-box-arrow-in-right"></i>,
+            'user.logout': <i className="bi bi-circle"></i>,
+            'user.registered': <i className="bi bi-person-plus"></i>,
         };
-        return icons[action] || '📝';
+        return icons[action] || <i className="bi bi-circle"></i>;
     };
 
     const getActionColor = (action) => {
