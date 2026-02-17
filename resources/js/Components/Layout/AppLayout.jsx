@@ -44,7 +44,7 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
     ];
 
     return (
-        <div className="bp-dark-dashboard">
+        <div className="bp-dark-dashboard bp-user-theme-dark">
             {sidebarOpen && (
                 <div className="bp-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
             )}

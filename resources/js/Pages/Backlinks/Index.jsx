@@ -4,6 +4,7 @@ import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
+import BpDatePicker from '../../Components/Shared/BpDatePicker';
 
 export default function BacklinksIndex({ backlinks, stats, campaigns, filters }) {
     const { flash } = usePage().props;
@@ -15,6 +16,10 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
         date_to: '',
         search: '',
     });
+
+    const hasActiveFilters = (localFilters.campaign_id || '') !== '' || (localFilters.status || '') !== '' ||
+        (localFilters.type || '') !== '' || (localFilters.date_from || '') !== '' || (localFilters.date_to || '') !== '' ||
+        (localFilters.search || '').trim() !== '';
 
     const handleFilterChange = (key, value) => {
         const newFilters = { ...localFilters, [key]: value };
@@ -83,7 +88,7 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                             <p className="text-2xl font-bold text-green-900">{stats?.verified || 0}</p>
                         </div>
                     </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
+                    <Card className="bp-stat-card-pending bg-white border border-gray-200 shadow-md">
                         <div className="p-4">
                             <p className="text-yellow-600 text-xs font-medium mb-1">Pending</p>
                             <p className="text-2xl font-bold text-yellow-900">{stats?.pending || 0}</p>
@@ -104,7 +109,7 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                 </div>
 
                 {/* Filters */}
-                <Card className="bg-white border border-gray-200 shadow-md">
+                <Card className="bp-filter-controls bp-filter-card bg-white border border-gray-200 shadow-md">
                     <h3 className="text-lg font-bold text-gray-900 mb-4">Filters</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                         <div>
@@ -121,7 +126,7 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                             <select
                                 value={localFilters.campaign_id || ''}
                                 onChange={(e) => handleFilterChange('campaign_id', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="bp-filter-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                             >
                                 <option value="">All Campaigns</option>
                                 {campaigns?.map((campaign) => (
@@ -134,7 +139,7 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                             <select
                                 value={localFilters.status || ''}
                                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="bp-filter-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                             >
                                 <option value="">All Statuses</option>
                                 <option value="verified">Verified</option>
@@ -148,7 +153,7 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                             <select
                                 value={localFilters.type || ''}
                                 onChange={(e) => handleFilterChange('type', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="bp-filter-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                             >
                                 <option value="">All Types</option>
                                 <option value="comment">Comment</option>
@@ -158,41 +163,43 @@ export default function BacklinksIndex({ backlinks, stats, campaigns, filters })
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
-                            <Input
-                                type="date"
+                            <BpDatePicker
+                                label="Date From"
                                 value={localFilters.date_from || ''}
                                 onChange={(e) => handleFilterChange('date_from', e.target.value)}
+                                placeholder="Select date"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date To</label>
-                            <Input
-                                type="date"
+                            <BpDatePicker
+                                label="Date To"
                                 value={localFilters.date_to || ''}
                                 onChange={(e) => handleFilterChange('date_to', e.target.value)}
+                                placeholder="Select date"
                             />
                         </div>
                     </div>
                     <div className="mt-4 flex gap-2">
-                        <Button variant="secondary" onClick={() => {
-                            const emptyFilters = {
-                                campaign_id: '',
-                                status: '',
-                                type: '',
-                                date_from: '',
-                                date_to: '',
-                                search: '',
-                            };
-                            setLocalFilters(emptyFilters);
-                            router.get('/backlinks', emptyFilters);
-                        }}>
-                            Clear Filters
-                        </Button>
-                        <Button variant="secondary" onClick={() => handleExport('csv')}>
+                        {hasActiveFilters && (
+                            <Button variant="primary" className="bp-filter-btn bp-filter-btn-primary" onClick={() => {
+                                const emptyFilters = {
+                                    campaign_id: '',
+                                    status: '',
+                                    type: '',
+                                    date_from: '',
+                                    date_to: '',
+                                    search: '',
+                                };
+                                setLocalFilters(emptyFilters);
+                                router.get('/backlinks', emptyFilters);
+                            }}>
+                                Clear Filters
+                            </Button>
+                        )}
+                        <Button variant="secondary" className="bp-filter-btn-secondary bp-btn-secondary" onClick={() => handleExport('csv')}>
                             <i className="bi bi-download"></i> Export CSV
                         </Button>
-                        <Button variant="secondary" onClick={() => handleExport('json')}>
+                        <Button variant="secondary" className="bp-filter-btn-secondary bp-btn-secondary" onClick={() => handleExport('json')}>
                             <i className="bi bi-download"></i> Export JSON
                         </Button>
                     </div>

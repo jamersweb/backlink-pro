@@ -77,16 +77,16 @@ export default function CampaignsIndex({ campaigns }) {
                         <Button
                             variant="secondary"
                             onClick={() => window.location.href = '/campaigns/export?format=csv'}
-                            className="px-4 py-2"
+                            className="bp-btn-secondary"
                         >
-                            <i className="bi bi-download" style={{ marginRight: 6 }}></i> Export CSV
+                            <i className="bi bi-download"></i> Export CSV
                         </Button>
                         <Button
                             variant="secondary"
                             onClick={() => window.location.href = '/campaigns/export?format=json'}
-                            className="px-4 py-2"
+                            className="bp-btn-secondary"
                         >
-                            <i className="bi bi-filetype-json" style={{ marginRight: 6 }}></i> Export JSON
+                            <i className="bi bi-filetype-json"></i> Export JSON
                         </Button>
                     </div>
                 </div>

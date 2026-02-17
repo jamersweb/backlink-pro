@@ -118,7 +118,7 @@ export default function CampaignBacklinks({ campaign, backlinks, stats, filters 
                             </select>
                         </div>
                         <div className="flex items-end">
-                            <Button variant="primary" onClick={handleFilter} className="w-full">
+                            <Button variant="primary" onClick={handleFilter} className="bp-filter-btn bp-filter-btn-primary w-full">
                                 Apply Filters
                             </Button>
                         </div>

@@ -83,7 +83,7 @@ export default function BacklinksShow({ domain, run, backlinks, refDomains, anch
                                 <Button variant="secondary">Disavow</Button>
                             </Link>
                             <Link href={`/domains/${domain.id}/backlinks/${run.id}/export`}>
-                                <Button variant="outline"><i className="bi bi-download"></i> Export CSV</Button>
+                                <Button variant="outline" className="bp-btn-secondary"><i className="bi bi-download"></i> Export CSV</Button>
                             </Link>
                         </div>
                     )}

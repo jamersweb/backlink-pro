@@ -11,6 +11,8 @@ export default function NotificationsIndex({ notifications, unreadCount, filters
         type: '',
     });
 
+    const hasActiveFilters = (localFilters.filter || '') !== '' || (localFilters.type || '') !== '';
+
     const handleFilterChange = (key, value) => {
         const newFilters = { ...localFilters, [key]: value };
         setLocalFilters(newFilters);
@@ -118,18 +120,21 @@ export default function NotificationsIndex({ notifications, unreadCount, filters
                                 <option value="info">Info</option>
                             </select>
                         </div>
-                        <div className="flex items-end">
-                            <Button
-                                variant="secondary"
-                                onClick={() => {
-                                    const emptyFilters = { filter: '', type: '' };
-                                    setLocalFilters(emptyFilters);
-                                    router.get('/notifications', emptyFilters);
-                                }}
-                            >
-                                Clear Filters
-                            </Button>
-                        </div>
+                        {hasActiveFilters && (
+                            <div className="flex items-end">
+                                <Button
+                                    variant="primary"
+                                    className="bp-filter-btn bp-filter-btn-primary"
+                                    onClick={() => {
+                                        const emptyFilters = { filter: '', type: '' };
+                                        setLocalFilters(emptyFilters);
+                                        router.get('/notifications', emptyFilters);
+                                    }}
+                                >
+                                    Clear Filters
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </Card>
 

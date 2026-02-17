@@ -5,6 +5,7 @@ import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Input from '../../Components/Shared/Input';
 import Button from '../../Components/Shared/Button';
+import BpDatePicker from '../../Components/Shared/BpDatePicker';
 
 export default function ReportsIndex({ overallStats, backlinksByType, backlinksByStatus, dailyBacklinks, campaignPerformance, filters }) {
     const [startDate, setStartDate] = useState(filters?.start_date || '');
@@ -42,22 +43,26 @@ export default function ReportsIndex({ overallStats, backlinksByType, backlinksB
         <AppLayout header="Reports & Analytics">
             <div className="space-y-6">
                 {/* Date Filter */}
-                <Card title="Date Range">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Input
-                            label="Start Date"
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                        <Input
-                            label="End Date"
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                        />
-                        <div className="flex items-end gap-2">
-                            <Button variant="primary" onClick={handleDateFilter} className="flex-1">
+                <Card title="Date Range" className="bp-date-range-card">
+                    <div className="bp-filter-row">
+                        <div className="bp-field">
+                            <BpDatePicker
+                                label="Start Date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                placeholder="Select start date"
+                            />
+                        </div>
+                        <div className="bp-field">
+                            <BpDatePicker
+                                label="End Date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                placeholder="Select end date"
+                            />
+                        </div>
+                        <div className="bp-action-group">
+                            <Button variant="primary" onClick={handleDateFilter} className="bp-filter-btn bp-filter-btn-primary">
                                 Apply Filter
                             </Button>
                             <Button
@@ -70,7 +75,7 @@ export default function ReportsIndex({ overallStats, backlinksByType, backlinksB
                                     });
                                     window.location.href = `/reports/export?${params.toString()}`;
                                 }}
-                                className="flex-1"
+                                className="bp-filter-btn bp-filter-btn-secondary bp-btn-secondary"
                             >
                                 <i className="bi bi-download"></i> CSV
                             </Button>
@@ -84,7 +89,7 @@ export default function ReportsIndex({ overallStats, backlinksByType, backlinksB
                                     });
                                     window.location.href = `/reports/export?${params.toString()}`;
                                 }}
-                                className="flex-1"
+                                className="bp-filter-btn bp-filter-btn-secondary bp-btn-secondary"
                             >
                                 <i className="bi bi-download"></i> JSON
                             </Button>

@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '@/Components/Shared/Button';
 import Input from '@/Components/Shared/Input';
+import BpDatePicker from '@/Components/Shared/BpDatePicker';
 
 export default function CreateReportModal({ domain, onClose }) {
     const [formData, setFormData] = useState({
@@ -72,13 +73,11 @@ export default function CreateReportModal({ domain, onClose }) {
 
                         {/* Expiration */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Expiration Date (Optional)
-                            </label>
-                            <Input
-                                type="date"
+                            <BpDatePicker
+                                label="Expiration Date (Optional)"
                                 value={formData.expires_at}
                                 onChange={(e) => setFormData(prev => ({ ...prev, expires_at: e.target.value }))}
+                                placeholder="Select expiration date"
                             />
                         </div>
 

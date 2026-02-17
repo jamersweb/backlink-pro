@@ -12,6 +12,8 @@ export default function SiteAccountsIndex({ siteAccounts, campaigns, filters }) 
         status: '',
     });
 
+    const hasActiveFilters = (localFilters.campaign_id || '') !== '' || (localFilters.status || '') !== '';
+
     const handleFilterChange = (key, value) => {
         const newFilters = { ...localFilters, [key]: value };
         setLocalFilters(newFilters);
@@ -87,7 +89,7 @@ export default function SiteAccountsIndex({ siteAccounts, campaigns, filters }) 
                             <p className="text-2xl font-bold text-green-900">{stats.verified}</p>
                         </div>
                     </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
+                    <Card className="bp-stat-card-waiting bg-white border border-gray-200 shadow-md">
                         <div className="p-4">
                             <p className="text-yellow-600 text-xs font-medium mb-1">Waiting Email</p>
                             <p className="text-2xl font-bold text-yellow-900">{stats.waiting_email}</p>
@@ -106,16 +108,16 @@ export default function SiteAccountsIndex({ siteAccounts, campaigns, filters }) 
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-gray-900">Filters</h3>
                         <Link href="/site-accounts/create">
-                            <Button variant="primary"><i className="bi bi-plus-lg"></i> Add Site Account</Button>
+                            <Button variant="primary" className="bp-btn-purple"><i className="bi bi-plus-lg"></i> Add Site Account</Button>
                         </Link>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bp-filter-controls grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
                             <select
                                 value={localFilters.campaign_id || ''}
                                 onChange={(e) => handleFilterChange('campaign_id', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="bp-filter-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                             >
                                 <option value="">All Campaigns</option>
                                 {campaigns?.map((campaign) => (
@@ -128,7 +130,7 @@ export default function SiteAccountsIndex({ siteAccounts, campaigns, filters }) 
                             <select
                                 value={localFilters.status || ''}
                                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="bp-filter-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                             >
                                 <option value="">All Statuses</option>
                                 <option value="verified">Verified</option>
@@ -137,15 +139,17 @@ export default function SiteAccountsIndex({ siteAccounts, campaigns, filters }) 
                                 <option value="failed">Failed</option>
                             </select>
                         </div>
-                        <div className="flex items-end">
-                            <Button variant="secondary" onClick={() => {
-                                const emptyFilters = { campaign_id: '', status: '' };
-                                setLocalFilters(emptyFilters);
-                                router.get('/site-accounts', emptyFilters);
-                            }}>
-                                Clear Filters
-                            </Button>
-                        </div>
+                        {hasActiveFilters && (
+                            <div className="flex items-end">
+                                <Button variant="primary" className="bp-filter-btn bp-filter-btn-primary" onClick={() => {
+                                    const emptyFilters = { campaign_id: '', status: '' };
+                                    setLocalFilters(emptyFilters);
+                                    router.get('/site-accounts', emptyFilters);
+                                }}>
+                                    Clear Filters
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </Card>
 

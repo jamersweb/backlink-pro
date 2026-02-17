@@ -4,6 +4,7 @@ import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
+import BpDatePicker from '../../Components/Shared/BpDatePicker';
 
 export default function ActivityIndex({ activities, stats, actionTypes, filters }) {
     const { flash } = usePage().props;
@@ -12,6 +13,8 @@ export default function ActivityIndex({ activities, stats, actionTypes, filters 
         date_from: '',
         date_to: '',
     });
+
+    const hasActiveFilters = (localFilters.action || '') !== '' || (localFilters.date_from || '') !== '' || (localFilters.date_to || '') !== '';
 
     const handleFilterChange = (key, value) => {
         const newFilters = { ...localFilters, [key]: value };
@@ -83,7 +86,7 @@ export default function ActivityIndex({ activities, stats, actionTypes, filters 
                             <div className="text-sm text-gray-500">Verified</div>
                         </div>
                     </Card>
-                    <Card className="bg-white border border-yellow-200 shadow-md">
+                    <Card className="bp-stat-card-pending bg-white border border-gray-200 shadow-md">
                         <div className="text-center p-4">
                             <div className="text-2xl font-bold text-yellow-600">{stats?.pending_backlinks || 0}</div>
                             <div className="text-sm text-gray-500">Pending</div>
@@ -115,33 +118,36 @@ export default function ActivityIndex({ activities, stats, actionTypes, filters 
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
-                            <Input
-                                type="date"
+                            <BpDatePicker
+                                label="Date From"
                                 value={localFilters.date_from || ''}
                                 onChange={(e) => handleFilterChange('date_from', e.target.value)}
+                                placeholder="Select date"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date To</label>
-                            <Input
-                                type="date"
+                            <BpDatePicker
+                                label="Date To"
                                 value={localFilters.date_to || ''}
                                 onChange={(e) => handleFilterChange('date_to', e.target.value)}
+                                placeholder="Select date"
                             />
                         </div>
-                        <div className="flex items-end">
-                            <Button
-                                variant="secondary"
-                                onClick={() => {
-                                    const emptyFilters = { action: '', date_from: '', date_to: '' };
-                                    setLocalFilters(emptyFilters);
-                                    router.get('/activity', emptyFilters);
-                                }}
-                            >
-                                Clear Filters
-                            </Button>
-                        </div>
+                        {hasActiveFilters && (
+                            <div className="flex items-end">
+                                <Button
+                                    variant="primary"
+                                    className="bp-filter-btn bp-filter-btn-primary"
+                                    onClick={() => {
+                                        const emptyFilters = { action: '', date_from: '', date_to: '' };
+                                        setLocalFilters(emptyFilters);
+                                        router.get('/activity', emptyFilters);
+                                    }}
+                                >
+                                    Clear Filters
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </Card>
 

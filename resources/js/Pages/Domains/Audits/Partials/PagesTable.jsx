@@ -84,7 +84,7 @@ export default function PagesTable({ audit, pages, filters }) {
                     </div>
 
                     <div className="flex items-end">
-                        <Button variant="primary" onClick={handleFilter} className="w-full">
+                        <Button variant="primary" onClick={handleFilter} className="bp-filter-btn bp-filter-btn-primary w-full">
                             Filter
                         </Button>
                     </div>

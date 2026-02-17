@@ -957,6 +957,462 @@ body.bp-dark-dashboard-page {
 }
 
 /* ============================================
+   WAITING EMAIL / PENDING STAT CARDS — NO YELLOW BORDER
+   Site Accounts, Activity, Backlinks, etc.
+   ============================================ */
+.bp-dark-dashboard .bp-stat-card-waiting,
+.bp-dark-dashboard .bp-stat-card-waiting:hover,
+.bp-dark-dashboard .bp-stat-card-waiting:focus,
+.bp-dark-dashboard .bp-stat-card-waiting:focus-within,
+.bp-user-theme-dark .bp-stat-card-waiting,
+.bp-user-theme-dark .bp-stat-card-waiting:hover,
+.bp-user-theme-dark .bp-stat-card-waiting:focus,
+.bp-user-theme-dark .bp-stat-card-waiting:focus-within {
+    border-color: var(--bp-border) !important;
+    box-shadow: var(--bp-shadow) !important;
+    outline: none !important;
+}
+
+.bp-dark-dashboard .bp-stat-card-pending,
+.bp-dark-dashboard .bp-stat-card-pending:hover,
+.bp-dark-dashboard .bp-stat-card-pending:focus,
+.bp-dark-dashboard .bp-stat-card-pending:focus-within,
+.bp-user-theme-dark .bp-stat-card-pending,
+.bp-user-theme-dark .bp-stat-card-pending:hover,
+.bp-user-theme-dark .bp-stat-card-pending:focus,
+.bp-user-theme-dark .bp-stat-card-pending:focus-within {
+    border-color: var(--bp-border) !important;
+    box-shadow: var(--bp-shadow) !important;
+    outline: none !important;
+}
+
+/* ============================================
+   GLOBAL FILTER CONTROLS — PURPLE THEME
+   Apply to Reports, Site Accounts, Backlinks, etc.
+   ============================================ */
+.bp-dark-dashboard .bp-filter-select,
+.bp-dark-dashboard select.bp-filter-select,
+.bp-user-theme-dark .bp-filter-select,
+.bp-user-theme-dark select.bp-filter-select,
+.bp-user-theme-dark .filters select {
+    background: var(--bp-bg) !important;
+    border-color: var(--bp-border) !important;
+    color: var(--bp-text) !important;
+    padding-right: 44px !important;
+}
+
+.bp-dark-dashboard .bp-filter-select:focus,
+.bp-user-theme-dark .bp-filter-select:focus {
+    border-color: var(--bp-brand) !important;
+    box-shadow: 0 0 0 3px var(--bp-brand-glow) !important;
+    outline: none !important;
+}
+
+.bp-dark-dashboard .bp-filter-select option,
+.bp-user-theme-dark .bp-filter-select option {
+    background: var(--bp-surface);
+    color: var(--bp-text);
+}
+
+.bp-dark-dashboard .bp-filter-btn-secondary,
+.bp-user-theme-dark .bp-filter-btn-secondary {
+    background: var(--bp-surface-2) !important;
+    border: 1px solid var(--bp-border) !important;
+    color: var(--bp-text) !important;
+    border-color: rgba(124, 58, 237, 0.3) !important;
+}
+
+.bp-dark-dashboard .bp-filter-btn-secondary:hover,
+.bp-user-theme-dark .bp-filter-btn-secondary:hover {
+    border-color: var(--bp-brand) !important;
+    background: rgba(124, 58, 237, 0.08) !important;
+}
+
+/* ============================================
+   CSV/JSON BUTTONS - Sizing only (USER site only)
+   Apply to Export CSV, Export JSON - NO new colors
+   ============================================ */
+.bp-dark-dashboard .bp-btn-secondary,
+.bp-user-theme-dark .bp-btn-secondary {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 16px !important;
+    border-radius: 14px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
+.bp-dark-dashboard .bp-btn-secondary svg,
+.bp-dark-dashboard .bp-btn-secondary i,
+.bp-user-theme-dark .bp-btn-secondary svg,
+.bp-user-theme-dark .bp-btn-secondary i {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 16px !important;
+    flex: 0 0 16px !important;
+}
+
+/* ============================================
+   FILTER BUTTONS - Purple #7C3AED (USER site only)
+   Apply Filter, Clear Filters, Search, Apply, Reset, etc.
+   ============================================ */
+.bp-dark-dashboard .bp-filter-btn:not(.bp-filter-btn-secondary),
+.bp-dark-dashboard .bp-filter-btn-primary,
+.bp-dark-dashboard .bp-btn-purple,
+.bp-user-theme-dark .bp-filter-btn:not(.bp-filter-btn-secondary),
+.bp-user-theme-dark .bp-filter-btn-primary,
+.bp-user-theme-dark .bp-btn-purple {
+    background: #7C3AED !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 18px;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-shadow: 0 14px 30px rgba(124, 58, 237, 0.20);
+    transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.bp-dark-dashboard .bp-filter-btn:not(.bp-filter-btn-secondary):hover,
+.bp-dark-dashboard .bp-filter-btn-primary:hover,
+.bp-dark-dashboard .bp-btn-purple:hover,
+.bp-user-theme-dark .bp-filter-btn:not(.bp-filter-btn-secondary):hover,
+.bp-user-theme-dark .bp-filter-btn-primary:hover,
+.bp-user-theme-dark .bp-btn-purple:hover {
+    background: #6D28D9 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(124, 58, 237, 0.22);
+}
+
+.bp-dark-dashboard .bp-filter-btn:not(.bp-filter-btn-secondary):active,
+.bp-dark-dashboard .bp-filter-btn-primary:active,
+.bp-dark-dashboard .bp-btn-purple:active,
+.bp-user-theme-dark .bp-filter-btn:not(.bp-filter-btn-secondary):active,
+.bp-user-theme-dark .bp-filter-btn-primary:active,
+.bp-user-theme-dark .bp-btn-purple:active {
+    background: #5B21B6 !important;
+    transform: translateY(0);
+}
+
+.bp-dark-dashboard .bp-filter-btn:not(.bp-filter-btn-secondary):focus-visible,
+.bp-dark-dashboard .bp-filter-btn-primary:focus-visible,
+.bp-dark-dashboard .bp-btn-purple:focus-visible,
+.bp-user-theme-dark .bp-filter-btn:not(.bp-filter-btn-secondary):focus-visible,
+.bp-user-theme-dark .bp-filter-btn-primary:focus-visible,
+.bp-user-theme-dark .bp-btn-purple:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.35);
+}
+
+/* ============================================
+   BP DATE PICKER - Dark theme (USER site only)
+   ============================================ */
+/* Datepicker popup: always on top (portal renders to body) */
+.bp-date-picker-popover,
+.bp-dark-dashboard .bp-date-picker-popover,
+.bp-user-theme-dark .bp-date-picker-popover {
+    z-index: 99999 !important;
+}
+
+/* Prevent parent overflow from clipping (backup; portal avoids this) */
+.bp-dark-dashboard .bp-date-range-card,
+.bp-user-theme-dark .bp-date-range-card {
+    overflow: visible !important;
+}
+
+.bp-dark-dashboard .bp-filter-row,
+.bp-user-theme-dark .bp-filter-row {
+    overflow: visible;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-field,
+.bp-user-theme-dark .bp-filter-row .bp-field {
+    overflow: visible;
+}
+
+.bp-dark-dashboard .bp-date-picker-trigger {
+    background: var(--bp-bg) !important;
+    border-color: var(--bp-border) !important;
+    color: var(--bp-text) !important;
+}
+
+.bp-dark-dashboard .bp-date-picker-trigger:focus {
+    border-color: var(--bp-brand) !important;
+    box-shadow: 0 0 0 3px var(--bp-brand-glow) !important;
+}
+
+/* Popover: portal renders to body; scope via body class when on user site */
+body.bp-dark-dashboard-page .bp-date-picker-popover,
+.bp-dark-dashboard .bp-date-picker-popover,
+.bp-user-theme-dark .bp-date-picker-popover {
+    background: #0B1220 !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+    padding: 12px !important;
+    max-width: 92vw !important;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-root,
+.bp-dark-dashboard .bp-date-picker-root,
+.bp-user-theme-dark .bp-date-picker-root {
+    --rdp-accent-color: #7C3AED;
+    --rdp-accent-background-color: #7C3AED;
+    --rdp-today-color: #7C3AED;
+    --rdp-selected-border: 2px solid #7C3AED;
+    --rdp-outside-opacity: 1;
+    /* Compact sizing: reduce ~10-15% */
+    --rdp-day-height: 36px;
+    --rdp-day-width: 36px;
+    --rdp-day_button-height: 32px;
+    --rdp-day_button-width: 32px;
+    --rdp-nav_button-height: 1.75rem;
+    --rdp-nav_button-width: 1.75rem;
+    --rdp-nav-height: 2.25rem;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-caption_label,
+.bp-dark-dashboard .bp-date-picker-root .rdp-caption_label,
+.bp-user-theme-dark .bp-date-picker-root .rdp-caption_label {
+    font-size: 14px !important;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-weekday,
+.bp-dark-dashboard .bp-date-picker-root .rdp-weekday,
+.bp-user-theme-dark .bp-date-picker-root .rdp-weekday {
+    font-size: 11px !important;
+    padding: 0.25rem 0 !important;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day_button {
+    font-size: 13px !important;
+}
+
+/* Month/Year header - bright and readable */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-caption_label,
+.bp-dark-dashboard .bp-date-picker-root .rdp-caption_label,
+.bp-user-theme-dark .bp-date-picker-root .rdp-caption_label {
+    color: #E5E7EB !important;
+    font-weight: 600 !important;
+}
+
+/* Weekday row (Su Mo Tu...) - muted but readable */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-weekday,
+.bp-dark-dashboard .bp-date-picker-root .rdp-weekday,
+.bp-user-theme-dark .bp-date-picker-root .rdp-weekday {
+    color: #94A3B8 !important;
+    opacity: 1 !important;
+}
+
+/* Date numbers - normal days */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day_button {
+    color: #E5E7EB !important;
+}
+
+/* Outside month / disabled - dim */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day.rdp-outside .rdp-day_button,
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day.rdp-disabled:not(.rdp-selected) .rdp-day_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day.rdp-outside .rdp-day_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day.rdp-disabled:not(.rdp-selected) .rdp-day_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day.rdp-outside .rdp-day_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day.rdp-disabled:not(.rdp-selected) .rdp-day_button {
+    color: #64748B !important;
+}
+
+/* Hover day - subtle purple tint */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day_button:hover:not([disabled]):not(.rdp-selected),
+.bp-dark-dashboard .bp-date-picker-root .rdp-day_button:hover:not([disabled]):not(.rdp-selected),
+.bp-user-theme-dark .bp-date-picker-root .rdp-day_button:hover:not([disabled]):not(.rdp-selected) {
+    background: rgba(124, 58, 237, 0.18) !important;
+    color: #FFFFFF !important;
+}
+
+/* Selected day - brand purple (selected can be on .rdp-day or .rdp-day_button) */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day.rdp-selected .rdp-day_button,
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day_button.rdp-selected,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day.rdp-selected .rdp-day_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day_button.rdp-selected,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day.rdp-selected .rdp-day_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day_button.rdp-selected {
+    background: #7C3AED !important;
+    color: #FFFFFF !important;
+    border-color: #7C3AED !important;
+}
+
+/* Today (not selected) - subtle outline (today can be on .rdp-day) */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day.rdp-today:not(.rdp-selected) .rdp-day_button,
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-day_button.rdp-today:not(.rdp-selected),
+.bp-dark-dashboard .bp-date-picker-root .rdp-day.rdp-today:not(.rdp-selected) .rdp-day_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-day_button.rdp-today:not(.rdp-selected),
+.bp-user-theme-dark .bp-date-picker-root .rdp-day.rdp-today:not(.rdp-selected) .rdp-day_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-day_button.rdp-today:not(.rdp-selected) {
+    border-color: rgba(124, 58, 237, 0.55) !important;
+    color: #E5E7EB !important;
+}
+
+/* Nav chevrons - light */
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-chevron,
+.bp-dark-dashboard .bp-date-picker-root .rdp-chevron,
+.bp-user-theme-dark .bp-date-picker-root .rdp-chevron {
+    fill: #C7D2FE !important;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-nav_button:hover,
+.bp-dark-dashboard .bp-date-picker-root .rdp-nav_button:hover,
+.bp-user-theme-dark .bp-date-picker-root .rdp-nav_button:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-root .rdp-nav_button,
+.bp-dark-dashboard .bp-date-picker-root .rdp-nav_button,
+.bp-user-theme-dark .bp-date-picker-root .rdp-nav_button {
+    color: #E5E7EB !important;
+}
+
+/* Footer links (Clear / Today) */
+body.bp-dark-dashboard-page .bp-date-picker-footer .bp-date-picker-footer-btn,
+.bp-dark-dashboard .bp-date-picker-footer .bp-date-picker-footer-btn,
+.bp-user-theme-dark .bp-date-picker-footer .bp-date-picker-footer-btn {
+    color: #C4B5FD !important;
+}
+
+body.bp-dark-dashboard-page .bp-date-picker-footer .bp-date-picker-footer-btn:hover,
+.bp-dark-dashboard .bp-date-picker-footer .bp-date-picker-footer-btn:hover,
+.bp-user-theme-dark .bp-date-picker-footer .bp-date-picker-footer-btn:hover {
+    color: #FFFFFF !important;
+}
+
+.bp-dark-dashboard .bp-date-picker .bp-date-picker-popover .border-t {
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* All native selects in filter panels get purple focus */
+.bp-dark-dashboard .bp-filter-controls select,
+.bp-dark-dashboard .bp-filter-card select,
+.bp-dark-dashboard .bp-filter-row select {
+    background: var(--bp-bg) !important;
+    border-color: var(--bp-border) !important;
+    color: var(--bp-text) !important;
+}
+
+.bp-dark-dashboard .bp-filter-controls select:focus,
+.bp-dark-dashboard .bp-filter-card select:focus,
+.bp-dark-dashboard .bp-filter-row select:focus {
+    border-color: var(--bp-brand) !important;
+    box-shadow: 0 0 0 3px var(--bp-brand-glow) !important;
+    outline: none !important;
+}
+
+/* Override gray focus ring on filter selects */
+.bp-dark-dashboard .bp-filter-controls select.focus\:ring-gray-500:focus,
+.bp-dark-dashboard .bp-filter-card select.focus\:ring-gray-500:focus,
+.bp-dark-dashboard .bp-filter-row select.focus\:ring-gray-500:focus {
+    --tw-ring-color: var(--bp-brand-glow) !important;
+}
+
+/* ============================================
+   DATE RANGE FILTER ROW (Reports page)
+   Scoped to .bp-dark-dashboard (USER site)
+   Start Date, End Date, Apply Filter, CSV, JSON aligned
+   ============================================ */
+.bp-dark-dashboard .bp-filter-row,
+.bp-user-theme-dark .bp-filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-action-group,
+.bp-user-theme-dark .bp-filter-row .bp-action-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-field,
+.bp-user-theme-dark .bp-filter-row .bp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-field > *,
+.bp-user-theme-dark .bp-filter-row .bp-field > * {
+    margin-bottom: 0 !important;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-field input,
+.bp-user-theme-dark .bp-filter-row .bp-field input,
+.bp-dark-dashboard .bp-filter-row .bp-field .bp-date-picker-trigger,
+.bp-user-theme-dark .bp-filter-row .bp-field .bp-date-picker-trigger {
+    height: 44px !important;
+    min-height: 44px !important;
+    border-radius: var(--bp-radius-sm);
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-action-group .bp-filter-btn,
+.bp-dark-dashboard .bp-filter-row .bp-action-group .bp-btn-secondary,
+.bp-user-theme-dark .bp-filter-row .bp-action-group .bp-filter-btn,
+.bp-user-theme-dark .bp-filter-row .bp-action-group .bp-btn-secondary {
+    height: 44px !important;
+    min-height: 44px !important;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-filter-btn-secondary,
+.bp-user-theme-dark .bp-filter-row .bp-filter-btn-secondary {
+    background: var(--bp-surface-2) !important;
+    border: 1px solid var(--bp-border) !important;
+    color: var(--bp-text) !important;
+    padding: 0 16px;
+}
+
+.bp-dark-dashboard .bp-filter-row .bp-filter-btn-secondary:hover,
+.bp-user-theme-dark .bp-filter-row .bp-filter-btn-secondary:hover {
+    background: var(--bp-surface-3) !important;
+    border-color: var(--bp-border-hover) !important;
+}
+
+/* Responsive: wrap on small screens, action group stays together */
+@media (max-width: 767px) {
+    .bp-dark-dashboard .bp-filter-row,
+    .bp-user-theme-dark .bp-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bp-dark-dashboard .bp-filter-row .bp-field,
+    .bp-user-theme-dark .bp-filter-row .bp-field {
+        min-width: 100%;
+    }
+
+    .bp-dark-dashboard .bp-filter-row .bp-action-group,
+    .bp-user-theme-dark .bp-filter-row .bp-action-group {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+}
+
+/* ============================================
    TAILWIND UTILITY DARK OVERRIDES (scoped)
    ============================================ */
 .bp-dark-dashboard .text-gray-900 { color: var(--bp-text) !important; }

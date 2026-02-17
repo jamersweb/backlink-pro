@@ -47,7 +47,7 @@ export default function GmailIndex({ connectedAccounts }) {
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900">Connected Gmail Accounts</h1>
                     <a href="/gmail/oauth/connect" className="inline-block">
-                        <Button variant="primary">Connect Gmail Account</Button>
+                        <Button variant="primary" className="bp-btn-purple">Connect Gmail Account</Button>
                     </a>
                 </div>
 
@@ -94,7 +94,7 @@ export default function GmailIndex({ connectedAccounts }) {
                             <p className="mt-1 text-sm text-gray-500">Get started by connecting a Gmail account.</p>
                             <div className="mt-6">
                                 <a href="/gmail/oauth/connect" className="inline-block">
-                                    <Button variant="primary">Connect Gmail Account</Button>
+                                    <Button variant="primary" className="bp-btn-purple">Connect Gmail Account</Button>
                                 </a>
                             </div>
                         </div>

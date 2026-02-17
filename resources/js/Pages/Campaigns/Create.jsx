@@ -4,6 +4,7 @@ import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
+import BpDatePicker from '../../Components/Shared/BpDatePicker';
 import Select from '../../Components/Shared/Select';
 import Textarea from '../../Components/Shared/Textarea';
 
@@ -459,21 +460,21 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                 return (
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium">Scheduling</h3>
-                        <Input
+                        <BpDatePicker
                             label="Start Date"
                             name="start_date"
-                            type="date"
                             value={data.start_date}
                             onChange={(e) => setData('start_date', e.target.value)}
                             error={errors.start_date}
+                            placeholder="Select start date"
                         />
-                        <Input
+                        <BpDatePicker
                             label="End Date (Optional)"
                             name="end_date"
-                            type="date"
                             value={data.end_date}
                             onChange={(e) => setData('end_date', e.target.value)}
                             error={errors.end_date}
+                            placeholder="Select end date"
                         />
                     </div>
                 );

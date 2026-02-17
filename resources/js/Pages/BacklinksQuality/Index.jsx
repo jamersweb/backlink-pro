@@ -147,7 +147,7 @@ export default function BacklinksQualityIndex({ domain, latestRun, backlinks, ta
                         </select>
                     </div>
                     <div className="mt-4">
-                        <Button onClick={applyFilters}>Apply Filters</Button>
+                        <Button onClick={applyFilters} className="bp-filter-btn bp-filter-btn-primary">Apply Filters</Button>
                     </div>
                 </Card>
 

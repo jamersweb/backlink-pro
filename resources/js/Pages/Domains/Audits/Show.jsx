@@ -75,7 +75,7 @@ export default function AuditsShow({ domain, audit, pages, issues, issueTypes, f
                     </div>
                     <div className="flex gap-2">
                         <Link href={`/domains/${domain.id}/audits/${audit.id}/export`}>
-                            <Button variant="outline">Export CSV</Button>
+                            <Button variant="outline" className="bp-btn-secondary"><i className="bi bi-download"></i> Export CSV</Button>
                         </Link>
                         <Link href={`/domains/${domain.id}/audits`}>
                             <Button variant="outline">Back to Audits</Button>

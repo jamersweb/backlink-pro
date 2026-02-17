@@ -85,7 +85,7 @@ export default function DomainsIndex({ domains, stats, filters }) {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Your Domains</h1>
                     <Link href="/domains/create">
-                        <Button variant="primary" disabled={stats && !stats.can_add_more}>
+                        <Button variant="primary" className="bp-btn-purple" disabled={stats && !stats.can_add_more}>
                             {stats && !stats.can_add_more ? 'Limit Reached' : <><i className="bi bi-plus-lg"></i> Add Domain</>}
                         </Button>
                     </Link>
@@ -104,13 +104,14 @@ export default function DomainsIndex({ domains, stats, filters }) {
                                 className="mb-0"
                             />
                         </div>
-                        <Button type="submit" variant="primary">
+                        <Button type="submit" variant="primary" className="bp-filter-btn bp-filter-btn-primary">
                             Search
                         </Button>
                         {filters?.q && (
                             <Button
                                 type="button"
                                 variant="outline"
+                                className="bp-filter-btn bp-filter-btn-primary"
                                 onClick={() => {
                                     setData('q', '');
                                     router.get('/domains', {}, { preserveState: true });
@@ -204,7 +205,7 @@ export default function DomainsIndex({ domains, stats, filters }) {
                             <p className="mt-1 text-sm text-gray-500">Get started by adding your first domain.</p>
                             <div className="mt-6">
                                 <Link href="/domains/create">
-                                    <Button variant="primary">Add Domain</Button>
+                                    <Button variant="primary" className="bp-btn-purple">Add Domain</Button>
                                 </Link>
                             </div>
                         </div>
