@@ -15,7 +15,7 @@
         }
         h1 {
             color: #1a202c;
-            border-bottom: 3px solid #4299e1;
+            border-bottom: 3px solid #7C3AED;
             padding-bottom: 10px;
         }
         h2 {
@@ -27,12 +27,12 @@
         .score {
             font-size: 48px;
             font-weight: bold;
-            color: #4299e1;
+            color: #7C3AED;
         }
         .grade {
             font-size: 24px;
             font-weight: bold;
-            color: #4299e1;
+            color: #7C3AED;
         }
         table {
             width: 100%;

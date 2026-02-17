@@ -38,6 +38,7 @@ class Audit extends Model
         'pages_scanned',
         'pages_discovered',
         'progress_percent',
+        'progress_stage',
         'crawl_stats',
         'performance_summary',
     ];

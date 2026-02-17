@@ -170,3 +170,13 @@ Schedule::call(function () {
 })->weeklyOn(0, '06:00')
   ->name('cleanup-old-seo-data')
   ->withoutOverlapping(60); // Sunday at 6 AM
+
+// Every minute: Fail audits stuck in queued state (worker not running)
+Schedule::command('audit:fail-stuck-queued --minutes=5')->everyMinute()
+  ->name('fail-stuck-queued-audits')
+  ->withoutOverlapping(2);
+
+// Every minute: Fail audits stuck in running state (max 15 min runtime)
+Schedule::command('audit:fail-stuck-running --minutes=15')->everyMinute()
+  ->name('fail-stuck-running-audits')
+  ->withoutOverlapping(2);

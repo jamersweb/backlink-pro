@@ -222,8 +222,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::prefix('audit-report')->name('audit-report.')->group(function() {
         Route::get('/', [AuditReportController::class, 'index'])->name('index');
         Route::post('/', [AuditReportController::class, 'create'])->name('create');
-        Route::get('/{id}', [AuditReportController::class, 'show'])->name('show');
         Route::get('/{id}/status', [AuditReportController::class, 'status'])->name('status');
+        Route::post('/{id}/export-pdf', [AuditReportController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{id}', [AuditReportController::class, 'show'])->name('show');
     });
 
     // Google OAuth for Audit Report (User Panel)
@@ -676,6 +677,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
 // Public Report Routes (no auth required)
 Route::get('/r/{token}', [PublicReportController::class, 'show'])->name('public.report.show');
+Route::get('/audit-report/share/{token}', [AuditReportController::class, 'share'])->name('audit-report.share');
 Route::post('/r/{token}/unlock', [PublicReportController::class, 'unlock'])->name('public.report.unlock');
 
 // Widget JS endpoint

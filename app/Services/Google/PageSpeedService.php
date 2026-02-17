@@ -126,8 +126,8 @@ class PageSpeedService
             'key' => $apiKey,
         ];
 
-        return Http::timeout(120)
-            ->retry(3, 1000)
+        return Http::timeout(45)
+            ->retry(2, 2000)
             ->get('https://www.googleapis.com/pagespeedonline/v5/runPagespeed', $params);
     }
 

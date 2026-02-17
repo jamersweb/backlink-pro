@@ -4,13 +4,14 @@ namespace App\Jobs;
 
 use App\Models\Audit;
 use App\Models\AuditPage;
+use App\Models\ConnectedAccount;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\PageParser;
 use App\Services\SeoAudit\AuditKpiBuilder;
+use App\Services\Google\PageSpeedService;
+use App\Services\Google\SearchConsoleService;
+use App\Services\Google\Ga4Service;
 use App\Jobs\StartAuditPipelineJob;
-use App\Jobs\RunPageSpeedJob;
-use App\Jobs\RunCruxJob;
-use App\Services\Google\CruxService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,125 +24,84 @@ class RunSeoAuditJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 300; // 5 minutes
+    public $timeout = 300;
     public $tries = 2;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(
         public int $auditId
     ) {}
 
-    /**
-     * Execute the job.
-     * 
-     * Phase 1: If pages_limit=1 and crawl_depth=0, scan homepage only.
-     * Phase 2: Otherwise, dispatch StartAuditPipelineJob for multi-page crawling.
-     */
     public function handle(): void
     {
-        Log::info('RunSeoAuditJob started', ['audit_id' => $this->auditId]);
+        Log::info('AuditJob started', ['audit_id' => $this->auditId]);
         
         $audit = Audit::find($this->auditId);
-        
         if (!$audit) {
-            Log::error("Audit not found: {$this->auditId}");
+            Log::error('AuditJob: audit not found', ['audit_id' => $this->auditId]);
             return;
         }
 
-        // Update to running status immediately
         $audit->status = Audit::STATUS_RUNNING;
-        $audit->progress_percent = 10;
+        $audit->progress_percent = 5;
+        $audit->progress_stage = 'starting';
         $audit->save();
-        
-        Log::info('Audit status updated to running', ['audit_id' => $audit->id]);
 
         try {
-            $organization = $audit->organization; // May be null for personal audits
-            
-            // Optional: Run PageSpeed Insights (skip if no key configured)
-            $hasSharedKey = (bool) config('services.google.pagespeed_api_key');
-            $hasByokKey = $organization
-                && $organization->pagespeed_byok_enabled
-                && $organization->pagespeed_last_key_verified_at
-                && !empty($organization->pagespeed_api_key_encrypted);
+            $kpis = $audit->audit_kpis ?? [];
 
-            if ($hasSharedKey || $hasByokKey) {
-                Log::info('Running PageSpeed audit', ['audit_id' => $audit->id]);
+            // Stage 1: Fetch & parse homepage
+            $this->updateProgress($audit, 10, 'onpage', 'Analyzing on-page SEO...');
+            $this->handleSinglePage($audit);
+            
+            // Stage 2: PageSpeed Insights
+            $this->updateProgress($audit, 35, 'psi', 'Running PageSpeed Insights...');
+            $this->runPageSpeed($audit, $kpis);
+            
+            // Stage 3: Google Analytics (if connected)
+            $this->updateProgress($audit, 55, 'ga4', 'Fetching Google Analytics data...');
+            $this->runGa4($audit, $kpis);
+            
+            // Stage 4: Google Search Console (if connected)
+            $this->updateProgress($audit, 70, 'gsc', 'Fetching Search Console data...');
+            $this->runGsc($audit, $kpis);
+            
+            // Stage 5: Compile final report
+            $this->updateProgress($audit, 85, 'compiling', 'Compiling report...');
+            
+            // Persist all KPIs
+            $audit->refresh();
+            $mergedKpis = array_merge($audit->audit_kpis ?? [], $kpis);
+            $audit->audit_kpis = $mergedKpis;
+            $audit->status = Audit::STATUS_COMPLETED;
+            $audit->progress_percent = 100;
+            $audit->progress_stage = 'completed';
+            $audit->finished_at = now();
+            $audit->save();
+            
+            if ($audit->lead_email) {
                 try {
-                    RunPageSpeedJob::dispatchSync($audit->id, $audit->normalized_url);
-                    $audit->progress_percent = 30;
-                    $audit->save();
+                    \Illuminate\Support\Facades\Mail::to($audit->lead_email)
+                        ->queue(new \App\Mail\UserAuditReadyMail($audit));
                 } catch (\Exception $e) {
-                    Log::warning('PageSpeed job failed, continuing audit', [
-                        'audit_id' => $audit->id,
-                        'error' => $e->getMessage(),
-                    ]);
+                    Log::warning('Failed to queue audit email', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
                 }
-            }
-
-            // Optional: Run CrUX (skip if no key)
-            try {
-                $cruxService = new CruxService();
-                $cruxKeyInfo = $cruxService->resolveKey($organization);
-            } catch (\Exception $e) {
-                Log::warning('CrUX service initialization failed', [
-                    'audit_id' => $audit->id,
-                    'error' => $e->getMessage(),
-                ]);
-                $cruxKeyInfo = ['key' => null];
-            }
-            
-            if (!empty($cruxKeyInfo['key'])) {
-                Log::info('Running CrUX audit', ['audit_id' => $audit->id]);
-                try {
-                    RunCruxJob::dispatchSync($audit->id, $audit->normalized_url);
-                    $audit->progress_percent = 50;
-                    $audit->save();
-                } catch (\Exception $e) {
-                    Log::warning('CrUX job failed, continuing audit', [
-                        'audit_id' => $audit->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            // Check if this is a Phase 1 single-page audit
-            $pagesLimit = $audit->pages_limit ?? 25;
-            $crawlDepth = $audit->crawl_depth ?? 2;
-            
-            Log::info('Determining audit type', [
-                'audit_id' => $audit->id,
-                'pages_limit' => $pagesLimit,
-                'crawl_depth' => $crawlDepth,
-            ]);
-            
-            if ($pagesLimit === 1 && $crawlDepth === 0) {
-                // Phase 1: Single page audit (FAST)
-                Log::info('Running single-page audit', ['audit_id' => $audit->id]);
-                $this->handleSinglePage($audit);
-            } else {
-                // Phase 2: Multi-page crawl - dispatch pipeline
-                Log::info('Dispatching multi-page crawl pipeline', ['audit_id' => $audit->id]);
-                StartAuditPipelineJob::dispatch($this->auditId);
             }
             
             Log::info('RunSeoAuditJob completed', [
                 'audit_id' => $audit->id,
-                'status' => $audit->fresh()->status,
+                'score' => $audit->overall_score,
             ]);
             
         } catch (\Exception $e) {
-            Log::error('RunSeoAuditJob failed with exception', [
+            Log::error('AuditJob failed', [
                 'audit_id' => $this->auditId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
             
-            // Ensure audit is marked as failed
             $audit->status = Audit::STATUS_FAILED;
-            $audit->error = 'Job execution failed: ' . $e->getMessage();
+            $audit->error = $e->getMessage();
+            $audit->progress_stage = 'failed';
             $audit->finished_at = now();
             $audit->save();
             
@@ -149,134 +109,271 @@ class RunSeoAuditJob implements ShouldQueue
         }
     }
 
-    /**
-     * Handle Phase 1 single-page audit
-     */
+    public function failed(\Throwable $e): void
+    {
+        Log::error('AuditJob failed (queue)', [
+            'audit_id' => $this->auditId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        $audit = Audit::find($this->auditId);
+        if ($audit && $audit->status !== Audit::STATUS_COMPLETED) {
+            $audit->status = Audit::STATUS_FAILED;
+            $audit->error = 'Job failed: ' . $e->getMessage();
+            $audit->progress_stage = 'failed';
+            $audit->finished_at = now();
+            $audit->save();
+        }
+    }
+
+    protected function updateProgress(Audit $audit, int $percent, string $stage, string $logMessage): void
+    {
+        $audit->progress_percent = $percent;
+        $audit->progress_stage = $stage;
+        $audit->save();
+        Log::info($logMessage, ['audit_id' => $audit->id]);
+    }
+
     protected function handleSinglePage(Audit $audit): void
     {
+        $response = Http::timeout(25)
+            ->retry(2, 1000)
+            ->withUserAgent('BacklinkProBot/1.0')
+            ->withOptions([
+                'allow_redirects' => [
+                    'max' => 5,
+                    'strict' => true,
+                    'referer' => true,
+                    'protocols' => ['http', 'https'],
+                ],
+            ])
+            ->get($audit->normalized_url);
+
+        $statusCode = $response->status();
+        $finalUrl = $response->effectiveUri() ?? $audit->normalized_url;
+        $html = $response->body();
+        $htmlSizeBytes = strlen($html);
+
+        $headers = [
+            'server' => $response->header('Server'),
+            'x_powered_by' => $response->header('X-Powered-By'),
+            'content_type' => $response->header('Content-Type'),
+            'x_robots_tag' => $response->header('X-Robots-Tag'),
+        ];
+        $parsed = PageParser::parse($html, $finalUrl, $audit->normalized_url, $headers);
+
+        $page = AuditPage::create([
+            'audit_id' => $audit->id,
+            'url' => $finalUrl,
+            'status_code' => $statusCode,
+            'title' => $parsed['title'],
+            'title_len' => $parsed['title_len'],
+            'meta_description' => $parsed['meta_description'],
+            'meta_len' => $parsed['meta_len'],
+            'canonical_url' => $parsed['canonical_url'],
+            'robots_meta' => $parsed['robots_meta'],
+            'h1_count' => $parsed['h1_count'],
+            'h2_count' => $parsed['h2_count'],
+            'h3_count' => $parsed['h3_count'],
+            'word_count' => $parsed['word_count'],
+            'images_total' => $parsed['images_total'],
+            'images_missing_alt' => $parsed['images_missing_alt'],
+            'internal_links_count' => $parsed['internal_links_count'],
+            'external_links_count' => $parsed['external_links_count'],
+            'og_present' => $parsed['og_present'],
+            'twitter_cards_present' => $parsed['twitter_cards_present'],
+            'schema_types' => $parsed['schema_types'],
+            'html_size_bytes' => $htmlSizeBytes,
+        ]);
+
+        $rulesEngine = new RulesEngine();
+        $evaluation = $rulesEngine->evaluate($audit, $page);
+
+        $categoryScores = $rulesEngine->calculateCategoryScores($evaluation['categoryPenalties']);
+        $overallScore = $rulesEngine->calculateOverallScore($categoryScores);
+        $overallGrade = $rulesEngine->scoreToGrade($overallScore);
+
+        $summary = [
+            'total_issues' => count($evaluation['issues']),
+            'high_impact_issues' => collect($evaluation['issues'])->where('impact', 'high')->count(),
+            'medium_impact_issues' => collect($evaluation['issues'])->where('impact', 'medium')->count(),
+            'low_impact_issues' => collect($evaluation['issues'])->where('impact', 'low')->count(),
+        ];
+
+        $audit->overall_score = $overallScore;
+        $audit->overall_grade = $overallGrade;
+        $audit->category_scores = $categoryScores;
+        $audit->summary = $summary;
+
+        $kpiBuilder = new AuditKpiBuilder();
+        $audit->audit_kpis = $kpiBuilder->build($audit);
+        $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
+        $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
+        $audit->save();
+    }
+
+    protected function runPageSpeed(Audit $audit, array &$kpis): void
+    {
+        $hasKey = (bool) config('services.google.pagespeed_api_key');
+        if (!$hasKey) {
+            Log::info('PageSpeed API key not configured, skipping', ['audit_id' => $audit->id]);
+            $kpis['google']['pagespeed'] = ['status' => 'skipped', 'error' => 'API key not configured'];
+            return;
+        }
+
         try {
-            Log::info('handleSinglePage started', ['audit_id' => $audit->id, 'url' => $audit->normalized_url]);
-            
-            // Update status to running
-            $audit->status = Audit::STATUS_RUNNING;
-            $audit->progress_percent = 60;
-            $audit->started_at = now();
-            $audit->error = null;
-            $audit->save();
+            $service = new PageSpeedService();
+            $mobile = $service->run($audit->normalized_url, 'mobile', $audit->organization);
+            $desktop = $service->run($audit->normalized_url, 'desktop', $audit->organization);
 
-            // Fetch homepage HTML
-            $response = Http::timeout(20)
-                ->withUserAgent('BacklinkProBot/1.0')
-                ->withOptions([
-                    'allow_redirects' => [
-                        'max' => 5,
-                        'strict' => true,
-                        'referer' => true,
-                        'protocols' => ['http', 'https'],
-                    ],
-                ])
-                ->get($audit->normalized_url);
-
-            $statusCode = $response->status();
-            $finalUrl = $response->effectiveUri() ?? $audit->normalized_url;
-            $html = $response->body();
-            $htmlSizeBytes = strlen($html);
-
-            // Parse HTML
-            $headers = [
-                'server' => $response->header('Server'),
-                'x_powered_by' => $response->header('X-Powered-By'),
-                'content_type' => $response->header('Content-Type'),
-                'x_robots_tag' => $response->header('X-Robots-Tag'),
-            ];
-            $parsed = PageParser::parse($html, $finalUrl, $audit->normalized_url, $headers);
-
-            // Create audit page
-            $page = AuditPage::create([
-                'audit_id' => $audit->id,
-                'url' => $finalUrl,
-                'status_code' => $statusCode,
-                'title' => $parsed['title'],
-                'title_len' => $parsed['title_len'],
-                'meta_description' => $parsed['meta_description'],
-                'meta_len' => $parsed['meta_len'],
-                'canonical_url' => $parsed['canonical_url'],
-                'robots_meta' => $parsed['robots_meta'],
-                'h1_count' => $parsed['h1_count'],
-                'h2_count' => $parsed['h2_count'],
-                'h3_count' => $parsed['h3_count'],
-                'word_count' => $parsed['word_count'],
-                'images_total' => $parsed['images_total'],
-                'images_missing_alt' => $parsed['images_missing_alt'],
-                'internal_links_count' => $parsed['internal_links_count'],
-                'external_links_count' => $parsed['external_links_count'],
-                'og_present' => $parsed['og_present'],
-                'twitter_cards_present' => $parsed['twitter_cards_present'],
-                'schema_types' => $parsed['schema_types'],
-                'html_size_bytes' => $htmlSizeBytes,
-            ]);
-
-            // Run rules engine
-            $rulesEngine = new RulesEngine();
-            $evaluation = $rulesEngine->evaluate($audit, $page);
-
-            // Issues are already created and saved by createIssue() method
-            // $evaluation['issues'] contains AuditIssue models
-
-            // Calculate scores
-            $categoryScores = $rulesEngine->calculateCategoryScores($evaluation['categoryPenalties']);
-            $overallScore = $rulesEngine->calculateOverallScore($categoryScores);
-            $overallGrade = $rulesEngine->scoreToGrade($overallScore);
-
-            // Create summary
-            $summary = [
-                'total_issues' => count($evaluation['issues']),
-                'high_impact_issues' => collect($evaluation['issues'])->where('impact', 'high')->count(),
-                'medium_impact_issues' => collect($evaluation['issues'])->where('impact', 'medium')->count(),
-                'low_impact_issues' => collect($evaluation['issues'])->where('impact', 'low')->count(),
-            ];
-
-            // Update audit
-            $audit->overall_score = $overallScore;
-            $audit->overall_grade = $overallGrade;
-            $audit->category_scores = $categoryScores;
-            $audit->summary = $summary;
-
-            // Build KPI payload
-            $kpiBuilder = new AuditKpiBuilder();
-            $audit->audit_kpis = $kpiBuilder->build($audit);
-            $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
-            $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
-
-            $audit->status = Audit::STATUS_COMPLETED;
-            $audit->progress_percent = 100;
-            $audit->finished_at = now();
-            $audit->save();
-            
-            Log::info('Single-page audit completed successfully', [
-                'audit_id' => $audit->id,
-                'score' => $audit->overall_score,
-                'issues_count' => $audit->issues()->count(),
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("SEO Audit failed: {$e->getMessage()}", [
-                'audit_id' => $this->auditId,
+            $kpis['google']['pagespeed'] = [
                 'url' => $audit->normalized_url,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = 'Audit failed: ' . $e->getMessage();
-            $audit->progress_percent = 0;
-            $audit->finished_at = now();
-            $audit->save();
+                'mobile' => $mobile,
+                'desktop' => $desktop,
+                'source' => $mobile['source'] ?? 'shared_key',
+                'fetched_at' => $mobile['fetched_at'] ?? now()->toIso8601String(),
+            ];
             
-            // Re-throw to ensure proper error handling
-            throw $e;
+            // Also store on AuditPage for Lighthouse data
+            $page = $audit->pages()->first();
+            if ($page) {
+                $page->lighthouse_mobile = $mobile['kpis'] ?? null;
+                $page->lighthouse_desktop = $desktop['kpis'] ?? null;
+                $page->save();
+            }
+        } catch (\Exception $e) {
+            Log::warning('PageSpeed failed, continuing', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
+            $kpis['google']['pagespeed'] = ['status' => 'failed', 'error' => $e->getMessage()];
         }
     }
 
-    
+    protected function runGa4(Audit $audit, array &$kpis): void
+    {
+        if (!$audit->user_id) return;
+
+        $account = ConnectedAccount::where('user_id', $audit->user_id)
+            ->where('provider', 'google')
+            ->where('service', 'seo')
+            ->where('status', 'active')
+            ->first();
+
+        if (!$account) {
+            $kpis['ga4'] = ['connected' => false, 'message' => 'Google Analytics not connected'];
+            return;
+        }
+
+        try {
+            $ga4 = new Ga4Service($account);
+            $properties = $ga4->listProperties();
+            
+            if (empty($properties)) {
+                $kpis['ga4'] = ['connected' => true, 'message' => 'No GA4 properties found', 'data' => null];
+                return;
+            }
+
+            $propertyId = $properties[0]['propertyName'];
+            $endDate = new \DateTime('now');
+            $startDate = (clone $endDate)->modify('-30 days');
+
+            $dailyMetrics = $ga4->runDailyReport($propertyId, $startDate, $endDate);
+            
+            $landingPages = [];
+            try {
+                $landingPages = $ga4->runLandingPagesReport($propertyId, $startDate, $endDate, 20);
+            } catch (\Exception $e) {
+                Log::warning('GA4 landing pages failed', ['error' => $e->getMessage()]);
+            }
+
+            $totalSessions = array_sum(array_column($dailyMetrics, 'sessions'));
+            $totalUsers = array_sum(array_column($dailyMetrics, 'total_users'));
+
+            $kpis['ga4'] = [
+                'connected' => true,
+                'property' => $properties[0]['displayName'] ?? $propertyId,
+                'period' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
+                'summary' => [
+                    'total_sessions' => $totalSessions,
+                    'total_users' => $totalUsers,
+                    'avg_engagement_rate' => !empty($dailyMetrics) ? round(array_sum(array_column($dailyMetrics, 'engagement_rate')) / count($dailyMetrics) * 100, 1) : 0,
+                ],
+                'daily' => $dailyMetrics,
+                'top_pages' => $landingPages,
+            ];
+        } catch (\Exception $e) {
+            Log::warning('GA4 integration failed, continuing', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
+            $kpis['ga4'] = ['connected' => true, 'error' => $e->getMessage(), 'data' => null];
+        }
+    }
+
+    protected function runGsc(Audit $audit, array &$kpis): void
+    {
+        if (!$audit->user_id) return;
+
+        $account = ConnectedAccount::where('user_id', $audit->user_id)
+            ->where('provider', 'google')
+            ->where('service', 'seo')
+            ->where('status', 'active')
+            ->first();
+
+        if (!$account) {
+            $kpis['gsc'] = ['connected' => false, 'message' => 'Search Console not connected'];
+            return;
+        }
+
+        try {
+            $gsc = new SearchConsoleService($account);
+            $sites = $gsc->listSites();
+            
+            // Find matching site URL
+            $auditHost = parse_url($audit->normalized_url, PHP_URL_HOST);
+            $siteUrl = null;
+            foreach ($sites as $site) {
+                $siteHost = parse_url($site['siteUrl'], PHP_URL_HOST) ?? str_replace('sc-domain:', '', $site['siteUrl']);
+                if ($siteHost === $auditHost || str_contains($site['siteUrl'], $auditHost)) {
+                    $siteUrl = $site['siteUrl'];
+                    break;
+                }
+            }
+            
+            if (!$siteUrl && !empty($sites)) {
+                $siteUrl = $sites[0]['siteUrl'];
+            }
+
+            if (!$siteUrl) {
+                $kpis['gsc'] = ['connected' => true, 'message' => 'No matching Search Console property found', 'data' => null];
+                return;
+            }
+
+            $endDate = new \DateTime('now');
+            $startDate = (clone $endDate)->modify('-30 days');
+
+            $dailyMetrics = $gsc->fetchDailyMetrics($siteUrl, $startDate, $endDate);
+            $topQueries = $gsc->fetchTopQueries($siteUrl, $startDate, $endDate, 20);
+            $topPages = $gsc->fetchTopPages($siteUrl, $startDate, $endDate, 20);
+
+            $totalClicks = array_sum(array_column($dailyMetrics, 'clicks'));
+            $totalImpressions = array_sum(array_column($dailyMetrics, 'impressions'));
+            $avgPosition = !empty($dailyMetrics) ? round(array_sum(array_column($dailyMetrics, 'position')) / count($dailyMetrics), 1) : 0;
+            $avgCtr = $totalImpressions > 0 ? round(($totalClicks / $totalImpressions) * 100, 2) : 0;
+
+            $kpis['gsc'] = [
+                'connected' => true,
+                'site_url' => $siteUrl,
+                'period' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
+                'summary' => [
+                    'total_clicks' => $totalClicks,
+                    'total_impressions' => $totalImpressions,
+                    'avg_ctr' => $avgCtr,
+                    'avg_position' => $avgPosition,
+                ],
+                'daily' => $dailyMetrics,
+                'top_queries' => $topQueries,
+                'top_pages' => $topPages,
+            ];
+        } catch (\Exception $e) {
+            Log::warning('GSC integration failed, continuing', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
+            $kpis['gsc'] = ['connected' => true, 'error' => $e->getMessage(), 'data' => null];
+        }
+    }
 }

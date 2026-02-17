@@ -1,8 +1,10 @@
 import AppLayout from '../Components/Layout/AppLayout';
 import Card from '../Components/Shared/Card';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-export default function AuditReport({ googleConnected = false, googleEmail = null, recentAudits = [] }) {
+const STORAGE_KEY = 'backlinkpro_last_audit_id';
+
+export default function AuditReport({ googleConnected = false, googleEmail = null, recentAudits = [], lastCompletedAuditId = null }) {
     const [formData, setFormData] = useState({
         url: '',
         email: '',
@@ -96,6 +98,49 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
         return hasUrl && hasEmail && noErrors;
     };
 
+    const stageLabels = {
+        starting: 'Starting audit...',
+        onpage: 'Analyzing on-page SEO...',
+        psi: 'Running PageSpeed Insights...',
+        ga4: 'Fetching Google Analytics data...',
+        gsc: 'Fetching Search Console data...',
+        compiling: 'Compiling report...',
+        completed: 'Audit completed!',
+    };
+
+    // Track when audit was queued (for stuck detection)
+    const [queuedAt, setQueuedAt] = useState(null);
+    const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+    // On mount: load last completed audit only when idle (abort if user runs new audit)
+    const initialLoadRef = useRef(null);
+    useEffect(() => {
+        if (auditStatus !== 'idle' || reportData) return;
+        const stored = (typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY)) || lastCompletedAuditId;
+        if (stored) {
+            const ctrl = new AbortController();
+            initialLoadRef.current = ctrl;
+            setStatus('Loading report...');
+            fetch(`/audit-report/${stored}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
+                signal: ctrl.signal,
+            })
+                .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed')))
+                .then(data => {
+                    const audit = data.audit || data;
+                    if (initialLoadRef.current === ctrl) {
+                        setReportData(audit);
+                        setCurrentAuditId(audit?.id ?? null);
+                        setAuditStatus('completed');
+                        setStatus('');
+                        if (audit?.id) try { localStorage.setItem(STORAGE_KEY, String(audit.id)); } catch (_) {}
+                    }
+                })
+                .catch(e => { if (e?.name !== 'AbortError' && initialLoadRef.current === ctrl) setStatus(''); });
+            return () => { ctrl.abort(); initialLoadRef.current = null; };
+        }
+    }, []);
+
     // Poll audit status
     useEffect(() => {
         if (!currentAuditId || auditStatus === 'completed') return;
@@ -107,6 +152,7 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                     },
+                    cache: 'no-store',
                 });
                 
                 if (!response.ok) {
@@ -114,13 +160,15 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                 }
                 
                 const data = await response.json();
+                const stage = data.progress_stage || '';
+                const stageLabel = stageLabels[stage] || `Processing (${stage})...`;
+                const queuedSeconds = queuedAt ? Math.floor((Date.now() - queuedAt) / 1000) : (data.created_at ? Math.floor((Date.now() - new Date(data.created_at).getTime()) / 1000) : 0);
+                const isStuckQueued = data.status === 'queued' && queuedSeconds >= 120;
                 
                 if (data.status === 'completed') {
                     clearInterval(pollInterval);
                     setAuditProgress(100);
                     setStatus('Audit completed successfully!');
-                    
-                    // Fetch full report data
                     fetchReportData(currentAuditId);
                 } else if (data.status === 'failed') {
                     clearInterval(pollInterval);
@@ -129,19 +177,20 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                     setIsLoading(false);
                 } else if (data.status === 'running') {
                     setAuditProgress(data.progress_percent || 50);
-                    setStatus('Analyzing website...');
+                    setStatus(stageLabel);
                 } else {
-                    setAuditProgress(data.progress_percent || 10);
-                    setStatus('Queued - waiting to start...');
+                    setAuditProgress(data.progress_percent || 5);
+                    setStatus(isStuckQueued
+                        ? 'Starting… (worker may not be running — audits will auto-fail after 5 min)'
+                        : 'Queued - waiting to start...');
                 }
             } catch (error) {
                 console.error('Error polling audit status:', error);
-                setStatus('Error: Failed to check audit status');
             }
-        }, 2500);
+        }, 2000);
 
         return () => clearInterval(pollInterval);
-    }, [currentAuditId, auditStatus]);
+    }, [currentAuditId, auditStatus, queuedAt]);
 
     // Fetch full report data
     const fetchReportData = async (auditId) => {
@@ -159,14 +208,21 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
             }
             
             const data = await response.json();
-            setReportData(data.audit || data);
+            const audit = data.audit || data;
+            setReportData(audit);
+            setCurrentAuditId(audit?.id ?? null);
             setAuditStatus('completed');
             setIsLoading(false);
+            if (audit?.id) {
+                try { localStorage.setItem(STORAGE_KEY, String(audit.id)); } catch (_) {}
+            }
         } catch (error) {
             console.error('Error fetching report:', error);
             setStatus('Error: Failed to load report');
             setAuditStatus('failed');
             setIsLoading(false);
+            setCurrentAuditId(null);
+            try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
         }
     };
 
@@ -203,6 +259,10 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
             return;
         }
         
+        if (initialLoadRef.current) {
+            initialLoadRef.current.abort();
+            initialLoadRef.current = null;
+        }
         setIsLoading(true);
         setAuditStatus('running');
         setStatus('Starting audit... This may take 30-60 seconds.');
@@ -260,6 +320,7 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
             
             if (data.success && data.audit_id) {
                 setCurrentAuditId(data.audit_id);
+                setQueuedAt(Date.now());
                 
                 // Check if already completed (sync queue)
                 if (data.status === 'completed') {
@@ -269,13 +330,14 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                     setTimeout(() => fetchReportData(data.audit_id), 500);
                 } else {
                     // Will be completed via polling
-                    setStatus('Audit processing...');
-                    setAuditProgress(10);
+                    setStatus('Queued - waiting to start...');
+                    setAuditProgress(5);
                 }
             } else if (data.audit_id) {
                 setCurrentAuditId(data.audit_id);
-                setStatus('Audit processing...');
-                setAuditProgress(10);
+                setQueuedAt(Date.now());
+                setStatus('Queued - waiting to start...');
+                setAuditProgress(5);
             } else {
                 throw new Error(data.message || 'Failed to create audit');
             }
@@ -293,84 +355,63 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
         }
     };
 
-    // Handle re-run audit
+    // Handle Run New Audit - clear report and show form
     const handleRerun = () => {
         setReportData(null);
         setAuditStatus('idle');
         setCurrentAuditId(null);
+        setQueuedAt(null);
         setStatus('');
         setAuditProgress(0);
         setIsLoading(false);
         setFormData({ url: '', email: '', send_to_email: true });
+        try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
     };
 
-    // Handle PDF download
-    const handleDownloadPDF = async () => {
-        if (!currentAuditId) return;
-
+    // Handle Export PDF - fetch from server and download
+    const handleExportPDF = async () => {
+        const auditId = currentAuditId || reportData?.id;
+        if (!auditId) return;
+        setIsExportingPdf(true);
         try {
-            setStatus('Generating PDF...');
-            
-            // For MVP: Generate PDF client-side using html2pdf
-            const element = document.getElementById('audit-report-content');
-            
-            if (window.html2pdf) {
-                const opt = {
-                    margin: 10,
-                    filename: `audit-report-${reportData.url}-${new Date().toISOString().split('T')[0]}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                
-                await window.html2pdf().set(opt).from(element).save();
-                setStatus('PDF downloaded successfully!');
-                setTimeout(() => setStatus(''), 3000);
-            } else {
-                // Fallback: Server-side PDF generation
-                const response = await fetch(`/audit-report/${currentAuditId}/pdf`, {
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    },
-                });
-                
-                if (!response.ok) {
-                    throw new Error('PDF generation failed');
-                }
-                
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch(`/audit-report/${auditId}/export-pdf`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/pdf', 'X-CSRF-TOKEN': csrf || '', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!res.ok) throw new Error('Export failed');
+            const blob = await res.blob();
+            const isPdf = res.headers.get('Content-Type')?.includes('pdf');
+            if (isPdf) {
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `audit-report-${reportData.url}.pdf`;
-                document.body.appendChild(a);
+                a.download = `audit-report-${auditId}-${new Date().toISOString().slice(0,10)}.pdf`;
                 a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                setStatus('PDF downloaded successfully!');
-                setTimeout(() => setStatus(''), 3000);
+                URL.revokeObjectURL(url);
+            } else {
+                const text = await blob.text();
+                const w = window.open('', '_blank');
+                w.document.write(text);
+                w.document.close();
             }
-        } catch (error) {
-            console.error('Error downloading PDF:', error);
-            setStatus('Error: Failed to generate PDF');
-            setTimeout(() => setStatus(''), 3000);
+        } catch (e) {
+            console.error(e);
+            window.print();
+        } finally {
+            setIsExportingPdf(false);
         }
     };
 
     return (
         <AppLayout header="Audit Report">
-            <div className="space-y-6 max-w-7xl mx-auto">
+            <div className="bp-audit-report-page space-y-6 max-w-7xl mx-auto">
                 {/* Header Card */}
-                <div className="relative overflow-hidden rounded-2xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-8 shadow-[var(--admin-shadow-md)]">
-                    {/* Background decoration - only visible in dark mode */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#2F6BFF]/10 rounded-full blur-3xl -mr-32 -mt-32 dark:opacity-100 opacity-0"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#B6F400]/10 rounded-full blur-3xl -ml-24 -mb-24 dark:opacity-100 opacity-0"></div>
-                    
+                <div className="bp-audit-header-card bp-card relative overflow-hidden">
                     <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div>
-                            <h2 className="text-2xl font-bold text-[var(--admin-text)] mb-2">Audit Report</h2>
-                            <p className="text-[var(--admin-text-muted)]">
+                            <h2 className="mb-2">Audit Report</h2>
+                            <p className="bp-text-muted">
                                 {auditStatus === 'completed' 
                                     ? `Report for ${reportData?.url || 'your website'}`
                                     : 'Enter website details to generate an SEO audit report.'
@@ -379,29 +420,33 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                         </div>
                         
                         {auditStatus === 'completed' ? (
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 items-center">
                                 <button
                                     onClick={handleRerun}
-                                    className="px-4 py-2.5 bg-[var(--admin-surface-2)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] rounded-lg font-medium text-[var(--admin-text)] transition-colors flex items-center gap-2"
+                                    className="text-sm text-[var(--admin-text-dim)] hover:text-[var(--admin-text)] transition-colors flex items-center gap-1.5"
                                 >
                                     <i className="bi bi-arrow-clockwise"></i>
-                                    Re-run
+                                    Run New Audit
                                 </button>
                                 <button
-                                    onClick={handleDownloadPDF}
-                                    className="px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] text-white shadow-lg shadow-[#2F6BFF]/20"
+                                    onClick={handleExportPDF}
+                                    disabled={isExportingPdf}
+                                    className="bp-btn-purple px-6 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 h-11 min-h-[44px]"
                                 >
-                                    <i className="bi bi-download"></i>
-                                    Download PDF
+                                    {isExportingPdf ? (
+                                        <><i className="bi bi-arrow-repeat animate-spin"></i> Generating PDF…</>
+                                    ) : (
+                                        <><i className="bi bi-download"></i> Export PDF</>
+                                    )}
                                 </button>
                             </div>
                         ) : (
                             <button
                                 onClick={handleSubmit}
                                 disabled={!isFormValid() || isLoading}
-                                className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 h-11 min-h-[44px] ${
                                     isFormValid() && !isLoading
-                                        ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] text-white shadow-lg shadow-[#2F6BFF]/20'
+                                        ? 'bp-btn-purple'
                                         : 'bg-[var(--admin-surface-3)] text-[var(--admin-text-dim)] cursor-not-allowed'
                                 }`}
                             >
@@ -421,25 +466,25 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                     </div>
                 </div>
 
-                {/* Status Message with Progress */}
-                {status && (
-                    <div className={`p-4 rounded-xl border ${
-                        status.includes('completed') || status.includes('Redirecting')
-                            ? 'bg-[#12B76A]/10 border-[#12B76A]/30'
+                {/* Status Message with Progress - hide when completed */}
+                {status && auditStatus !== 'completed' && (
+                    <div className={`bp-card rounded-2xl p-5 border ${
+                        status.includes('completed') || status.includes('successfully')
+                            ? 'border-[#12B76A]/30'
                             : status.includes('Error') || status.includes('failed')
-                                ? 'bg-[#F04438]/10 border-[#F04438]/30'
-                                : 'bg-[#2F6BFF]/10 border-[#2F6BFF]/30'
+                                ? 'border-[#F04438]/30'
+                                : 'border-[#7C3AED]/30'
                     }`}>
                         <div className="flex items-center gap-3 mb-3">
                             <i className={`bi ${
-                                status.includes('completed') || status.includes('Redirecting') ? 'bi-check-circle-fill text-[#12B76A]' :
+                                status.includes('completed') || status.includes('successfully') ? 'bi-check-circle-fill text-[#12B76A]' :
                                 status.includes('Error') || status.includes('failed') ? 'bi-x-circle-fill text-[#F04438]' :
-                                'bi-arrow-repeat animate-spin text-[#5B8AFF]'
+                                'bi-arrow-repeat animate-spin text-[#A78BFA]'
                             } text-lg`}></i>
                             <span className={`font-medium ${
-                                status.includes('completed') || status.includes('Redirecting') ? 'text-[#12B76A]' :
+                                status.includes('completed') || status.includes('successfully') ? 'text-[#12B76A]' :
                                 status.includes('Error') || status.includes('failed') ? 'text-[#F04438]' :
-                                'text-[#5B8AFF]'
+                                'text-[#A78BFA]'
                             }`}>{status}</span>
                         </div>
                         
@@ -449,10 +494,10 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                     <span>Progress</span>
                                     <span>{auditProgress}%</span>
                                 </div>
-                                <div className="w-full h-2 bg-[var(--admin-surface-2)] rounded-full overflow-hidden">
+                                <div className="w-full h-2.5 bg-[var(--admin-surface-2)] rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-gradient-to-r from-[#2F6BFF] to-[#5B8AFF] transition-all duration-500 ease-out"
-                                        style={{ width: `${auditProgress}%` }}
+                                        className="h-full rounded-full transition-all duration-700 ease-out"
+                                        style={{ width: `${auditProgress}%`, background: 'linear-gradient(90deg, #7C3AED, #A78BFA)' }}
                                     ></div>
                                 </div>
                             </div>
@@ -471,11 +516,11 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Form Card - Takes 2 columns on desktop */}
                         <div className="lg:col-span-2">
-                            <Card variant="elevated">
+                            <div className="bp-form-card overflow-hidden rounded-2xl p-6">
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Website URL Field */}
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--admin-text)] mb-2">
+                                    <label className="bp-form-label block text-sm mb-2">
                                         Website URL <span className="text-[#F04438]">*</span>
                                     </label>
                                     <div className="relative">
@@ -488,9 +533,9 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                             onChange={(e) => handleInputChange('url', e.target.value)}
                                             onBlur={() => setErrors(prev => ({ ...prev, url: validateUrl(formData.url) }))}
                                             placeholder="https://example.com"
-                                            className={`w-full pl-11 pr-4 py-3 bg-[var(--admin-surface-2)] border ${
-                                                errors.url ? 'border-[#F04438]' : 'border-[var(--admin-border)]'
-                                            } rounded-lg text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] focus:outline-none focus:border-[#2F6BFF] focus:ring-1 focus:ring-[#2F6BFF] transition-colors`}
+                                            className={`bp-input w-full pl-11 pr-4 py-3 ${
+                                                errors.url ? 'border-[#F04438]' : ''
+                                            } rounded-xl text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] transition-colors`}
                                         />
                                     </div>
                                     {errors.url && (
@@ -499,7 +544,7 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                             {errors.url}
                                         </p>
                                     )}
-                                    <p className="mt-2 text-xs text-[var(--admin-text-dim)] flex items-center gap-1">
+                                    <p className="bp-form-helper mt-2 flex items-center gap-1">
                                         <i className="bi bi-info-circle"></i>
                                         We'll crawl your website and create an audit report.
                                     </p>
@@ -507,7 +552,7 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
 
                                 {/* Email Field */}
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--admin-text)] mb-2">
+                                    <label className="bp-form-label block text-sm mb-2">
                                         Email {formData.send_to_email && <span className="text-[#F04438]">*</span>}
                                     </label>
                                     <div className="relative">
@@ -520,9 +565,9 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                             onChange={(e) => handleInputChange('email', e.target.value)}
                                             onBlur={() => setErrors(prev => ({ ...prev, email: validateEmail(formData.email) }))}
                                             placeholder="name@email.com"
-                                            className={`w-full pl-11 pr-4 py-3 bg-[var(--admin-surface-2)] border ${
-                                                errors.email ? 'border-[#F04438]' : 'border-[var(--admin-border)]'
-                                            } rounded-lg text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] focus:outline-none focus:border-[#2F6BFF] focus:ring-1 focus:ring-[#2F6BFF] transition-colors`}
+                                            className={`bp-input w-full pl-11 pr-4 py-3 ${
+                                                errors.email ? 'border-[#F04438]' : ''
+                                            } rounded-xl text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] transition-colors`}
                                         />
                                     </div>
                                     {errors.email && (
@@ -534,17 +579,17 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                 </div>
 
                                 {/* Checkbox */}
-                                <div className="flex items-start gap-3 p-4 bg-[var(--admin-hover-bg)] rounded-lg border border-[var(--admin-border)]">
+                                <div className="bp-checkbox-info-card flex items-start gap-3">
                                     <input
                                         type="checkbox"
                                         id="send-email"
                                         checked={formData.send_to_email}
                                         onChange={(e) => handleCheckboxChange(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded border-[var(--admin-border)] bg-[var(--admin-bg)] text-[#2F6BFF] focus:ring-[#2F6BFF] focus:ring-offset-0 cursor-pointer"
+                                        className="mt-0.5 w-4 h-4 rounded border-[var(--admin-border)] bg-[var(--admin-bg)] focus:ring-[#7C3AED] focus:ring-offset-0 cursor-pointer"
                                     />
                                     <label htmlFor="send-email" className="flex-1 text-sm text-[var(--admin-text)] cursor-pointer">
                                         <span className="font-medium">Send report to email</span>
-                                        <p className="text-xs text-[var(--admin-text-dim)] mt-1">
+                                        <p className="bp-form-helper mt-1">
                                             Receive the audit report in your email inbox once completed.
                                         </p>
                                     </label>
@@ -552,7 +597,7 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
 
                                 {/* Google Integrations - Moved under checkbox */}
                                 <div className="space-y-3">
-                                    <label className="block text-sm font-medium text-[var(--admin-text)]">
+                                    <label className="bp-form-label block text-sm">
                                         Google Integrations <span className="text-xs text-[var(--admin-text-dim)] font-normal ml-1">(Optional)</span>
                                     </label>
                                     
@@ -580,39 +625,39 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <button
                                                 type="button"
                                                 onClick={handleGoogleConnect}
-                                                className="flex items-center gap-3 p-3 bg-[var(--admin-surface-2)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] hover:border-[var(--admin-hover-border)] rounded-lg transition-all duration-150 group"
+                                                className="bp-integration-tile flex items-center gap-3 p-4 group"
                                             >
-                                                <div className="w-8 h-8 rounded-lg bg-[#2F6BFF]/15 flex items-center justify-center flex-shrink-0">
-                                                    <i className="bi bi-graph-up text-[#5B8AFF]"></i>
+                                                <div className="bp-integration-icon bg-gradient-to-br from-[#3B82F6]/20 to-[#3B82F6]/08 flex items-center justify-center flex-shrink-0">
+                                                    <i className="bi bi-graph-up text-[#60a5fa]"></i>
                                                 </div>
                                                 <div className="flex-1 text-left">
-                                                    <p className="text-sm font-medium text-[var(--admin-text)] group-hover:text-[#5B8AFF] transition-colors">Google Analytics</p>
+                                                    <p className="text-sm font-medium text-[var(--admin-text)] group-hover:text-[#60a5fa] transition-colors">Google Analytics</p>
                                                     <p className="text-xs text-[var(--admin-text-dim)]">Connect GA4</p>
                                                 </div>
-                                                <i className="bi bi-arrow-right text-[var(--admin-text-dim)] group-hover:text-[#5B8AFF] transition-colors"></i>
+                                                <i className="bi bi-arrow-right text-[var(--admin-text-dim)] group-hover:text-[#60a5fa] transition-colors"></i>
                                             </button>
                                             
                                             <button
                                                 type="button"
                                                 onClick={handleGoogleConnect}
-                                                className="flex items-center gap-3 p-3 bg-[var(--admin-surface-2)] hover:bg-[var(--admin-hover-bg)] border border-[var(--admin-border)] hover:border-[var(--admin-hover-border)] rounded-lg transition-all duration-150 group"
+                                                className="bp-integration-tile flex items-center gap-3 p-4 group"
                                             >
-                                                <div className="w-8 h-8 rounded-lg bg-[#12B76A]/15 flex items-center justify-center flex-shrink-0">
-                                                    <i className="bi bi-search text-[#12B76A]"></i>
+                                                <div className="bp-integration-icon bg-gradient-to-br from-[#10B981]/20 to-[#10B981]/08 flex items-center justify-center flex-shrink-0">
+                                                    <i className="bi bi-search text-[#34d399]"></i>
                                                 </div>
                                                 <div className="flex-1 text-left">
-                                                    <p className="text-sm font-medium text-[var(--admin-text)] group-hover:text-[#12B76A] transition-colors">Search Console</p>
+                                                    <p className="text-sm font-medium text-[var(--admin-text)] group-hover:text-[#34d399] transition-colors">Search Console</p>
                                                     <p className="text-xs text-[var(--admin-text-dim)]">Connect GSC</p>
                                                 </div>
-                                                <i className="bi bi-arrow-right text-[var(--admin-text-dim)] group-hover:text-[#12B76A] transition-colors"></i>
+                                                <i className="bi bi-arrow-right text-[var(--admin-text-dim)] group-hover:text-[#34d399] transition-colors"></i>
                                             </button>
                                         </div>
                                     )}
-                                    <p className="text-xs text-[var(--admin-text-dim)] flex items-center gap-1">
+                                    <p className="bp-form-helper flex items-center gap-1">
                                         <i className="bi bi-info-circle"></i>
                                         Connect to enrich your audit with traffic data and search performance metrics
                                     </p>
@@ -623,9 +668,9 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                     <button
                                         type="submit"
                                         disabled={!isFormValid() || isLoading}
-                                        className={`w-full px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                                        className={`w-full px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 h-11 min-h-[44px] ${
                                             isFormValid() && !isLoading
-                                                ? 'bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] text-white shadow-lg shadow-[#2F6BFF]/20'
+                                                ? 'bp-btn-purple'
                                                 : 'bg-[var(--admin-surface-3)] text-[var(--admin-text-dim)] cursor-not-allowed'
                                         }`}
                                     >
@@ -643,60 +688,60 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                     </button>
                                 </div>
                                 </form>
-                            </Card>
+                            </div>
                         </div>
 
                         {/* Info Side Card - Takes 1 column on desktop */}
                         <div className="lg:col-span-1">
-                            <Card variant="elevated" className="h-full">
+                            <div className="bp-what-you-get-card h-full overflow-hidden rounded-2xl p-6">
                             <div className="space-y-6">
                                 {/* Title */}
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-[#B6F400]/15 flex items-center justify-center">
-                                        <i className="bi bi-lightbulb text-xl text-[#B6F400]"></i>
+                                    <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/15 flex items-center justify-center">
+                                        <i className="bi bi-lightbulb text-xl text-[#A78BFA]"></i>
                                     </div>
                                     <h3 className="text-lg font-semibold text-[var(--admin-text)]">What you'll get</h3>
                                 </div>
 
                                 {/* Feature List */}
-                                <div className="space-y-4">
-                                    <div className="flex items-start gap-3 group">
-                                        <div className="mt-1 w-5 h-5 rounded-full bg-[#2F6BFF]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#2F6BFF]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#5B8AFF] text-xs"></i>
+                                <div className="space-y-3">
+                                    <div className="bp-what-you-get-item flex items-start gap-3 group">
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
+                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-[var(--admin-text)]">On-page checks</p>
-                                            <p className="text-xs text-[var(--admin-text-dim)] mt-0.5">Title tags, meta descriptions, headings, and content analysis</p>
+                                            <p className="bp-item-title text-sm">On-page checks</p>
+                                            <p className="bp-item-desc mt-0.5">Title tags, meta descriptions, headings, and content analysis</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3 group">
-                                        <div className="mt-1 w-5 h-5 rounded-full bg-[#2F6BFF]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#2F6BFF]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#5B8AFF] text-xs"></i>
+                                    <div className="bp-what-you-get-item flex items-start gap-3 group">
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
+                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-[var(--admin-text)]">Off-page signals</p>
-                                            <p className="text-xs text-[var(--admin-text-dim)] mt-0.5">Backlink profile, domain authority, and external factors</p>
+                                            <p className="bp-item-title text-sm">Off-page signals</p>
+                                            <p className="bp-item-desc mt-0.5">Backlink profile, domain authority, and external factors</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3 group">
-                                        <div className="mt-1 w-5 h-5 rounded-full bg-[#2F6BFF]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#2F6BFF]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#5B8AFF] text-xs"></i>
+                                    <div className="bp-what-you-get-item flex items-start gap-3 group">
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
+                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-[var(--admin-text)]">Technical SEO</p>
-                                            <p className="text-xs text-[var(--admin-text-dim)] mt-0.5">Site speed, mobile-friendliness, SSL, and crawlability</p>
+                                            <p className="bp-item-title text-sm">Technical SEO</p>
+                                            <p className="bp-item-desc mt-0.5">Site speed, mobile-friendliness, SSL, and crawlability</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3 group">
-                                        <div className="mt-1 w-5 h-5 rounded-full bg-[#2F6BFF]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#2F6BFF]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#5B8AFF] text-xs"></i>
+                                    <div className="bp-what-you-get-item flex items-start gap-3 group">
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
+                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-[var(--admin-text)]">Performance summary</p>
-                                            <p className="text-xs text-[var(--admin-text-dim)] mt-0.5">Overall score and actionable recommendations</p>
+                                            <p className="bp-item-title text-sm">Performance summary</p>
+                                            <p className="bp-item-desc mt-0.5">Overall score and actionable recommendations</p>
                                         </div>
                                     </div>
                                 </div>
@@ -708,22 +753,22 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
                                 <div>
                                     <p className="text-xs font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider mb-3">Optional Integrations</p>
                                     <div className="flex flex-wrap gap-2">
-                                        <span className="px-3 py-1.5 bg-[#2F6BFF]/10 border border-[#2F6BFF]/30 rounded-full text-xs font-medium text-[#5B8AFF] flex items-center gap-1.5">
+                                        <span className="bp-optional-chip px-3 py-1.5 bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#60a5fa] flex items-center gap-1.5">
                                             <i className="bi bi-graph-up"></i>
                                             GA4
                                         </span>
-                                        <span className="px-3 py-1.5 bg-[#12B76A]/10 border border-[#12B76A]/30 rounded-full text-xs font-medium text-[#12B76A] flex items-center gap-1.5">
+                                        <span className="bp-optional-chip px-3 py-1.5 bg-[#10B981]/10 border border-[#10B981]/30 text-[#34d399] flex items-center gap-1.5">
                                             <i className="bi bi-search"></i>
                                             GSC
                                         </span>
-                                        <span className="px-3 py-1.5 bg-[#F79009]/10 border border-[#F79009]/30 rounded-full text-xs font-medium text-[#F79009] flex items-center gap-1.5">
+                                        <span className="bp-optional-chip px-3 py-1.5 bg-[#F79009]/10 border border-[#F79009]/30 text-[#fbbf24] flex items-center gap-1.5">
                                             <i className="bi bi-speedometer2"></i>
                                             PSI
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            </Card>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -738,12 +783,21 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
         const overallScore = reportData.overall_score || 0;
         const categoryScores = reportData.category_scores || {};
         const issues = reportData.issues || [];
-        const performanceData = reportData.performance_summary || {};
+        const psi = reportData.psi || {};
+        const ga4 = reportData.ga4 || {};
+        const gsc = reportData.gsc || {};
+        const pageData = reportData.page_data || {};
 
         const getScoreColor = (score) => {
-            if (score >= 90) return { bg: 'bg-[#12B76A]/10', border: 'border-[#12B76A]/30', text: 'text-[#12B76A]' };
-            if (score >= 70) return { bg: 'bg-[#F79009]/10', border: 'border-[#F79009]/30', text: 'text-[#F79009]' };
-            return { bg: 'bg-[#F04438]/10', border: 'border-[#F04438]/30', text: 'text-[#F04438]' };
+            if (score >= 90) return '#12B76A';
+            if (score >= 70) return '#F79009';
+            return '#F04438';
+        };
+
+        const getScoreBg = (score) => {
+            if (score >= 90) return 'bg-[#12B76A]/10 border-[#12B76A]/30';
+            if (score >= 70) return 'bg-[#F79009]/10 border-[#F79009]/30';
+            return 'bg-[#F04438]/10 border-[#F04438]/30';
         };
 
         const getGrade = (score) => {
@@ -754,161 +808,388 @@ export default function AuditReport({ googleConnected = false, googleEmail = nul
             return 'F';
         };
 
-        const scoreColors = getScoreColor(overallScore);
-        const grade = getGrade(overallScore);
+        const getImpactColor = (impact) => {
+            if (impact === 'high') return { bg: 'bg-[#F04438]/10', text: 'text-[#F04438]', border: 'border-l-[#F04438]' };
+            if (impact === 'medium') return { bg: 'bg-[#F79009]/10', text: 'text-[#F79009]', border: 'border-l-[#F79009]' };
+            return { bg: 'bg-[#12B76A]/10', text: 'text-[#12B76A]', border: 'border-l-[#12B76A]' };
+        };
 
-        const criticalIssues = issues.filter(i => i.severity === 'critical');
-        const warningIssues = issues.filter(i => i.severity === 'warning');
-        const infoIssues = issues.filter(i => i.severity === 'info');
+        const psiMobile = psi?.mobile?.kpis || {};
+        const psiDesktop = psi?.desktop?.kpis || {};
+        const labMetrics = psiMobile?.lab_metrics || psiDesktop?.lab_metrics || {};
+        const psiCategories = psiMobile?.categories || psiDesktop?.categories || {};
+
+        const highIssues = issues.filter(i => i.impact === 'high');
+        const mediumIssues = issues.filter(i => i.impact === 'medium');
+        const lowIssues = issues.filter(i => i.impact === 'low');
+
+        const shareUrl = reportData.share_token ? `${window.location.origin}/audit-report/share/${reportData.share_token}` : null;
+
+        const formatScore = (v) => (v == null || v === '' ? '—' : v);
+
+        function ScoreCircle({ score, size = 120, label }) {
+            const hasScore = score != null && score !== '';
+            const numScore = hasScore ? Math.min(100, Math.max(0, Number(score))) : 0;
+            const color = hasScore ? getScoreColor(numScore) : 'var(--admin-text-dim)';
+            const radius = (size - 12) / 2;
+            const circumference = 2 * Math.PI * radius;
+            const progress = hasScore ? (numScore / 100) * circumference : 0;
+            return (
+                <div className="flex flex-col items-center relative">
+                    <svg width={size} height={size} className="-rotate-90">
+                        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+                        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth="8"
+                            strokeDasharray={circumference} strokeDashoffset={circumference - progress}
+                            strokeLinecap="round" className="transition-all duration-1000" />
+                    </svg>
+                    <div className="absolute flex flex-col items-center justify-center" style={{ width: size, height: size }}>
+                        <span className="text-3xl font-bold" style={{ color }}>{formatScore(score)}</span>
+                        <span className="text-xs text-[var(--admin-text-dim)]">{label}</span>
+                    </div>
+                </div>
+            );
+        }
+
+        function MetricCard({ label, value, unit, status }) {
+            const color = status === 'good' ? '#12B76A' : status === 'warning' ? '#F79009' : '#F04438';
+            return (
+                <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)]">
+                    <p className="text-xs text-[var(--admin-text-dim)] mb-1">{label}</p>
+                    <p className="text-lg font-bold" style={{ color }}>{value}<span className="text-xs font-normal ml-0.5">{unit}</span></p>
+                </div>
+            );
+        }
+
+        function getMetricStatus(metric, value) {
+            const thresholds = {
+                fcp: [1800, 3000],
+                lcp: [2500, 4000],
+                cls: [0.1, 0.25],
+                tbt: [200, 600],
+                si: [3400, 5800],
+            };
+            const [good, poor] = thresholds[metric] || [0, 0];
+            if (value <= good) return 'good';
+            if (value <= poor) return 'warning';
+            return 'poor';
+        }
 
         return (
             <>
-                {/* Report Header with Score */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="lg:col-span-3">
-                        <Card variant="elevated">
-                            <div className="flex items-start gap-4">
-                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2F6BFF] to-[#2457D6] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#2F6BFF]/30">
-                                    <i className="bi bi-globe text-2xl text-white"></i>
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-xl font-bold text-[var(--admin-text)] mb-2">{reportData.url}</h3>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--admin-text-muted)]">
-                                        <span className="flex items-center gap-1.5">
-                                            <i className="bi bi-calendar3"></i>
-                                            {new Date(reportData.created_at).toLocaleDateString('en-US', { 
-                                                year: 'numeric', 
-                                                month: 'long', 
-                                                day: 'numeric' 
-                                            })}
-                                        </span>
-                                        {reportData.finished_at && (
-                                            <span className="flex items-center gap-1.5">
-                                                <i className="bi bi-clock"></i>
-                                                Completed in {Math.round((new Date(reportData.finished_at) - new Date(reportData.started_at)) / 1000)}s
-                                            </span>
-                                        )}
-                                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#12B76A]/10 border border-[#12B76A]/30 text-[#12B76A]">
-                                            <i className="bi bi-check-circle-fill mr-1"></i>
-                                            Completed
-                                        </span>
-                                    </div>
-                                </div>
+                {/* Executive Summary */}
+                <div className="bp-card rounded-2xl p-6">
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-shrink-0 relative" style={{ width: 140, height: 140 }}>
+                            <ScoreCircle score={overallScore} size={140} label="Overall" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-3 mb-3">
+                                <h3 className="text-xl font-bold text-[var(--admin-text)]">{reportData.url}</h3>
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#12B76A]/10 border border-[#12B76A]/30 text-[#12B76A]">
+                                    <i className="bi bi-check-circle-fill mr-1"></i>Completed
+                                </span>
                             </div>
-                        </Card>
-                    </div>
-
-                    <div className="lg:col-span-1">
-                        <Card variant="elevated" className="h-full">
-                            <div className="flex flex-col items-center justify-center h-full">
-                                <div className={`relative w-32 h-32 rounded-full ${scoreColors.bg} border-4 ${scoreColors.border} flex items-center justify-center`}>
-                                    <div className="text-center">
-                                        <div className={`text-3xl font-bold ${scoreColors.text}`}>{overallScore}</div>
-                                        <div className="text-xs text-[var(--admin-text-dim)] mt-1">Overall</div>
-                                        <div className={`text-xl font-bold ${scoreColors.text} mt-1`}>{grade}</div>
-                                    </div>
-                                </div>
+                            <div className="flex flex-wrap gap-4 text-sm text-[var(--admin-text-muted)] mb-4">
+                                <span className="flex items-center gap-1.5">
+                                    <i className="bi bi-calendar3"></i>
+                                    {reportData.created_at ? new Date(reportData.created_at).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : ''}
+                                </span>
+                                {reportData.finished_at && reportData.started_at && (
+                                    <span className="flex items-center gap-1.5">
+                                        <i className="bi bi-clock"></i>
+                                        {Math.round((new Date(reportData.finished_at) - new Date(reportData.started_at)) / 1000)}s
+                                    </span>
+                                )}
+                                <span className="flex items-center gap-1.5">
+                                    <i className="bi bi-trophy"></i> Grade: <strong style={{ color: getScoreColor(overallScore) }}>{getGrade(overallScore)}</strong>
+                                </span>
                             </div>
-                        </Card>
+                            <div className="flex flex-wrap gap-2">
+                                {shareUrl && (
+                                    <button onClick={() => { navigator.clipboard.writeText(shareUrl); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-[var(--admin-text)] hover:border-[var(--admin-hover-border)] transition-colors flex items-center gap-1.5">
+                                        <i className="bi bi-link-45deg"></i> Copy Share Link
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Category Score Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                        { label: 'Performance', score: categoryScores.performance || 0, icon: 'bi-lightning-charge', color: '#F79009' },
-                        { label: 'SEO Health', score: categoryScores.onpage || 0, icon: 'bi-heart-pulse', color: '#12B76A' },
-                        { label: 'Technical', score: categoryScores.technical || 0, icon: 'bi-gear', color: '#2F6BFF' },
-                        { label: 'Issues Found', score: issues.length, icon: 'bi-exclamation-triangle', color: '#F04438', isCount: true },
-                    ].map((kpi, index) => {
-                        const colors = kpi.isCount ? { bg: 'bg-[#F04438]/10', text: 'text-[#F04438]' } : getScoreColor(kpi.score);
+                        { label: 'SEO', score: psiCategories.seo_score ?? categoryScores.onpage ?? null, icon: 'bi-search', color: '#12B76A' },
+                        { label: 'Performance', score: psiCategories.performance_score ?? categoryScores.performance ?? null, icon: 'bi-lightning-charge', color: '#F79009' },
+                        { label: 'Accessibility', score: psiCategories.accessibility_score ?? null, icon: 'bi-universal-access', color: '#7C3AED' },
+                        { label: 'Best Practices', score: psiCategories.best_practices_score ?? null, icon: 'bi-shield-check', color: '#3B82F6' },
+                    ].map((cat, idx) => {
+                        const s = cat.score;
+                        const displayScore = s != null ? s : '—';
+                        const scoreColor = s != null ? getScoreColor(s) : 'var(--admin-text-dim)';
                         return (
-                            <Card key={index} variant="elevated" className="hover:shadow-[var(--admin-shadow-lg)] transition-shadow duration-200">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-sm text-[var(--admin-text-muted)] mb-2">{kpi.label}</p>
-                                        <p className={`text-3xl font-bold ${colors.text}`}>
-                                            {kpi.isCount ? kpi.score : kpi.score}
-                                            {!kpi.isCount && <span className="text-lg">/100</span>}
-                                        </p>
-                                    </div>
-                                    <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center`}>
-                                        <i className={`bi ${kpi.icon} text-xl`} style={{ color: kpi.color }}></i>
-                                    </div>
+                            <div key={idx} className={`bp-card rounded-2xl p-5 border ${s != null ? getScoreBg(s) : 'border-[var(--admin-border)]'}`}>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <i className={`bi ${cat.icon}`} style={{ color: cat.color }}></i>
+                                    <span className="text-sm font-medium text-[var(--admin-text)]">{cat.label}</span>
                                 </div>
-                            </Card>
+                                <div className="text-3xl font-bold" style={{ color: scoreColor }}>
+                                    {displayScore}{s != null && <span className="text-base font-normal text-[var(--admin-text-dim)]">/100</span>}
+                                </div>
+                            </div>
                         );
                     })}
                 </div>
 
-                {/* Issues Summary */}
-                <Card variant="elevated">
-                    <h3 className="text-lg font-semibold text-[var(--admin-text)] mb-4">Issues Summary</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div className="p-4 bg-[#F04438]/10 border border-[#F04438]/30 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <i className="bi bi-x-circle-fill text-2xl text-[#F04438]"></i>
-                                <div>
-                                    <p className="text-2xl font-bold text-[#F04438]">{criticalIssues.length}</p>
-                                    <p className="text-sm text-[var(--admin-text-dim)]">Critical Issues</p>
-                                </div>
-                            </div>
+                {/* Lab Metrics (PSI) */}
+                {labMetrics && Object.keys(labMetrics).length > 0 && (
+                    <div className="bp-card rounded-2xl p-6">
+                        <h3 className="text-lg font-bold text-[var(--admin-text)] mb-1">Core Web Vitals & Lab Metrics</h3>
+                        <p className="text-sm text-[var(--admin-text-dim)] mb-4">Measured by Lighthouse (PageSpeed Insights)</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                            {labMetrics.fcp_ms != null && <MetricCard label="First Contentful Paint" value={(labMetrics.fcp_ms / 1000).toFixed(1)} unit="s" status={getMetricStatus('fcp', labMetrics.fcp_ms)} />}
+                            {labMetrics.lcp_ms != null && <MetricCard label="Largest Contentful Paint" value={(labMetrics.lcp_ms / 1000).toFixed(1)} unit="s" status={getMetricStatus('lcp', labMetrics.lcp_ms)} />}
+                            {labMetrics.cls != null && <MetricCard label="Cumulative Layout Shift" value={labMetrics.cls.toFixed(3)} unit="" status={getMetricStatus('cls', labMetrics.cls)} />}
+                            {labMetrics.tbt_ms != null && <MetricCard label="Total Blocking Time" value={Math.round(labMetrics.tbt_ms)} unit="ms" status={getMetricStatus('tbt', labMetrics.tbt_ms)} />}
+                            {labMetrics.speed_index_ms != null && <MetricCard label="Speed Index" value={(labMetrics.speed_index_ms / 1000).toFixed(1)} unit="s" status={getMetricStatus('si', labMetrics.speed_index_ms)} />}
+                            {labMetrics.tti_ms != null && <MetricCard label="Time to Interactive" value={(labMetrics.tti_ms / 1000).toFixed(1)} unit="s" status={getMetricStatus('fcp', labMetrics.tti_ms)} />}
                         </div>
-                        <div className="p-4 bg-[#F79009]/10 border border-[#F79009]/30 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <i className="bi bi-exclamation-triangle-fill text-2xl text-[#F79009]"></i>
-                                <div>
-                                    <p className="text-2xl font-bold text-[#F79009]">{warningIssues.length}</p>
-                                    <p className="text-sm text-[var(--admin-text-dim)]">Warnings</p>
+                    </div>
+                )}
+
+                {/* On-Page Analysis */}
+                {pageData && (
+                    <div className="bp-card rounded-2xl p-6">
+                        <h3 className="text-lg font-bold text-[var(--admin-text)] mb-1">On-Page SEO Analysis</h3>
+                        <p className="text-sm text-[var(--admin-text-dim)] mb-4">Key elements found on the page</p>
+                        <div className="space-y-2">
+                            {[
+                                { label: 'Title Tag', value: pageData.title || 'Missing', ok: !!pageData.title && pageData.title_len >= 30 && pageData.title_len <= 60, detail: pageData.title ? `${pageData.title_len} characters` : 'Not found' },
+                                { label: 'Meta Description', value: pageData.meta_description ? (pageData.meta_description.substring(0, 80) + '...') : 'Missing', ok: !!pageData.meta_description && pageData.meta_len >= 70, detail: pageData.meta_description ? `${pageData.meta_len} characters` : 'Not found' },
+                                { label: 'H1 Heading', value: `${pageData.h1_count || 0} found`, ok: pageData.h1_count === 1, detail: pageData.h1_count === 1 ? 'Perfect — exactly one H1' : pageData.h1_count === 0 ? 'Missing H1 tag' : `Multiple H1 tags (${pageData.h1_count})` },
+                                { label: 'Word Count', value: `${pageData.word_count || 0} words`, ok: (pageData.word_count || 0) >= 300, detail: (pageData.word_count || 0) >= 300 ? 'Good content length' : 'Content may be too thin' },
+                                { label: 'Images', value: `${pageData.images_total || 0} total, ${pageData.images_missing_alt || 0} missing alt`, ok: (pageData.images_missing_alt || 0) === 0, detail: (pageData.images_missing_alt || 0) === 0 ? 'All images have alt text' : `${pageData.images_missing_alt} images need alt text` },
+                                { label: 'Open Graph', value: pageData.og_present ? 'Present' : 'Missing', ok: pageData.og_present, detail: pageData.og_present ? 'Social sharing tags found' : 'Add OG tags for better social sharing' },
+                                { label: 'Schema.org', value: pageData.schema_types?.length ? pageData.schema_types.join(', ') : 'None found', ok: pageData.schema_types?.length > 0, detail: pageData.schema_types?.length > 0 ? 'Structured data detected' : 'Add structured data for rich results' },
+                                { label: 'Links', value: `${pageData.internal_links_count || 0} internal, ${pageData.external_links_count || 0} external`, ok: (pageData.internal_links_count || 0) > 0, detail: 'Internal linking structure' },
+                            ].map((item, idx) => (
+                                <div key={idx} className={`flex items-center gap-3 p-3 rounded-lg border-l-4 ${item.ok ? 'border-l-[#12B76A] bg-[#12B76A]/5' : 'border-l-[#F79009] bg-[#F79009]/5'}`}>
+                                    <i className={`bi ${item.ok ? 'bi-check-circle-fill text-[#12B76A]' : 'bi-exclamation-circle-fill text-[#F79009]'} text-lg`}></i>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-sm text-[var(--admin-text)]">{item.label}</span>
+                                            <span className="text-xs text-[var(--admin-text-dim)] truncate">{item.detail}</span>
+                                        </div>
+                                        <p className="text-xs text-[var(--admin-text-muted)] truncate mt-0.5">{item.value}</p>
+                                    </div>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-                        <div className="p-4 bg-[#2F6BFF]/10 border border-[#2F6BFF]/30 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <i className="bi bi-info-circle-fill text-2xl text-[#5B8AFF]"></i>
-                                <div>
-                                    <p className="text-2xl font-bold text-[#5B8AFF]">{infoIssues.length}</p>
-                                    <p className="text-sm text-[var(--admin-text-dim)]">Opportunities</p>
-                                </div>
-                            </div>
+                    </div>
+                )}
+
+                {/* Issues & Recommendations */}
+                <div className="bp-card rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-[var(--admin-text)] mb-1">Issues & Recommendations</h3>
+                    <p className="text-sm text-[var(--admin-text-dim)] mb-4">Actionable insights to improve your site</p>
+                    
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                        <div className="p-3 rounded-xl bg-[#F04438]/10 border border-[#F04438]/20 text-center">
+                            <p className="text-2xl font-bold text-[#F04438]">{highIssues.length}</p>
+                            <p className="text-xs text-[var(--admin-text-dim)]">High Impact</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#F79009]/10 border border-[#F79009]/20 text-center">
+                            <p className="text-2xl font-bold text-[#F79009]">{mediumIssues.length}</p>
+                            <p className="text-xs text-[var(--admin-text-dim)]">Medium Impact</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#12B76A]/10 border border-[#12B76A]/20 text-center">
+                            <p className="text-2xl font-bold text-[#12B76A]">{lowIssues.length}</p>
+                            <p className="text-xs text-[var(--admin-text-dim)]">Low Impact</p>
                         </div>
                     </div>
 
                     {issues.length > 0 ? (
                         <div className="space-y-3">
-                            <h4 className="font-semibold text-[var(--admin-text)]">Top Issues</h4>
-                            {issues.slice(0, 10).map((issue, index) => (
-                                <div key={index} className="p-4 bg-[var(--admin-surface-2)] border border-[var(--admin-border)] rounded-xl hover:border-[var(--admin-hover-border)] transition-colors">
-                                    <div className="flex items-start gap-3">
-                                        <span className={`mt-0.5 px-2 py-1 rounded-md text-xs font-medium ${
-                                            issue.severity === 'critical' 
-                                                ? 'bg-[#F04438]/10 text-[#F04438]'
-                                                : issue.severity === 'warning'
-                                                    ? 'bg-[#F79009]/10 text-[#F79009]'
-                                                    : 'bg-[#2F6BFF]/10 text-[#5B8AFF]'
-                                        }`}>
-                                            {issue.severity?.toUpperCase() || 'INFO'}
-                                        </span>
-                                        <div className="flex-1">
-                                            <h5 className="font-semibold text-[var(--admin-text)] mb-1">{issue.title || 'Issue'}</h5>
-                                            <p className="text-sm text-[var(--admin-text-dim)]">{issue.description || 'No description available'}</p>
-                                            {issue.affected_count && (
-                                                <p className="text-xs text-[var(--admin-text-muted)] mt-2">
-                                                    Affects {issue.affected_count} {issue.affected_count === 1 ? 'page' : 'pages'}
-                                                </p>
-                                            )}
+                            {issues.map((issue, idx) => {
+                                const ic = getImpactColor(issue.impact);
+                                return (
+                                    <div key={idx} className={`p-4 rounded-xl border-l-4 ${ic.border} bg-[var(--admin-surface-2)] border border-[var(--admin-border)]`}>
+                                        <div className="flex items-start gap-3">
+                                            <span className={`mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ic.bg} ${ic.text}`}>{issue.impact}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <h5 className="font-semibold text-sm text-[var(--admin-text)] mb-1">{issue.title}</h5>
+                                                <p className="text-xs text-[var(--admin-text-dim)] mb-2">{issue.description}</p>
+                                                {issue.recommendation && (
+                                                    <div className="flex items-start gap-1.5 text-xs text-[#7C3AED]">
+                                                        <i className="bi bi-lightbulb mt-0.5"></i>
+                                                        <span>{issue.recommendation}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-8">
-                            <i className="bi bi-check-circle text-4xl text-[#12B76A] mb-3"></i>
-                            <p className="text-[var(--admin-text-dim)]">No issues found! Your site looks great.</p>
+                            <i className="bi bi-check-circle text-4xl text-[#12B76A]"></i>
+                            <p className="text-[var(--admin-text-dim)] mt-2">No issues found. Great job!</p>
                         </div>
                     )}
-                </Card>
+                </div>
+
+                {/* PSI Opportunities */}
+                {psiMobile?.opportunities?.length > 0 && (
+                    <div className="bp-card rounded-2xl p-6">
+                        <h3 className="text-lg font-bold text-[var(--admin-text)] mb-1">Performance Opportunities</h3>
+                        <p className="text-sm text-[var(--admin-text-dim)] mb-4">From Lighthouse — potential savings</p>
+                        <div className="space-y-2">
+                            {psiMobile.opportunities.map((opp, idx) => (
+                                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--admin-surface-2)] border border-[var(--admin-border)]">
+                                    <i className="bi bi-arrow-down-circle text-[#F79009]"></i>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-[var(--admin-text)]">{opp.title}</p>
+                                    </div>
+                                    {opp.savings_ms > 0 && (
+                                        <span className="text-xs font-semibold text-[#F79009] bg-[#F79009]/10 px-2 py-1 rounded">
+                                            Save {(opp.savings_ms / 1000).toFixed(1)}s
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Google Search Console */}
+                {gsc?.connected && gsc?.summary && (
+                    <div className="bp-card rounded-2xl p-6">
+                        <div className="flex items-center gap-2 mb-1">
+                            <i className="bi bi-google text-[#12B76A]"></i>
+                            <h3 className="text-lg font-bold text-[var(--admin-text)]">Search Console Data</h3>
+                        </div>
+                        <p className="text-sm text-[var(--admin-text-dim)] mb-4">Last 30 days — {gsc.site_url}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#3B82F6]">{(gsc.summary.total_clicks || 0).toLocaleString()}</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Total Clicks</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#7C3AED]">{(gsc.summary.total_impressions || 0).toLocaleString()}</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Impressions</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#12B76A]">{gsc.summary.avg_ctr || 0}%</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Avg CTR</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#F79009]">{gsc.summary.avg_position || 0}</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Avg Position</p>
+                            </div>
+                        </div>
+                        {gsc.top_queries?.length > 0 && (
+                            <>
+                                <h4 className="font-semibold text-sm text-[var(--admin-text)] mb-3">Top Keywords</h4>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-xs text-[var(--admin-text-dim)] border-b border-[var(--admin-border)]">
+                                                <th className="text-left py-2 pr-4">Query</th>
+                                                <th className="text-right py-2 px-2">Clicks</th>
+                                                <th className="text-right py-2 px-2">Impressions</th>
+                                                <th className="text-right py-2 px-2">CTR</th>
+                                                <th className="text-right py-2 pl-2">Position</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {gsc.top_queries.slice(0, 10).map((q, idx) => (
+                                                <tr key={idx} className="border-b border-[var(--admin-border)] last:border-0">
+                                                    <td className="py-2 pr-4 text-[var(--admin-text)] font-medium truncate max-w-[200px]">{q.query}</td>
+                                                    <td className="py-2 px-2 text-right text-[var(--admin-text)]">{q.clicks}</td>
+                                                    <td className="py-2 px-2 text-right text-[var(--admin-text-muted)]">{q.impressions}</td>
+                                                    <td className="py-2 px-2 text-right text-[var(--admin-text-muted)]">{(q.ctr * 100).toFixed(1)}%</td>
+                                                    <td className="py-2 pl-2 text-right text-[var(--admin-text-muted)]">{q.position.toFixed(1)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* Google Analytics */}
+                {ga4?.connected && ga4?.summary && (
+                    <div className="bp-card rounded-2xl p-6">
+                        <div className="flex items-center gap-2 mb-1">
+                            <i className="bi bi-graph-up text-[#3B82F6]"></i>
+                            <h3 className="text-lg font-bold text-[var(--admin-text)]">Analytics Overview</h3>
+                        </div>
+                        <p className="text-sm text-[var(--admin-text-dim)] mb-4">Last 30 days — {ga4.property}</p>
+                        <div className="grid grid-cols-3 gap-3 mb-6">
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#3B82F6]">{(ga4.summary.total_sessions || 0).toLocaleString()}</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Sessions</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#7C3AED]">{(ga4.summary.total_users || 0).toLocaleString()}</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Users</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-[var(--admin-surface-2)] border border-[var(--admin-border)] text-center">
+                                <p className="text-2xl font-bold text-[#12B76A]">{ga4.summary.avg_engagement_rate || 0}%</p>
+                                <p className="text-xs text-[var(--admin-text-dim)]">Engagement Rate</p>
+                            </div>
+                        </div>
+                        {ga4.top_pages?.length > 0 && (
+                            <>
+                                <h4 className="font-semibold text-sm text-[var(--admin-text)] mb-3">Top Landing Pages</h4>
+                                <div className="space-y-2">
+                                    {ga4.top_pages.slice(0, 8).map((pg, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[var(--admin-surface-2)] border border-[var(--admin-border)]">
+                                            <span className="text-sm text-[var(--admin-text)] truncate flex-1 mr-3">{pg.landing_page}</span>
+                                            <span className="text-xs text-[var(--admin-text-muted)] whitespace-nowrap">{pg.sessions} sessions</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* Not Connected CTAs */}
+                {(!gsc?.connected || !ga4?.connected) && (
+                    <div className="bp-card rounded-2xl p-6">
+                        <h3 className="text-lg font-bold text-[var(--admin-text)] mb-2">Enhance Your Report</h3>
+                        <p className="text-sm text-[var(--admin-text-dim)] mb-4">Connect Google services to unlock more insights in future audits.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {!ga4?.connected && (
+                                <a href="/google-seo/connect" className="bp-integration-tile flex items-center gap-3 p-4 group">
+                                    <div className="bp-integration-icon bg-gradient-to-br from-[#3B82F6]/20 to-[#3B82F6]/08 flex items-center justify-center flex-shrink-0">
+                                        <i className="bi bi-graph-up text-[#60a5fa]"></i>
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="text-sm font-medium text-[var(--admin-text)] group-hover:text-[#60a5fa]">Connect Google Analytics</p>
+                                        <p className="text-xs text-[var(--admin-text-dim)]">Traffic, engagement & top pages</p>
+                                    </div>
+                                    <i className="bi bi-arrow-right text-[var(--admin-text-dim)] group-hover:text-[#60a5fa]"></i>
+                                </a>
+                            )}
+                            {!gsc?.connected && (
+                                <a href="/google-seo/connect" className="bp-integration-tile flex items-center gap-3 p-4 group">
+                                    <div className="bp-integration-icon bg-gradient-to-br from-[#10B981]/20 to-[#10B981]/08 flex items-center justify-center flex-shrink-0">
+                                        <i className="bi bi-search text-[#34d399]"></i>
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="text-sm font-medium text-[var(--admin-text)] group-hover:text-[#34d399]">Connect Search Console</p>
+                                        <p className="text-xs text-[var(--admin-text-dim)]">Keywords, clicks & impressions</p>
+                                    </div>
+                                    <i className="bi bi-arrow-right text-[var(--admin-text-dim)] group-hover:text-[#34d399]"></i>
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
             </>
         );
     }

@@ -1,0 +1,18 @@
+; Supervisor config for BacklinkPro Audit Queue Worker
+; Copy to /etc/supervisor/conf.d/ (Linux) or equivalent, then:
+;   sudo supervisorctl reread
+;   sudo supervisorctl update
+;   sudo supervisorctl start backlinkpro-audit-worker
+
+[program:backlinkpro-audit-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/backlink-pro/artisan queue:work database --tries=3 --timeout=300 --sleep=3 --max-jobs=1000
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/path/to/backlink-pro/storage/logs/audit-worker.log
+stopwaitsecs=360
