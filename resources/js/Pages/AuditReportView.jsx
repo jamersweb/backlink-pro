@@ -3,8 +3,46 @@ import Card from '../Components/Shared/Card';
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
 
+function useExportPdf(auditId) {
+    const [exporting, setExporting] = useState(false);
+    const exportPdf = async () => {
+        if (!auditId) return;
+        setExporting(true);
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch(`/audit-report/${auditId}/export-pdf`, {
+                method: 'POST',
+                headers: { Accept: 'application/pdf', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!res.ok) throw new Error('Export failed');
+            const blob = await res.blob();
+            const isPdf = res.headers.get('Content-Type')?.includes('pdf');
+            if (isPdf) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `audit-report-${auditId}-${new Date().toISOString().slice(0, 10)}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                const text = await blob.text();
+                const w = window.open('', '_blank');
+                w.document.write(text);
+                w.document.close();
+            }
+        } catch (e) {
+            console.error(e);
+            window.print();
+        } finally {
+            setExporting(false);
+        }
+    };
+    return [exporting, exportPdf];
+}
+
 export default function AuditReportView({ audit }) {
     const [activeTab, setActiveTab] = useState('overview');
+    const [exportingPdf, exportPdf] = useExportPdf(audit?.id);
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: 'bi-speedometer2' },
@@ -46,6 +84,18 @@ export default function AuditReportView({ audit }) {
     return (
         <AppLayout header="Audit Report">
             <div className="space-y-6 max-w-7xl mx-auto">
+                {/* Failed audit error */}
+                {audit.status === 'failed' && audit.error && (
+                    <div className="rounded-2xl bg-[#F04438]/10 border border-[#F04438]/30 p-4 flex items-start gap-3">
+                        <i className="bi bi-x-circle-fill text-[#F04438] text-xl flex-shrink-0"></i>
+                        <div>
+                            <p className="font-medium text-[#F04438]">Audit failed</p>
+                            <p className="text-sm text-[var(--admin-text-muted)] mt-1">{audit.error}</p>
+                            <p className="text-xs text-[var(--admin-text-dim)] mt-2">You can run a new audit from the form page.</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header Card with Overall Score */}
                 <div className="relative overflow-hidden rounded-2xl bg-[var(--admin-surface)] border border-[var(--admin-border)] p-8 shadow-[var(--admin-shadow-md)]">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-[#2F6BFF]/10 rounded-full blur-3xl -mr-32 -mt-32 dark:opacity-100 opacity-0"></div>
@@ -290,11 +340,12 @@ export default function AuditReportView({ audit }) {
                         Back to Audits
                     </button>
                     <button
-                        onClick={() => alert('Export PDF functionality coming soon!')}
-                        className="px-6 py-2.5 bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] text-white rounded-lg font-medium transition-all shadow-lg shadow-[#2F6BFF]/20 flex items-center gap-2"
+                        onClick={() => exportPdf()}
+                        disabled={exportingPdf}
+                        className="px-6 py-2.5 bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BBD] text-white rounded-lg font-medium transition-all shadow-lg shadow-[#2F6BFF]/20 flex items-center gap-2 disabled:opacity-70"
                     >
-                        <i className="bi bi-download"></i>
-                        Export PDF
+                        {exportingPdf ? <i className="bi bi-arrow-repeat animate-spin"></i> : <i className="bi bi-download"></i>}
+                        {exportingPdf ? 'Generating PDF…' : 'Export PDF'}
                     </button>
                 </div>
             </div>
