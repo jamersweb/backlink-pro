@@ -39,6 +39,9 @@ class Audit extends Model
         'pages_discovered',
         'progress_percent',
         'progress_stage',
+        'psi_ready_at',
+        'ga4_ready_at',
+        'gsc_ready_at',
         'crawl_stats',
         'performance_summary',
     ];
@@ -56,6 +59,9 @@ class Audit extends Model
         'is_gated' => 'boolean',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
+        'psi_ready_at' => 'datetime',
+        'ga4_ready_at' => 'datetime',
+        'gsc_ready_at' => 'datetime',
     ];
 
     const STATUS_QUEUED = 'queued';

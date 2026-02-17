@@ -130,16 +130,20 @@ class AuditReportController extends Controller
         $audit = Audit::with(['pages', 'issues'])
             ->where('user_id', Auth::id())
             ->findOrFail($id);
-        
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'audit' => $this->formatAuditForFrontend($audit),
-            ]);
+
+        $payload = ['audit' => $this->formatAuditForFrontend($audit)];
+
+        // Inertia requests must receive an Inertia response (page or redirect), never plain JSON.
+        if ($request->header('X-Inertia')) {
+            return Inertia::render('AuditReportView', $payload);
         }
-        
-        return Inertia::render('AuditReportView', [
-            'audit' => $this->formatAuditForFrontend($audit),
-        ]);
+
+        // API / fetch with Accept: application/json
+        if ($request->wantsJson()) {
+            return response()->json($payload);
+        }
+
+        return Inertia::render('AuditReportView', $payload);
     }
 
     public function status($id)
@@ -165,23 +169,28 @@ class AuditReportController extends Controller
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
-    public function share($token)
+    public function share(Request $request, $token)
     {
         $audit = Audit::with(['pages', 'issues'])
             ->where('share_token', $token)
             ->where('status', Audit::STATUS_COMPLETED)
             ->firstOrFail();
-        
-        if (request()->wantsJson()) {
-            return response()->json([
-                'audit' => $this->formatAuditForFrontend($audit),
-            ]);
-        }
-        
-        return Inertia::render('AuditReportView', [
+
+        $payload = [
             'audit' => $this->formatAuditForFrontend($audit),
             'isShared' => true,
-        ]);
+        ];
+
+        // Inertia requests must receive an Inertia response, never plain JSON.
+        if ($request->header('X-Inertia')) {
+            return Inertia::render('AuditReportView', $payload);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json($payload);
+        }
+
+        return Inertia::render('AuditReportView', $payload);
     }
 
     protected function formatAuditForFrontend(Audit $audit): array
