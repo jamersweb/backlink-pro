@@ -19,6 +19,7 @@ use App\Http\Controllers\DomainBacklinksController;
 use App\Http\Controllers\DomainMetaController;
 use App\Http\Controllers\DomainMetaConnectorController;
 use App\Http\Controllers\DomainConnectorController;
+use App\Http\Controllers\ShopifyOAuthController;
 use App\Http\Controllers\MetaSnippetController;
 use App\Http\Controllers\SnippetAgentController;
 use App\Http\Controllers\DomainSnippetController;
@@ -89,6 +90,12 @@ Route::post('/email/verification-notification', [EmailVerificationController::cl
 // Health check endpoint (for monitoring)
 use App\Http\Controllers\HealthController;
 Route::get('/health', [HealthController::class, 'check'])->name('health');
+
+// Edge/Proxy (SEO-safe) mode – only when feature flag enabled
+if (\App\Support\Feature::enabled('edge_proxy')) {
+    Route::post('/edge/ping', [\App\Http\Controllers\EdgeProxyController::class, 'ping'])->middleware('throttle:60,1')->name('edge.ping');
+    Route::get('/edge/meta', [\App\Http\Controllers\EdgeProxyController::class, 'meta'])->middleware('throttle:120,1')->name('edge.meta');
+}
 
 // Marketing Controllers
 use App\Http\Controllers\MarketingController;
@@ -337,6 +344,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/meta/connect', [DomainMetaConnectorController::class, 'connectOrUpdate'])->name('connect');
         Route::post('/meta/test', [DomainMetaConnectorController::class, 'test'])->name('test');
         Route::post('/meta/disconnect', [DomainMetaConnectorController::class, 'disconnect'])->name('disconnect');
+        Route::post('/meta/edge-proxy/rotate', [DomainMetaConnectorController::class, 'rotateEdgeProxyToken'])->name('meta.edge-proxy.rotate');
         
         // New connector routes
         Route::get('/meta/connector', [DomainConnectorController::class, 'index'])->name('connector.index');
@@ -344,6 +352,14 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/meta/connector/test', [DomainConnectorController::class, 'test'])->name('connector.test');
         Route::delete('/meta/connector', [DomainConnectorController::class, 'destroy'])->name('connector.destroy');
     });
+
+    // Shopify OAuth (feature-flagged)
+    if (\App\Support\Feature::enabled('shopify_oauth')) {
+        Route::prefix('domains/{domain}')->name('domains.shopify.')->group(function () {
+            Route::get('/shopify/install', [ShopifyOAuthController::class, 'install'])->name('install');
+            Route::get('/shopify/callback', [ShopifyOAuthController::class, 'callback'])->name('callback');
+        });
+    }
 
     // Domain Content (nested under domains)
     Route::prefix('domains/{domain}')->name('domains.content.')->group(function() {
@@ -462,6 +478,14 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/integrations/google/disconnect', [DomainGoogleIntegrationController::class, 'disconnect'])->name('google.disconnect');
         Route::get('/integrations/google/connect', [GoogleSeoOAuthController::class, 'connect'])->name('google.connect');
     });
+
+    // Cannibalization (GSC query+page) – feature-flagged
+    if (\App\Support\Feature::enabled('cannibalization')) {
+        Route::prefix('domains/{domain}')->name('domains.seo.')->group(function () {
+            Route::get('/seo/cannibalization', [\App\Http\Controllers\CannibalizationController::class, 'index'])->name('cannibalization');
+            Route::post('/seo/cannibalization/scan', [\App\Http\Controllers\CannibalizationController::class, 'runScan'])->name('cannibalization.scan');
+        });
+    }
 
     // SEO OAuth callback (separate route)
     Route::get('/seo/google/callback', [GoogleSeoOAuthController::class, 'callback'])->name('seo.google.callback');

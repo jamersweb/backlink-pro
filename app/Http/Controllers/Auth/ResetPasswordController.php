@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -34,12 +33,12 @@ class ResetPasswordController extends Controller
             'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
 
-        // Reset password
+        // Reset password (set plain so User model 'hashed' cast hashes once)
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
-                    'password' => Hash::make($password),
+                    'password' => $password,
                 ])->setRememberToken(Str::random(60));
 
                 $user->save();

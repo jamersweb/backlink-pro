@@ -26,6 +26,7 @@ class DomainMetaConnector extends Model
     const TYPE_WORDPRESS = 'wordpress';
     const TYPE_SHOPIFY = 'shopify';
     const TYPE_CUSTOM_JS = 'custom_js';
+    const TYPE_EDGE_PROXY = 'edge_proxy';
 
     const STATUS_CONNECTED = 'connected';
     const STATUS_ERROR = 'error';

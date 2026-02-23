@@ -42,6 +42,7 @@ class CompetitorController extends Controller
                     'id' => $run->id,
                     'keywords' => $run->keywords,
                     'country' => $run->country,
+                    'competitor_urls' => $run->competitor_urls ?? [],
                     'status' => $run->status,
                     'snapshots_count' => $run->snapshots->count(),
                     'created_at' => $run->created_at->toIso8601String(),
@@ -65,6 +66,8 @@ class CompetitorController extends Controller
             'keywords' => ['required', 'array', 'min:1', 'max:10'],
             'keywords.*' => ['string', 'max:100'],
             'country' => ['nullable', 'string', 'max:10'],
+            'competitor_urls' => ['nullable', 'array', 'min:0', 'max:5'],
+            'competitor_urls.*' => ['url', 'max:2048'],
         ]);
 
         $run = CompetitorRun::create([
@@ -72,13 +75,14 @@ class CompetitorController extends Controller
             'audit_id' => $audit->id,
             'keywords' => $validated['keywords'],
             'country' => $validated['country'] ?? $organization->country ?? 'us',
+            'competitor_urls' => $validated['competitor_urls'] ?? [],
             'status' => CompetitorRun::STATUS_QUEUED,
         ]);
 
         // Dispatch job
         RunCompetitorBenchmarkJob::dispatch($run->id);
 
-        return redirect()->route('competitors.index', [
+        return redirect()->route('orgs.audits.ai.competitors.index', [
             'organization' => $organization->id,
             'audit' => $audit->id,
         ])->with('success', 'Competitor benchmark started.');

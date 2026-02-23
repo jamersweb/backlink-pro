@@ -101,6 +101,7 @@ class HandleInertiaRequests extends Middleware
             'currentUrl' => $request->fullUrl(),
             'appUrl' => config('marketing_site.urls.app_url'),
             'maintenance' => config('marketing_site.maintenance'),
+            'features' => config('features', []),
         ];
     }
 }

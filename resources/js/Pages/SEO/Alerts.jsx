@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Link, router, useForm } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import AppLayout from '@/Components/Layout/AppLayout';
 import Card from '@/Components/Shared/Card';
 import Button from '@/Components/Shared/Button';
 
 export default function SeoAlerts({ organization, rules, alerts }) {
+    const { props } = usePage();
+    const features = props.features || {};
     const [showCreateRuleModal, setShowCreateRuleModal] = useState(false);
 
     const ruleForm = useForm({
@@ -13,6 +16,8 @@ export default function SeoAlerts({ organization, rules, alerts }) {
         config: {
             threshold: 30,
             lookback_days: 7,
+            threshold_drop_pct: 30,
+            min_baseline_clicks: 5,
         },
         notify_emails: [],
     });
@@ -56,6 +61,7 @@ export default function SeoAlerts({ organization, rules, alerts }) {
             gsc_clicks_drop: 'GSC Clicks Drop',
             ga4_sessions_drop: 'GA4 Sessions Drop',
             conversion_drop: 'Conversion Drop',
+            page_content_decay: 'Page Content Decay',
         };
         return labels[type] || type;
     };
@@ -99,8 +105,10 @@ export default function SeoAlerts({ organization, rules, alerts }) {
                                                 </span>
                                             </div>
                                             <p className="text-sm text-gray-600">
-                                                {getTypeLabel(rule.type)} • Threshold: {rule.config?.threshold || 30}% • 
-                                                Lookback: {rule.config?.lookback_days || 7} days
+                                                {getTypeLabel(rule.type)}
+                                                {rule.type === 'page_content_decay'
+                                                    ? ` • Drop: ${rule.config?.threshold_drop_pct ?? 30}% • Lookback: ${rule.config?.lookback_days ?? 7} days • Min baseline: ${rule.config?.min_baseline_clicks ?? 5} clicks`
+                                                    : ` • Threshold: ${rule.config?.threshold || 30}% • Lookback: ${rule.config?.lookback_days || 7} days`}
                                             </p>
                                             {rule.alerts_count > 0 && (
                                                 <p className="text-xs text-gray-500 mt-1">
@@ -142,19 +150,45 @@ export default function SeoAlerts({ organization, rules, alerts }) {
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
-                                        {alert.diff && (
+                                        {alert.diff?.page_url && (
+                                            <>
+                                                <p className="text-sm text-gray-700 mb-1">
+                                                    <span className="font-medium">Page:</span>{' '}
+                                                    <code className="text-xs bg-white px-1 py-0.5 rounded break-all">{alert.diff.page_url}</code>
+                                                </p>
+                                                {(alert.diff.baseline_clicks != null || alert.diff.drop_percent != null) && (
+                                                    <p className="text-xs text-gray-500 mb-2">
+                                                        Baseline: {alert.diff.baseline_clicks} → Recent: {alert.diff.recent_clicks}
+                                                        {alert.diff.drop_percent != null && (
+                                                            <span className="text-red-600 ml-1">({alert.diff.drop_percent}% drop)</span>
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </>
+                                        )}
+                                        {alert.diff && !alert.diff.page_url && (
                                             <div className="mt-2 text-xs text-gray-500">
-                                                {alert.diff.baseline_avg && (
+                                                {alert.diff.baseline_avg != null && (
                                                     <span>Baseline: {alert.diff.baseline_avg} → </span>
                                                 )}
-                                                {alert.diff.yesterday && (
+                                                {alert.diff.yesterday != null && (
                                                     <span>Current: {alert.diff.yesterday}</span>
                                                 )}
-                                                {alert.diff.drop_percent && (
+                                                {alert.diff.drop_percent != null && (
                                                     <span className="text-red-600 ml-2">
                                                         ({alert.diff.drop_percent}% drop)
                                                     </span>
                                                 )}
+                                            </div>
+                                        )}
+                                        {alert.diff?.page_url && (
+                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                                <p className="text-xs font-medium text-gray-600 mb-1">Quick actions:</p>
+                                                <ul className="text-xs text-gray-600 list-disc list-inside space-y-0.5">
+                                                    <li>Update content and refresh key sections</li>
+                                                    <li>Improve title and meta description for relevance</li>
+                                                    <li>Add internal links from stronger pages</li>
+                                                </ul>
                                             </div>
                                         )}
                                     </div>
@@ -198,45 +232,101 @@ export default function SeoAlerts({ organization, rules, alerts }) {
                                             <option value="ga4_sessions_drop">GA4 Sessions Drop</option>
                                             <option value="rank_drop">Rank Drop</option>
                                             <option value="conversion_drop">Conversion Drop</option>
+                                            {features.content_decay && (
+                                                <option value="page_content_decay">Page Content Decay</option>
+                                            )}
                                         </select>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Threshold (%)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={ruleForm.data.config.threshold}
-                                                onChange={(e) => ruleForm.setData('config', {
-                                                    ...ruleForm.data.config,
-                                                    threshold: parseFloat(e.target.value),
-                                                })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                                min="0"
-                                                max="100"
-                                                step="0.1"
-                                                required
-                                            />
+                                    {ruleForm.data.type === 'page_content_decay' ? (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Drop threshold (%)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={ruleForm.data.config.threshold_drop_pct ?? 30}
+                                                    onChange={(e) => ruleForm.setData('config', {
+                                                        ...ruleForm.data.config,
+                                                        threshold_drop_pct: parseFloat(e.target.value),
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Lookback days
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={ruleForm.data.config.lookback_days ?? 7}
+                                                    onChange={(e) => ruleForm.setData('config', {
+                                                        ...ruleForm.data.config,
+                                                        lookback_days: parseInt(e.target.value, 10),
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    min="1"
+                                                    max="90"
+                                                />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Min baseline clicks
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={ruleForm.data.config.min_baseline_clicks ?? 5}
+                                                    onChange={(e) => ruleForm.setData('config', {
+                                                        ...ruleForm.data.config,
+                                                        min_baseline_clicks: parseInt(e.target.value, 10) || 0,
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    min="0"
+                                                />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Lookback Days
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={ruleForm.data.config.lookback_days}
-                                                onChange={(e) => ruleForm.setData('config', {
-                                                    ...ruleForm.data.config,
-                                                    lookback_days: parseInt(e.target.value),
-                                                })}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                                min="1"
-                                                max="30"
-                                                required
-                                            />
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Threshold (%)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={ruleForm.data.config.threshold}
+                                                    onChange={(e) => ruleForm.setData('config', {
+                                                        ...ruleForm.data.config,
+                                                        threshold: parseFloat(e.target.value),
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Lookback Days
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={ruleForm.data.config.lookback_days}
+                                                    onChange={(e) => ruleForm.setData('config', {
+                                                        ...ruleForm.data.config,
+                                                        lookback_days: parseInt(e.target.value, 10),
+                                                    })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    min="1"
+                                                    max="30"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                     <div className="flex gap-2 justify-end">
                                         <Button 
                                             type="button" 

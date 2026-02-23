@@ -12,21 +12,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('domain_meta_pages', function (Blueprint $table) {
+        $isSqlite = DB::getDriverName() === 'sqlite';
+        Schema::table('domain_meta_pages', function (Blueprint $table) use ($isSqlite) {
             if (!Schema::hasColumn('domain_meta_pages', 'remote_id')) {
-                $table->string('remote_id')->nullable()->after('external_id');
+                if ($isSqlite) {
+                    $table->string('remote_id')->nullable();
+                } else {
+                    $table->string('remote_id')->nullable()->after('external_id');
+                }
             }
-            
             if (!Schema::hasColumn('domain_meta_pages', 'handle')) {
-                $table->string('handle')->nullable()->after('remote_id');
+                if ($isSqlite) {
+                    $table->string('handle')->nullable();
+                } else {
+                    $table->string('handle')->nullable()->after('remote_id');
+                }
             }
         });
 
-        // Add index separately to avoid issues
         $indexName = 'domain_meta_pages_domain_id_resource_type_index';
-        $indexes = DB::select("SHOW INDEXES FROM domain_meta_pages WHERE Key_name = ?", [$indexName]);
-        
-        if (empty($indexes)) {
+        $addIndex = true;
+        if (DB::getDriverName() === 'mysql') {
+            $indexes = DB::select("SHOW INDEXES FROM domain_meta_pages WHERE Key_name = ?", [$indexName]);
+            $addIndex = empty($indexes);
+        }
+        if ($addIndex) {
             Schema::table('domain_meta_pages', function (Blueprint $table) {
                 $table->index(['domain_id', 'resource_type'], 'domain_meta_pages_domain_id_resource_type_index');
             });

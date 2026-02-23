@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Referral;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
@@ -30,11 +29,11 @@ class RegisterController extends Controller
             'password'              => 'required|string|confirmed|min:8',
         ]);
 
-        // User create
+        // User create (password set plain so User model 'hashed' cast hashes once)
         $user = User::create([
             'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
+            'email'    => strtolower(trim($data['email'])),
+            'password' => $data['password'],
         ]);
         
         // Default role assign karo (ensure role exists first)

@@ -236,7 +236,7 @@ class DomainMetaController extends Controller
             [
                 'meta_before_json' => $metaBefore,
                 'meta_after_json' => $metaAfter,
-                'publish_target' => $domain->metaConnector?->type === 'custom_js' 
+                'publish_target' => in_array($domain->metaConnector?->type ?? '', ['custom_js', 'edge_proxy']) 
                     ? DomainMetaChange::PUBLISH_TARGET_SNIPPET 
                     : DomainMetaChange::PUBLISH_TARGET_CONNECTOR,
             ]
@@ -298,7 +298,7 @@ class DomainMetaController extends Controller
                 'status' => DomainMetaChange::STATUS_QUEUED,
                 'meta_before_json' => $page->meta_current_json ?? $page->meta_published_json ?? [],
                 'meta_after_json' => $metaAfter,
-                'publish_target' => $domain->metaConnector?->type === 'custom_js' 
+                'publish_target' => in_array($domain->metaConnector?->type ?? '', ['custom_js', 'edge_proxy']) 
                     ? DomainMetaChange::PUBLISH_TARGET_SNIPPET 
                     : DomainMetaChange::PUBLISH_TARGET_CONNECTOR,
             ]);

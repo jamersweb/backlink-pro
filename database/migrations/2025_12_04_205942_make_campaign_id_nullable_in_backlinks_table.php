@@ -13,14 +13,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('backlinks', function (Blueprint $table) {
-            // Drop the foreign key constraint first
             $table->dropForeign(['campaign_id']);
         });
 
-        // Modify the column to be nullable
-        DB::statement('ALTER TABLE `backlinks` MODIFY `campaign_id` BIGINT UNSIGNED NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `backlinks` MODIFY `campaign_id` BIGINT UNSIGNED NULL');
+        }
+        // SQLite: skip column change to avoid MySQL-specific syntax; FK only
 
-        // Re-add the foreign key constraint with nullable support
         Schema::table('backlinks', function (Blueprint $table) {
             $table->foreign('campaign_id')
                 ->references('id')
@@ -39,8 +39,9 @@ return new class extends Migration
             $table->dropForeign(['campaign_id']);
         });
 
-        // Make it NOT NULL again (this might fail if there are NULL values)
-        DB::statement('ALTER TABLE `backlinks` MODIFY `campaign_id` BIGINT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `backlinks` MODIFY `campaign_id` BIGINT UNSIGNED NOT NULL');
+        }
 
         // Re-add the foreign key constraint
         Schema::table('backlinks', function (Blueprint $table) {

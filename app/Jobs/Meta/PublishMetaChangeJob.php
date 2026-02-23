@@ -65,22 +65,23 @@ class PublishMetaChangeJob implements ShouldQueue
             return;
         }
 
-        // Legacy connector handling (keep existing code for backward compatibility)
+        // Snippet/Edge: store in DB only; no remote push
+        if (in_array($connector->type, ['custom_js', 'edge_proxy'])) {
+            $page->update(['meta_published_json' => $change->meta_after_json]);
+            $change->update(['status' => DomainMetaChange::STATUS_PUBLISHED]);
+            return;
+        }
+
+        // Legacy connector handling (WordPress, Shopify, etc.)
         try {
             $metaConnector = \App\Services\Meta\Connectors\MetaConnectorFactory::make($connector->type);
             $meta = $change->meta_after_json;
-
-            if ($connector->type === 'custom_js') {
+            $result = $metaConnector->publishMeta($page, $meta, $connector);
+            if ($result['ok']) {
                 $page->update(['meta_published_json' => $meta]);
                 $change->update(['status' => DomainMetaChange::STATUS_PUBLISHED]);
             } else {
-                $result = $metaConnector->publishMeta($page, $meta, $connector);
-                if ($result['ok']) {
-                    $page->update(['meta_published_json' => $meta]);
-                    $change->update(['status' => DomainMetaChange::STATUS_PUBLISHED]);
-                } else {
-                    $this->failChange($change, 'REMOTE_ERROR', $result['message'] ?? 'Publish failed');
-                }
+                $this->failChange($change, 'REMOTE_ERROR', $result['message'] ?? 'Publish failed');
             }
         } catch (\Exception $e) {
             $this->handleException($change, $domain, $e);

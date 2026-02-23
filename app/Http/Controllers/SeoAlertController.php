@@ -63,21 +63,40 @@ class SeoAlertController extends Controller
     {
         $this->authorize('manage', $organization);
 
-        $validated = $request->validate([
+        $typeIn = 'rank_drop,gsc_clicks_drop,ga4_sessions_drop,conversion_drop';
+        if (\App\Support\Feature::enabled('content_decay')) {
+            $typeIn .= ',page_content_decay';
+        }
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'string', 'in:rank_drop,gsc_clicks_drop,ga4_sessions_drop,conversion_drop'],
+            'type' => ['required', 'string', 'in:' . $typeIn],
             'config' => ['required', 'array'],
-            'config.threshold' => ['required', 'numeric', 'min:0', 'max:100'],
-            'config.lookback_days' => ['required', 'integer', 'min:1', 'max:30'],
             'notify_emails' => ['nullable', 'array'],
             'notify_emails.*' => ['email'],
-        ]);
+        ];
+
+        if ($request->input('type') === 'page_content_decay') {
+            $rules['config.lookback_days'] = ['required', 'integer', 'min:1', 'max:90'];
+            $rules['config.threshold_drop_pct'] = ['required', 'numeric', 'min:0', 'max:100'];
+            $rules['config.min_baseline_clicks'] = ['nullable', 'integer', 'min:0'];
+        } else {
+            $rules['config.threshold'] = ['required', 'numeric', 'min:0', 'max:100'];
+            $rules['config.lookback_days'] = ['required', 'integer', 'min:1', 'max:30'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $config = $validated['config'];
+        if (($validated['type'] ?? '') === 'page_content_decay') {
+            $config['min_baseline_clicks'] = $config['min_baseline_clicks'] ?? 5;
+        }
 
         SeoAlertRule::create([
             'organization_id' => $organization->id,
             'name' => $validated['name'],
             'type' => $validated['type'],
-            'config' => $validated['config'],
+            'config' => $config,
             'notify_emails' => $validated['notify_emails'] ?? [],
             'is_enabled' => true,
         ]);
