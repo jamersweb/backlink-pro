@@ -35,9 +35,7 @@ class SubscriptionController extends Controller
                 'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
                 'billing_interval' => 'monthly',
                 'features' => $plan->features_json ?? [],
-                'max_domains' => $plan->getLimit('max_domains'),
-                'max_campaigns' => $plan->getLimit('max_campaigns'),
-                'daily_backlink_limit' => $plan->getLimit('daily_backlink_limit'),
+                'max_domains' => $plan->getLimit('domains.max_active'),
             ];
         });
         
@@ -184,6 +182,7 @@ class SubscriptionController extends Controller
         }
         
         $user = Auth::user();
+        $interval = $request->get('interval', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
 
         try {
             // Check if Stripe is configured
@@ -205,34 +204,37 @@ class SubscriptionController extends Controller
                 $user->update(['stripe_customer_id' => $customerId]);
             }
 
+            // Determine Stripe price ID based on interval
+            $priceId = $interval === 'yearly'
+                ? $planModel->stripe_price_id_yearly
+                : $planModel->stripe_price_id_monthly;
+
+            if (!$priceId) {
+                return back()->with('error', 'Stripe price not configured for this plan.');
+            }
+
             $session = Session::create([
                 'payment_method_types' => ['card'],
                 'customer' => $customerId,
                 'line_items' => [[
-                    'price_data' => [
-                        'currency' => 'usd',
-                        'product_data' => [
-                            'name' => $planModel->name . ' Plan',
-                            'description' => $planModel->description,
-                        ],
-                        'unit_amount' => $planModel->price_monthly ?? 0, // Already in cents
-                        'recurring' => [
-                            'interval' => 'month', // Always monthly in new structure
-                        ],
-                    ],
+                    'price' => $priceId,
                     'quantity' => 1,
                 ]],
                 'mode' => 'subscription',
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.cancel-page'),
                 'metadata' => [
+                    'type' => 'user_subscription',
                     'user_id' => $user->id,
-                    'plan_id' => $planModel->id,
+                    'plan_code' => $planModel->code,
+                    'interval' => $interval,
                 ],
                 'subscription_data' => [
                     'metadata' => [
+                        'type' => 'user_subscription',
                         'user_id' => $user->id,
-                        'plan_id' => $planModel->id,
+                        'plan_code' => $planModel->code,
+                        'interval' => $interval,
                     ],
                 ],
             ]);
@@ -261,21 +263,63 @@ class SubscriptionController extends Controller
         try {
             $session = Session::retrieve($sessionId);
             
-            if ($session->payment_status === 'paid') {
-                $user = Auth::user();
-                $planId = $session->metadata->plan_id;
-                
-                $user->update([
-                    'plan_id' => $planId,
-                    'stripe_customer_id' => $session->customer,
-                    'stripe_subscription_id' => $session->subscription,
-                    'subscription_status' => 'active',
-                ]);
+            if ($session->payment_status === 'paid' && $session->subscription) {
+                $userId = $session->metadata->user_id ?? (Auth::check() ? Auth::id() : null);
 
-                return Inertia::render('Subscription/Success', [
-                    'success' => 'Subscription activated successfully!',
-                    'plan' => Plan::find($planId)
-                ]);
+                if ($userId) {
+                    try {
+                        $subscription = StripeSubscription::retrieve($session->subscription);
+
+                        // Determine plan from price ID
+                        $priceId = $subscription->items->data[0]->price->id ?? null;
+                        $plan = $priceId
+                            ? Plan::where('stripe_price_id_monthly', $priceId)
+                                ->orWhere('stripe_price_id_yearly', $priceId)
+                                ->first()
+                            : null;
+
+                        $user = \App\Models\User::find($userId);
+                        if ($user) {
+                            $user->plan_id = $plan?->id ?? $user->plan_id;
+                            $user->stripe_customer_id = $subscription->customer;
+                            $user->stripe_subscription_id = $subscription->id;
+                            $user->subscription_status = $subscription->status;
+                            $user->trial_ends_at = $subscription->trial_end
+                                ? date('Y-m-d H:i:s', $subscription->trial_end)
+                                : null;
+                            $user->save();
+
+                            // Ensure a user_subscriptions row exists and is updated
+                            $userSubscription = \App\Models\UserSubscription::firstOrNew(['user_id' => $userId]);
+                            if (!$userSubscription->started_at) {
+                                $userSubscription->started_at = now();
+                            }
+                            $userSubscription->plan_id = $plan?->id ?? $userSubscription->plan_id;
+                            $userSubscription->status = in_array($subscription->status, ['trialing', 'active'])
+                                ? \App\Models\UserSubscription::STATUS_ACTIVE
+                                : \App\Models\UserSubscription::STATUS_CANCELED;
+                            $userSubscription->current_period_start = date('Y-m-d', $subscription->current_period_start);
+                            $userSubscription->current_period_end = date('Y-m-d', $subscription->current_period_end);
+                            $userSubscription->meta_json = [
+                                'stripe_subscription_id' => $subscription->id,
+                                'stripe_customer_id' => $subscription->customer,
+                                'stripe_price_id' => $priceId,
+                                'interval' => $subscription->items->data[0]->price->recurring->interval ?? null,
+                            ];
+                            $userSubscription->save();
+                        }
+
+                        return Inertia::render('Subscription/Success', [
+                            'success' => 'Subscription activated successfully!',
+                            'plan' => $plan,
+                        ]);
+                    } catch (ApiErrorException $e) {
+                        // Fall through to generic error handling below
+                        return Inertia::render('Subscription/Success', [
+                            'error' => 'Failed to verify subscription: ' . $e->getMessage()
+                        ]);
+                    }
+                }
             }
         } catch (ApiErrorException $e) {
             return Inertia::render('Subscription/Success', [

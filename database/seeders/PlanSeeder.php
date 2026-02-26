@@ -36,6 +36,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => 3,
                     'meta.publish_per_month' => 50,
                     'insights.runs_per_day' => 5,
+                    'automation.campaigns_per_month' => 5,
+                    'automation.jobs_per_month' => 2000,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => '1'],
@@ -95,6 +97,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => 20,
                     'meta.publish_per_month' => 1000,
                     'insights.runs_per_day' => 20,
+                    'automation.campaigns_per_month' => 20,
+                    'automation.jobs_per_month' => 8000,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => '5'],
@@ -155,6 +159,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => 100,
                     'meta.publish_per_month' => 10000,
                     'insights.runs_per_day' => 100,
+                    'automation.campaigns_per_month' => 50,
+                    'automation.jobs_per_month' => 25000,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => '20+'],
@@ -215,6 +221,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => -1,
                     'meta.publish_per_month' => -1,
                     'insights.runs_per_day' => -1,
+                    'automation.campaigns_per_month' => -1,
+                    'automation.jobs_per_month' => -1,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => 'Unlimited'],

@@ -80,7 +80,7 @@ class QuotaService
         $limit = $this->getLimit($user, $quotaKey);
 
         // No limit means unlimited
-        if ($limit === null) {
+        if ($limit === null || $limit < 0) {
             return;
         }
 
@@ -97,8 +97,13 @@ class QuotaService
         }
 
         if ($used + $amount > $limit) {
-            $subscription = $this->getSubscription($user);
-            $resetDate = $periodType === 'month' ? $subscription->getResetDate() : null;
+            // Determine when the quota will reset
+            if ($periodType === 'day') {
+                $resetDate = Carbon::tomorrow();
+            } else {
+                $subscription = $this->getSubscription($user);
+                $resetDate = $subscription->getResetDate();
+            }
 
             throw new QuotaExceededException($quotaKey, $limit, $used, $resetDate);
         }
@@ -142,33 +147,18 @@ class QuotaService
      */
     protected function parseQuotaKey(string $quotaKey): array
     {
-        // Map quota keys to period types
-        $dailyKeys = [
-            'google.sync_now_per_day',
-            'insights.runs_per_day',
-        ];
-
-        $monthlyKeys = [
-            'audits.runs_per_month',
-            'audits.pages_per_month',
-            'backlinks.runs_per_month',
-            'backlinks.links_fetched_per_month',
-            'meta.publish_per_month',
-            'automation.jobs_per_month',
-            'automation.campaigns_per_month',
-        ];
-
-        if (in_array($quotaKey, $dailyKeys)) {
+        // Determine period type based on suffix; metric key must match quota key
+        if (str_ends_with($quotaKey, '_per_day')) {
             $periodType = 'day';
-            $metricKey = str_replace('_per_day', '', $quotaKey);
-        } elseif (in_array($quotaKey, $monthlyKeys)) {
+        } elseif (str_ends_with($quotaKey, '_per_month')) {
             $periodType = 'month';
-            $metricKey = str_replace('_per_month', '', $quotaKey);
         } else {
-            // Default to monthly
+            // Default to monthly for keys without an explicit suffix
             $periodType = 'month';
-            $metricKey = $quotaKey;
         }
+
+        // Store and read counters using the full quota key
+        $metricKey = $quotaKey;
 
         return [$periodType, $metricKey];
     }

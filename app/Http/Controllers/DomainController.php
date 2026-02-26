@@ -72,12 +72,12 @@ class DomainController extends Controller
                 return $domain;
             });
 
-        // Get user's plan limits
+        // Get user's plan limits from current subscription plan
         $user = Auth::user();
-        $plan = $user->plan;
+        $plan = $user->currentPlan();
         
-        // Get max_domains from limits_json array
-        $maxDomains = $plan ? $plan->getLimit('max_domains') : null;
+        // Get domains.max_active from limits_json array
+        $maxDomains = $plan ? $plan->getLimit('domains.max_active') : null;
         
         $stats = [
             'total_domains' => $totalCount,

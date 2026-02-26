@@ -191,9 +191,7 @@ export default function SettingsIndex({ user, plan, connectedAccounts }) {
                                             </div>
                                             <div className="text-sm text-gray-600 space-y-1">
                                                 <p><strong>Price:</strong> ${plan.price} / {plan.billing_interval}</p>
-                                                <p><strong>Max Domains:</strong> {plan.max_domains === -1 ? 'Unlimited' : plan.max_domains}</p>
-                                                <p><strong>Max Campaigns:</strong> {plan.max_campaigns === -1 ? 'Unlimited' : plan.max_campaigns}</p>
-                                                <p><strong>Daily Backlink Limit:</strong> {plan.daily_backlink_limit === -1 ? 'Unlimited' : plan.daily_backlink_limit}</p>
+                                                <p><strong>Max Domains:</strong> {plan.max_domains === null ? 'Unknown' : (plan.max_domains === -1 ? 'Unlimited' : plan.max_domains)}</p>
                                             </div>
                                         </div>
 

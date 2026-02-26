@@ -57,11 +57,12 @@ class DomainBacklinksController extends Controller
             'limit_anchors' => 'required|integer|min:1|max:1000',
         ]);
 
-        // Check quota limits
+        // Check quota limits (runs and links fetched per month)
         $user = Auth::user();
         try {
             $quotaService = app(\App\Services\Usage\QuotaService::class);
             $quotaService->assertCan($user, 'backlinks.runs_per_month', 1);
+            $quotaService->assertCan($user, 'backlinks.links_fetched_per_month', $validated['limit_backlinks']);
         } catch (\App\Exceptions\QuotaExceededException $e) {
             return back()->withErrors([
                 'quota' => $e->getMessage()

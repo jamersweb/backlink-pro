@@ -215,8 +215,6 @@ Route::middleware([\App\Http\Middleware\TrackAffiliateReferral::class])->group(f
 // Home redirect (authenticated users go to dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home')->middleware('auth');
 
-// Stripe webhook (no CSRF protection)
-Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');
 //user routes
 //dashboard route
 
