@@ -1,10 +1,12 @@
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
 export default function SiteAccountsCreate({ campaigns }) {
+    const hasCampaigns = (campaigns?.length ?? 0) > 0;
+
     const { data, setData, post, processing, errors } = useForm({
         campaign_id: '',
         site_domain: '',
@@ -16,6 +18,9 @@ export default function SiteAccountsCreate({ campaigns }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!hasCampaigns) {
+            return;
+        }
         post('/site-accounts');
     };
 
@@ -24,21 +29,32 @@ export default function SiteAccountsCreate({ campaigns }) {
             <Card>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
+                        <div className="mb-1 flex items-center justify-between gap-3">
+                            <label className="block text-sm font-medium text-gray-700">Campaign</label>
+                            <Link href="/campaign/create" className="text-xs font-medium text-indigo-600 hover:text-indigo-500">
+                                + Create Campaign
+                            </Link>
+                        </div>
                         <select
                             name="campaign_id"
                             value={data.campaign_id}
                             onChange={(e) => setData('campaign_id', e.target.value)}
                             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            required
+                            required={hasCampaigns}
+                            disabled={!hasCampaigns}
                         >
-                            <option value="">Select a campaign</option>
+                            <option value="">{hasCampaigns ? 'Select a campaign' : 'No campaign found'}</option>
                             {campaigns?.map((campaign) => (
                                 <option key={campaign.id} value={campaign.id}>
-                                    {campaign.name}
+                                    {campaign.name || campaign.web_name || campaign.web_url || `Campaign #${campaign.id}`}
                                 </option>
                             ))}
                         </select>
+                        {!hasCampaigns && (
+                            <p className="mt-1 text-sm text-amber-600">
+                                Pehle campaign create karein, phir site account add hoga.
+                            </p>
+                        )}
                         {errors.campaign_id && (
                             <p className="mt-1 text-sm text-red-600">{errors.campaign_id}</p>
                         )}
@@ -97,7 +113,7 @@ export default function SiteAccountsCreate({ campaigns }) {
                     </div>
 
                     <div className="flex gap-4">
-                        <Button type="submit" variant="primary" disabled={processing}>
+                        <Button type="submit" variant="primary" disabled={processing || !hasCampaigns}>
                             {processing ? 'Creating...' : 'Create Site Account'}
                         </Button>
                         <Button type="button" variant="outline" onClick={() => window.history.back()}>
@@ -109,4 +125,3 @@ export default function SiteAccountsCreate({ campaigns }) {
         </AppLayout>
     );
 }
-

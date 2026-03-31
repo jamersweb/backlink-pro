@@ -1,5 +1,6 @@
 import { Link, useForm, Head } from '@inertiajs/react';
 import { useState } from 'react';
+import SocialLoginButtons from '@/Components/Auth/SocialLoginButtons';
 
 export default function Register() {
     const { data, setData, post, processing, errors } = useForm({
@@ -72,6 +73,17 @@ export default function Register() {
                     <form onSubmit={submit} className="mt-8">
                         <div className="bg-[#111827]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl shadow-black/50">
                             <div className="space-y-5">
+                                <SocialLoginButtons />
+
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-white/10"></div>
+                                    </div>
+                                    <div className="relative flex justify-center">
+                                        <span className="bg-[#111827] px-3 text-xs text-[#6B7280]">or create with email</span>
+                                    </div>
+                                </div>
+
                                 {/* Name Field */}
                                 <div>
                                     <label htmlFor="name" className="block text-sm font-medium text-[#E5E7EB] mb-2">

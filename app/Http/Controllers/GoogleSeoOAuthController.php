@@ -152,9 +152,11 @@ class GoogleSeoOAuthController extends Controller
 
             // Update onboarding if coming from wizard
             if ($returnUrl && str_contains($returnUrl, '/setup')) {
-                $onboarding = \App\Models\DomainOnboarding::where('domain_id', $domain->id)->first();
-                if ($onboarding) {
-                    $onboarding->markStepDone(\App\Models\DomainOnboarding::STEP_GOOGLE_CONNECTED);
+                if (\Illuminate\Support\Facades\Schema::hasTable('domain_onboardings')) {
+                    $onboarding = \App\Models\DomainOnboarding::where('domain_id', $domain->id)->first();
+                    if ($onboarding) {
+                        $onboarding->markStepDone(\App\Models\DomainOnboarding::STEP_GOOGLE_CONNECTED);
+                    }
                 }
                 return redirect($returnUrl)
                     ->with('success', 'Google account connected successfully!');

@@ -34,11 +34,17 @@ export default function ConnectorModal({ domain, connector, onClose }) {
     };
 
     const rotateToken = () => {
-        router.post(`/domains/${domain.id}/meta/edge-proxy/rotate`, {}, { preserveScroll: true, onSuccess: () => onClose(); });
+        router.post(`/domains/${domain.id}/meta/edge-proxy/rotate`, {}, {
+            preserveScroll: true,
+            onSuccess: () => onClose(),
+        });
     };
 
     const verifyEdge = () => {
-        router.post(`/domains/${domain.id}/meta/test`, {}, { preserveScroll: true, onSuccess: () => onClose(); });
+        router.post(`/domains/${domain.id}/meta/test`, {}, {
+            preserveScroll: true,
+            onSuccess: () => onClose(),
+        });
     };
 
     const edgeToken = connector?.auth_json?.edge_token ?? '';
@@ -239,5 +245,4 @@ export default {
         </div>
     );
 }
-
 

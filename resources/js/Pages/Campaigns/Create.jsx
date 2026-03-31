@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm, usePage, Link } from '@inertiajs/react';
 import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
@@ -8,10 +8,10 @@ import BpDatePicker from '../../Components/Shared/BpDatePicker';
 import Select from '../../Components/Shared/Select';
 import Textarea from '../../Components/Shared/Textarea';
 
-export default function CampaignCreate({ countries, states, cities, domains, connectedAccounts, planSettings, plan }) {
+export default function CampaignCreate({ countries, domains, connectedAccounts, planSettings, plan }) {
     const { flash } = usePage().props;
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 7;
+    const totalSteps = 6;
 
     const { data, setData, post, processing, errors, reset } = useForm({
         // Step 1: Basic Info
@@ -52,7 +52,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
         
         // Step 7: Gmail Verification
         gmail_account_id: '',
-        requires_email_verification: true,
+        requires_email_verification: false,
         gmail: '',
         password: '',
     });
@@ -66,8 +66,8 @@ export default function CampaignCreate({ countries, states, cities, domains, con
             const submitData = {
                 ...data,
                 company_country: data.company_country ? parseInt(data.company_country) : '',
-                company_state: data.company_state ? parseInt(data.company_state) : '',
-                company_city: data.company_city ? parseInt(data.company_city) : null,
+                company_state: null,
+                company_city: null,
                 gmail_account_id: data.gmail_account_id ? parseInt(data.gmail_account_id) : null,
             };
             
@@ -117,7 +117,6 @@ export default function CampaignCreate({ countries, states, cities, domains, con
             setCurrentStep(currentStep - 1);
         }
     };
-
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
@@ -251,48 +250,13 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             required
                         >
                             <option value="">Select a country</option>
-                            {countries?.map((country) => (
+                            {(countries || []).map((country) => (
                                 <option key={country.id} value={country.id}>
                                     {country.name}
                                 </option>
                             ))}
                         </Select>
-                        {data.company_country && (
-                            <Select
-                                label="Company State *"
-                                name="company_state"
-                                value={data.company_state}
-                                onChange={(e) => {
-                                    setData('company_state', e.target.value);
-                                    setData('company_city', ''); // Reset city when state changes
-                                }}
-                                error={errors.company_state}
-                                required
-                            >
-                                <option value="">Select a state</option>
-                                {states?.filter(s => String(s.country_id) === String(data.company_country)).map((state) => (
-                                    <option key={state.id} value={state.id}>
-                                        {state.name}
-                                    </option>
-                                ))}
-                            </Select>
-                        )}
-                        {data.company_state && (
-                            <Select
-                                label="Company City"
-                                name="company_city"
-                                value={data.company_city}
-                                onChange={(e) => setData('company_city', e.target.value)}
-                                error={errors.company_city}
-                            >
-                                <option value="">Select a city</option>
-                                {cities?.filter(c => String(c.state_id) === String(data.company_state)).map((city) => (
-                                    <option key={city.id} value={city.id}>
-                                        {city.name}
-                                    </option>
-                                ))}
-                            </Select>
-                        )}
+                        
                         <Input
                             label="Website Name *"
                             name="web_name"
@@ -328,7 +292,7 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             required
                         />
                         <Select
-                            label="Ranking Target *"
+                            label="Targeted Countries *"
                             name="web_target"
                             value={data.web_target}
                             onChange={(e) => setData('web_target', e.target.value)}
@@ -509,6 +473,15 @@ export default function CampaignCreate({ countries, states, cities, domains, con
                             {errors.gmail_account_id && (
                                 <p className="mt-1 text-sm text-red-600">{errors.gmail_account_id}</p>
                             )}
+                            {(!connectedAccounts || connectedAccounts.length === 0) && (
+                                <p className="mt-2 text-sm text-amber-600">
+                                    No connected Gmail account found.{' '}
+                                    <Link href="/gmail" className="font-medium text-indigo-600 hover:text-indigo-500">
+                                        Connect one now
+                                    </Link>
+                                    .
+                                </p>
+                            )}
                         </div>
                         {!data.gmail_account_id && (
                             <>
@@ -625,4 +598,8 @@ export default function CampaignCreate({ countries, states, cities, domains, con
         </AppLayout>
     );
 }
+
+
+
+
 

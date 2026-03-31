@@ -1,5 +1,6 @@
 import { Link, useForm, Head } from '@inertiajs/react';
 import { useState } from 'react';
+import SocialLoginButtons from '@/Components/Auth/SocialLoginButtons';
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({
@@ -225,6 +226,17 @@ export default function Login() {
                                     </span>
                                     <div className="absolute inset-0 bg-gradient-to-r from-[#B6F400]/0 via-[#B6F400]/10 to-[#B6F400]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                                 </button>
+
+                                <div className="relative pt-2">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-white/10"></div>
+                                    </div>
+                                    <div className="relative flex justify-center">
+                                        <span className="bg-[#111827] px-3 text-xs uppercase tracking-[0.2em] text-[#6B7280]">continue with</span>
+                                    </div>
+                                </div>
+
+                                <SocialLoginButtons />
                             </div>
                         </div>
                     </form>
@@ -260,3 +272,5 @@ export default function Login() {
         </>
     );
 }
+
+

@@ -8,6 +8,7 @@ use App\Models\ConnectedAccount;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\PageParser;
 use App\Services\SeoAudit\AuditKpiBuilder;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use App\Services\Google\PageSpeedService;
 use App\Services\Google\SearchConsoleService;
 use App\Services\Google\Ga4Service;
@@ -71,7 +72,7 @@ class RunSeoAuditJob implements ShouldQueue
             // Persist all KPIs
             $audit->refresh();
             $mergedKpis = array_merge($audit->audit_kpis ?? [], $kpis);
-            $audit->audit_kpis = $mergedKpis;
+            $audit->audit_kpis = $this->sanitizeKpis($mergedKpis);
             $audit->status = Audit::STATUS_COMPLETED;
             $audit->progress_percent = 100;
             $audit->progress_stage = 'completed';
@@ -99,11 +100,12 @@ class RunSeoAuditJob implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
             
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = $e->getMessage();
-            $audit->progress_stage = 'failed';
-            $audit->finished_at = now();
-            $audit->save();
+            Audit::whereKey($audit->id)->update([
+                'status' => Audit::STATUS_FAILED,
+                'error' => $e->getMessage(),
+                'progress_stage' => 'failed',
+                'finished_at' => now(),
+            ]);
             
             throw $e;
         }
@@ -119,11 +121,12 @@ class RunSeoAuditJob implements ShouldQueue
 
         $audit = Audit::find($this->auditId);
         if ($audit && $audit->status !== Audit::STATUS_COMPLETED) {
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = 'Job failed: ' . $e->getMessage();
-            $audit->progress_stage = 'failed';
-            $audit->finished_at = now();
-            $audit->save();
+            Audit::whereKey($audit->id)->update([
+                'status' => Audit::STATUS_FAILED,
+                'error' => 'Job failed: ' . $e->getMessage(),
+                'progress_stage' => 'failed',
+                'finished_at' => now(),
+            ]);
         }
     }
 
@@ -207,7 +210,7 @@ class RunSeoAuditJob implements ShouldQueue
         $audit->summary = $summary;
 
         $kpiBuilder = new AuditKpiBuilder();
-        $audit->audit_kpis = $kpiBuilder->build($audit);
+        $audit->audit_kpis = $this->sanitizeKpis($kpiBuilder->build($audit));
         $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
         $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
         $audit->save();
@@ -375,5 +378,10 @@ class RunSeoAuditJob implements ShouldQueue
             Log::warning('GSC integration failed, continuing', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
             $kpis['gsc'] = ['connected' => true, 'error' => $e->getMessage(), 'data' => null];
         }
+    }
+
+    protected function sanitizeKpis(array $kpis): array
+    {
+        return app(AuditKpiSanitizer::class)->sanitize($kpis);
     }
 }

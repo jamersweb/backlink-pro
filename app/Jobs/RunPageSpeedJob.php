@@ -7,6 +7,7 @@ use App\Models\UsageEvent;
 use App\Services\Google\PageSpeedService;
 use App\Services\Billing\PlanLimiter;
 use App\Services\Billing\UsageRecorder;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -80,6 +81,13 @@ class RunPageSpeedJob implements ShouldQueue
             'fetched_at' => $mobile['fetched_at'] ?? now()->toIso8601String(),
             'cache_hit' => ($mobile['cache_hit'] ?? false) && ($desktop['cache_hit'] ?? false),
         ]);
+
+        $page = $audit->pages()->where('url', $this->url)->first() ?? $audit->pages()->first();
+        if ($page) {
+            $page->lighthouse_mobile = $mobile['kpis'] ?? $page->lighthouse_mobile;
+            $page->lighthouse_desktop = $desktop['kpis'] ?? $page->lighthouse_desktop;
+            $page->save();
+        }
     }
 
     protected function persistKpis(array $pagespeed): void
@@ -93,7 +101,7 @@ class RunPageSpeedJob implements ShouldQueue
             $kpis = $audit->audit_kpis ?? [];
             $kpis['google'] = $kpis['google'] ?? [];
             $kpis['google']['pagespeed'] = $pagespeed;
-            $audit->audit_kpis = $kpis;
+            $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpis);
             $audit->save();
         } catch (\Exception $e) {
             Log::warning('Failed to persist PageSpeed KPIs', [

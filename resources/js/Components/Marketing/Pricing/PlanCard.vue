@@ -48,16 +48,17 @@
         <!-- CTAs -->
         <div class="space-y-3">
             <a
-                :href="plan.ctas.primary.href"
+                :href="primaryCta.href"
                 class="btn-primary w-full text-center block"
             >
-                {{ plan.ctas.primary.label }}
+                {{ primaryCta.label }}
             </a>
             <a
-                :href="plan.ctas.secondary.href"
+                v-if="secondaryCta"
+                :href="secondaryCta.href"
                 class="btn-secondary w-full text-center block"
             >
-                {{ plan.ctas.secondary.label }}
+                {{ secondaryCta.label }}
             </a>
         </div>
     </div>
@@ -80,5 +81,22 @@ const props = defineProps({
 
 const currentPrice = computed(() => {
     return props.plan.prices[props.billingCycle] || props.plan.prices.monthly;
+});
+
+const interval = computed(() => (props.billingCycle === 'annual' ? 'yearly' : 'monthly'));
+const checkoutHref = computed(() => `/subscription/checkout/${props.plan.id}?interval=${interval.value}`);
+
+const primaryCta = computed(() => {
+    if (currentPrice.value.amount > 0) {
+        return { href: checkoutHref.value, label: 'Subscribe' };
+    }
+    return props.plan.ctas?.primary ?? { href: '#', label: 'Get started' };
+});
+
+const secondaryCta = computed(() => {
+    if (props.plan.id === 'pro') {
+        return { label: 'Talk to sales', href: '/contact' };
+    }
+    return props.plan.ctas?.secondary ?? null;
 });
 </script>

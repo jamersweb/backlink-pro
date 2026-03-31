@@ -45,7 +45,6 @@ class Campaign extends Model
 
     protected $casts = [
         'settings' => 'array',
-        'web_target' => 'array',
         'requires_email_verification' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
@@ -158,3 +157,4 @@ class Campaign extends Model
         return $query->where('status', self::STATUS_ACTIVE);
     }
 }
+

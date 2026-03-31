@@ -6,6 +6,7 @@ use App\Models\Audit;
 use App\Models\AuditPage;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\AuditKpiBuilder;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -80,7 +81,7 @@ class FinalizePerformanceSummaryJob implements ShouldQueue
 
             // Rebuild KPI payload after performance updates
             $kpiBuilder = new AuditKpiBuilder();
-            $audit->audit_kpis = $kpiBuilder->build($audit);
+            $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpiBuilder->build($audit));
             $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? $audit->category_grades;
             $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $audit->recommendations_count;
 

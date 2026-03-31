@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Audit;
 use App\Services\Google\PageSpeedService;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -55,7 +56,7 @@ class EnrichPsiJob implements ShouldQueue
         $kpis = $audit->audit_kpis ?? [];
         if (!isset($kpis['google'])) $kpis['google'] = [];
         $kpis['google']['pagespeed'] = $data;
-        $audit->audit_kpis = $kpis;
+        $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpis);
         $audit->psi_ready_at = now();
         $audit->save();
 

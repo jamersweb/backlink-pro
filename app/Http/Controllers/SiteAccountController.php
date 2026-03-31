@@ -32,7 +32,7 @@ class SiteAccountController extends Controller
         $siteAccounts = $query->paginate(20)->withQueryString();
 
         $campaigns = Campaign::where('user_id', Auth::id())
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'web_name', 'web_url']);
 
         return Inertia::render('SiteAccounts/Index', [
             'siteAccounts' => $siteAccounts,
@@ -47,7 +47,7 @@ class SiteAccountController extends Controller
     public function create()
     {
         $campaigns = Campaign::where('user_id', Auth::id())
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'web_name', 'web_url']);
 
         return Inertia::render('SiteAccounts/Create', [
             'campaigns' => $campaigns,
@@ -106,7 +106,7 @@ class SiteAccountController extends Controller
             ->findOrFail($id);
 
         $campaigns = Campaign::where('user_id', Auth::id())
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'web_name', 'web_url']);
 
         return Inertia::render('SiteAccounts/Edit', [
             'siteAccount' => $siteAccount,
@@ -155,4 +155,5 @@ class SiteAccountController extends Controller
             ->with('success', 'Site account deleted successfully');
     }
 }
+
 

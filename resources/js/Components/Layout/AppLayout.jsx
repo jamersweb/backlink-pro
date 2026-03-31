@@ -34,10 +34,6 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', iconActive: 'bi-grid-1x2-fill' },
         { href: '/campaign', label: 'Campaigns', icon: 'bi-megaphone', iconActive: 'bi-megaphone-fill' },
-        { href: '/domains', label: 'Domains', icon: 'bi-globe2', iconActive: 'bi-globe2' },
-        { href: '/site-accounts', label: 'Site Accounts', icon: 'bi-person-badge', iconActive: 'bi-person-badge-fill' },
-        { href: '/gmail', label: 'Gmail', icon: 'bi-envelope', iconActive: 'bi-envelope-fill' },
-        { href: '/activity', label: 'Activity', icon: 'bi-activity', iconActive: 'bi-activity' },
         { href: '/reports', label: 'Reports', icon: 'bi-bar-chart', iconActive: 'bi-bar-chart-fill' },
         { href: '/audit-report', label: 'Audit Report', icon: 'bi-clipboard-check', iconActive: 'bi-clipboard-check-fill' },
         { href: '/settings', label: 'Settings', icon: 'bi-gear', iconActive: 'bi-gear-fill' },
@@ -141,3 +137,4 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
         </div>
     );
 }
+

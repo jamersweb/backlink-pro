@@ -16,6 +16,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Starter',
                 'code' => 'starter',
+                'slug' => 'starter',
                 'tagline' => 'For small sites testing guardrailed workflows.',
                 'price_monthly' => 7900, // $79.00
                 'price_annual' => 6700, // $67.00/mo billed annually
@@ -77,6 +78,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Growth',
                 'code' => 'growth',
+                'slug' => 'growth',
                 'tagline' => 'For teams scaling with tighter controls and more workflows.',
                 'price_monthly' => 19900, // $199.00
                 'price_annual' => 16900, // $169.00/mo billed annually
@@ -139,6 +141,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Pro / Agency',
                 'code' => 'pro',
+                'slug' => 'pro',
                 'tagline' => 'For agencies and multi-project operations with audit needs.',
                 'price_monthly' => 49900, // $499.00
                 'price_annual' => 42400, // $424.00/mo billed annually
@@ -201,6 +204,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Enterprise',
                 'code' => 'enterprise',
+                'slug' => 'enterprise',
                 'tagline' => 'Custom solutions for large organizations.',
                 'price_monthly' => null, // Custom pricing
                 'price_annual' => null,

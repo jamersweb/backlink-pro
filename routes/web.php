@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\Auth\GoogleUnifiedCallbackController;
 use App\Http\Controllers\UserCampaignController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GmailOAuthController;
@@ -65,6 +67,15 @@ Route::post('/register', [RegisterController::class, 'register']);
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+    ->middleware('guest')
+    ->where('provider', 'google|apple|github|microsoft|facebook')
+    ->name('auth.social.redirect');
+Route::get('/auth/google/callback', [GoogleUnifiedCallbackController::class, 'handle'])->name('auth.google.callback');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->middleware('guest')
+    ->where('provider', 'apple|github|microsoft|facebook')
+    ->name('auth.social.callback');
 
 // Password Reset Routes
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -254,9 +265,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
         });
 
     // Google GA4 OAuth routes
-    Route::get('/auth/google/redirect', [GoogleGa4Controller::class, 'redirect'])->name('google.ga4.redirect');
-    Route::get('/auth/google/callback', [GoogleGa4Controller::class, 'callback'])->name('google.ga4.callback');
-    Route::post('/auth/google/disconnect', [GoogleGa4Controller::class, 'disconnect'])->name('google.ga4.disconnect');
+    Route::get('/auth/google-ga4/redirect', [GoogleGa4Controller::class, 'redirect'])->name('google.ga4.redirect');
+    Route::get('/auth/google-ga4/callback', [GoogleGa4Controller::class, 'callback'])->name('google.ga4.callback');
+    Route::post('/auth/google-ga4/disconnect', [GoogleGa4Controller::class, 'disconnect'])->name('google.ga4.disconnect');
     Route::get('/ga4/properties', [GoogleGa4Controller::class, 'properties'])->name('ga4.properties');
     Route::get('/ga4/summary', [GoogleGa4Controller::class, 'summary'])->name('ga4.summary');
 
@@ -267,7 +278,8 @@ Route::middleware(['auth', 'verified'])->group(function(){
             Route::get('/manage', [SubscriptionController::class, 'manage'])->name('manage');
             Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
             Route::post('/resume', [SubscriptionController::class, 'resume'])->name('resume');
-            Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('checkout');
+            Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkoutPage'])->name('checkout');
+            Route::post('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('checkout.process');
             Route::get('/success', [SubscriptionController::class, 'success'])->name('success');
             Route::get('/cancel-page', [SubscriptionController::class, 'cancelPage'])->name('cancel-page');
         });
@@ -724,3 +736,7 @@ Route::get('/test-comment', function () {
 });
 
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php
+
+
+
+

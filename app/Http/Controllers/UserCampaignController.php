@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Country;
-use App\Models\State;
-use App\Models\City;
 use App\Models\Domain;
 use App\Models\ConnectedAccount;
 use App\Models\Backlink;
@@ -15,6 +13,7 @@ use App\Services\NotificationService;
 use App\Services\ExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreUserCampaignRequest;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -57,13 +56,18 @@ public function show($id)
     ];
     
     return Inertia::render('Campaigns/Create', [
-        'countries' => Country::all(['id','name']) ?? [],
-        'states'    => State::all(['id','name','country_id']) ?? [],
-        'cities'    => City::all(['id','name','state_id']) ?? [],
+        'countries' => Country::query()->orderBy('name')->get(['id','name']) ?? [],
         'domains' => Domain::where('user_id', Auth::id())->get(['id', 'name']) ?? [],
         'connectedAccounts' => ConnectedAccount::where('user_id', Auth::id())
-            ->where('service', ConnectedAccount::SERVICE_GMAIL)
-            ->get(['id', 'email']) ?? [],
+            ->where('provider', ConnectedAccount::PROVIDER_GOOGLE)
+            ->where('status', ConnectedAccount::STATUS_ACTIVE)
+            ->where(function ($query) {
+                $query->where('service', ConnectedAccount::SERVICE_GMAIL)
+                    ->orWhereJsonContains('scopes', 'https://www.googleapis.com/auth/gmail.readonly')
+                    ->orWhereJsonContains('scopes', 'https://mail.google.com/');
+            })
+            ->orderBy('email')
+            ->get(['id', 'email', 'service']) ?? [],
         'planSettings' => $planSettings,
         'plan' => $plan ? [
             'name' => $plan->name,
@@ -81,13 +85,18 @@ public function show($id)
 
         return Inertia::render('Campaigns/Edit', [
             'campaign'  => $campaign,
-            'countries' => Country::all(['id', 'name']),
-            'states'    => State::all(['id', 'name', 'country_id']),
-            'cities'    => City::all(['id', 'name', 'state_id']),
+            'countries' => Country::query()->orderBy('name')->get(['id', 'name']),
             'domains' => Domain::where('user_id', Auth::id())->get(['id', 'name']),
             'connectedAccounts' => ConnectedAccount::where('user_id', Auth::id())
-                ->where('service', ConnectedAccount::SERVICE_GMAIL)
-                ->get(['id', 'email']),
+                ->where('provider', ConnectedAccount::PROVIDER_GOOGLE)
+                ->where('status', ConnectedAccount::STATUS_ACTIVE)
+                ->where(function ($query) {
+                    $query->where('service', ConnectedAccount::SERVICE_GMAIL)
+                        ->orWhereJsonContains('scopes', 'https://www.googleapis.com/auth/gmail.readonly')
+                        ->orWhereJsonContains('scopes', 'https://mail.google.com/');
+                })
+                ->orderBy('email')
+                ->get(['id', 'email', 'service']),
         ]);
     }
     public function store(StoreUserCampaignRequest $request)
@@ -99,6 +108,15 @@ public function show($id)
     if (empty($data['name'])) {
         $data['name'] = $data['web_name'] ?? 'Untitled Campaign';
     }
+
+    $data['company_state'] = $data['company_state'] ?? null;
+    $data['company_city'] = $data['company_city'] ?? null;
+    // Keep legacy NOT NULL gmail/password columns safe when Gmail UI is hidden.
+    $data['gmail'] = (string) ($data['gmail'] ?? '');
+    $data['password'] = (string) ($data['password'] ?? '');
+    // Keep legacy NOT NULL gmail/password columns safe when Gmail UI is hidden.
+    $data['gmail'] = (string) ($data['gmail'] ?? '');
+    $data['password'] = (string) ($data['password'] ?? '');
 
     if ($request->hasFile('company_logo')) {
         $file     = $request->file('company_logo');
@@ -113,17 +131,30 @@ public function show($id)
         $data['company_logo'] = 'images/company_logo/' . $filename;
     }
 
-    // If gmail_account_id is provided, use it and remove gmail/password
+    // If gmail_account_id is provided, keep gmail/password as empty strings for legacy schema.
     if (!empty($data['gmail_account_id'])) {
-        unset($data['gmail']);
-        unset($data['password']);
+        $data['gmail'] = '';
+        $data['password'] = '';
     }
 
     // Get user's plan settings
     $user = Auth::user();
     $plan = $user->plan;
     
-    // Check plan limits before creating campaign
+    // Ensure selected domain (if any) belongs to the authenticated user
+    if (!empty($data['domain_id'])) {
+        $ownsDomain = Domain::where('id', $data['domain_id'])
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$ownsDomain) {
+            return back()->withErrors([
+                'domain_id' => 'The selected domain is invalid or does not belong to your account.',
+            ])->withInput();
+        }
+    }
+    
+    // Check plan limits before creating campaign (if user has an active plan)
     if ($plan) {
         // Check max campaigns limit (-1 means unlimited)
         $maxCampaigns = $plan->getLimit('max_campaigns');
@@ -135,20 +166,9 @@ public function show($id)
                 ])->withInput();
             }
         }
-        
-        // Check if user has a plan (required for creating campaigns)
-        if (!$plan) {
-            return back()->withErrors([
-                'plan' => 'You need an active plan to create campaigns. Please subscribe to a plan first.'
-            ])->withInput();
-        }
-    } else {
-        return back()->withErrors([
-            'plan' => 'You need an active plan to create campaigns. Please subscribe to a plan first.'
-        ])->withInput();
     }
-    
-    // Use plan settings automatically
+
+    // Use plan settings automatically (fallback defaults if no plan)
     $planDailyLimit = $plan ? ($plan->getLimit('daily_backlink_limit') ?? 10) : 10;
     $planBacklinkTypes = $plan ? $plan->getBacklinkTypes() : ['comment', 'profile'];
     
@@ -165,26 +185,41 @@ public function show($id)
     $data['total_limit'] = $data['total_limit'] ?? ($planDailyLimit * 30);
     $data['status'] = Campaign::STATUS_ACTIVE;
 
-    $campaign = Campaign::create($data);
-    
-    // Create initial automation tasks based on plan
-    $this->createInitialTasks($campaign, $plan, $settings);
-    
-    // Log activity
-    ActivityLogService::logCampaignCreated($campaign);
-    
-    // Send notification
-    NotificationService::notifyCampaignCreated($campaign);
+    try {
+        DB::transaction(function () use (&$campaign, $data, $plan, $settings) {
+            $campaign = Campaign::create($data);
+            $this->createInitialTasks($campaign, $plan, $settings);
+        });
+
+        // Log activity and send notifications outside the DB transaction
+        ActivityLogService::logCampaignCreated($campaign);
+        NotificationService::notifyCampaignCreated($campaign);
+    } catch (\Throwable $e) {
+        \Log::error('Campaign create failed', [
+            'user_id' => Auth::id(),
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return back()->withErrors([
+            'campaign' => 'Campaign create failed. Please try again.',
+        ])->withInput();
+    }
 
     return redirect()
         ->route('user-campaign.index')
-        ->with('success', 'Campaign created successfully. Initial tasks have been queued.');
+        ->with('success', 'Campaign created successfully.');
 }
 
 public function update(StoreUserCampaignRequest $request, $id)
 {
     $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
     $data     = $request->validated();
+    $data['company_state'] = $data['company_state'] ?? null;
+    $data['company_city'] = $data['company_city'] ?? null;
+    // Keep legacy NOT NULL gmail/password columns safe when Gmail UI is hidden.
+    $data['gmail'] = (string) ($data['gmail'] ?? '');
+    $data['password'] = (string) ($data['password'] ?? '');
 
     // Handle company logo - only update if a new file is uploaded
     if ($request->hasFile('company_logo')) {
@@ -222,8 +257,8 @@ public function update(StoreUserCampaignRequest $request, $id)
     // Handle Gmail account
     if (!empty($data['gmail_account_id'])) {
         $data['gmail_account_id'] = (int) $data['gmail_account_id'];
-        unset($data['gmail']);
-        unset($data['password']);
+        $data['gmail'] = '';
+        $data['password'] = '';
     } else {
         $data['gmail_account_id'] = null;
     }
@@ -448,10 +483,12 @@ public function export(Request $request)
             return; // No backlink types allowed
         }
         
-        // Calculate initial tasks per type (based on daily limit)
-        $dailyLimit = $plan->getLimit('daily_backlink_limit') ?? 10;
-        $tasksPerType = max(1, floor($dailyLimit / count($backlinkTypes)));
-
+        // Keep initial task creation small to avoid request-time timeout.
+        $dailyLimit = (int) ($plan->getLimit('daily_backlink_limit') ?? 10);
+        if ($dailyLimit < 1) {
+            $dailyLimit = 10;
+        }
+        $tasksPerType = max(1, min(5, (int) floor($dailyLimit / max(1, count($backlinkTypes)))));
         // Handle keywords - convert string to array if needed
         $keywords = $campaign->web_keyword ?? '';
         if (is_string($keywords)) {
@@ -472,52 +509,17 @@ public function export(Request $request)
 
             // Map 'guestposting' to 'guest' (task type enum uses 'guest')
             $taskType = $type === 'guestposting' ? 'guest' : $type;
-
-            // Get unique URLs from backlinks for this task type
-            $siteTypeMap = [
-                'comment' => 'comment',
-                'profile' => 'profile',
-                'forum' => 'forum',
-                'guest' => 'guestposting',
-            ];
-            $siteType = $siteTypeMap[$taskType] ?? null;
-            
-            $backlinks = \App\Models\Backlink::where('status', \App\Models\Backlink::STATUS_ACTIVE)
-                ->where(function($query) use ($siteType) {
-                    if ($siteType) {
-                        $query->where('site_type', $siteType)
-                              ->orWhereNull('site_type');
-                    } else {
-                        $query->whereNull('site_type');
-                    }
-                })
-                ->select('id', 'url')
-                ->distinct('url')
-                ->limit($tasksPerType * 2)
-                ->get()
-                ->unique('url')
-                ->values();
-
-            // Create initial batch of tasks with different URLs
+            // Create initial batch of tasks.
+            // Keep task creation lightweight during request to avoid timeout.
             for ($i = 0; $i < $tasksPerType; $i++) {
-                $taskUrl = null;
-                $backlinkId = null;
-                
-                if ($backlinks->isNotEmpty()) {
-                    $urlIndex = $i % $backlinks->count();
-                    $backlink = $backlinks[$urlIndex];
-                    $taskUrl = $backlink->url;
-                    $backlinkId = $backlink->id;
-                }
-
                 AutomationTask::create([
                     'campaign_id' => $campaign->id,
                     'type' => $taskType,
                     'status' => AutomationTask::STATUS_PENDING,
                     'payload' => [
                         'campaign_id' => $campaign->id,
-                        'target_urls' => $taskUrl ? [$taskUrl] : [],
-                        'backlink_id' => $backlinkId,
+                        'target_urls' => [],
+                        'backlink_id' => null,
                         'keywords' => $keywords,
                         'anchor_text_strategy' => $settings['anchor_text_strategy'] ?? 'variation',
                         'content_tone' => $settings['content_tone'] ?? 'professional',
@@ -530,3 +532,7 @@ public function export(Request $request)
     }
 
 }
+
+
+
+

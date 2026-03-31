@@ -161,6 +161,8 @@ class InvitationController extends Controller
             auth()->login($user);
         }
 
+        $user->startFreeTrialIfEligible();
+
         return redirect()->route('dashboard')
             ->with('success', 'You have joined ' . $organization->name . '!');
     }
@@ -181,3 +183,4 @@ class InvitationController extends Controller
         return back()->with('success', 'Invitation revoked.');
     }
 }
+

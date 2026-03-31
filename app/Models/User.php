@@ -29,6 +29,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'stripe_subscription_id',
         'subscription_status',
         'trial_ends_at',
+        'google_id',
+        'apple_id',
+        'github_id',
+        'microsoft_id',
+        'facebook_id',
+        'avatar_url',
     ];
 
     /**
@@ -100,6 +106,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ConnectedAccount::class);
     }
 
+    public function socialAccounts()
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
     public function plan()
     {
         return $this->belongsTo(Plan::class);
@@ -124,6 +135,34 @@ class User extends Authenticatable implements MustVerifyEmail
         }
         // Fallback to starter plan
         return \App\Models\Plan::where('code', 'starter')->first();
+    }
+    public function hasActiveFreeTrial(): bool
+    {
+        return $this->subscription_status === 'trialing'
+            && $this->trial_ends_at !== null
+            && $this->trial_ends_at->isFuture();
+    }
+
+    public function startFreeTrialIfEligible(int $days = 7): bool
+    {
+        if ($this->hasRole('admin')) {
+            return false;
+        }
+
+        if ($this->trial_ends_at !== null) {
+            return false;
+        }
+
+        if ($this->stripe_subscription_id || $this->subscription_status === 'active') {
+            return false;
+        }
+
+        $this->forceFill([
+            'subscription_status' => 'trialing',
+            'trial_ends_at' => now()->addDays($days),
+        ])->save();
+
+        return true;
     }
 
     /**
@@ -232,3 +271,6 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 }
+
+
+

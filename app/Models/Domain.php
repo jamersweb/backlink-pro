@@ -13,6 +13,7 @@ class Domain extends Model
     use HasFactory;
     protected $fillable = [
         'user_id',
+        'team_id',
         'name',
         'url',
         'host',
@@ -337,4 +338,7 @@ class Domain extends Model
         return $this->hasMany(RankCheck::class);
     }
 }
+
+
+
 

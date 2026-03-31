@@ -55,6 +55,7 @@ class RegisterController extends Controller
         
         // Auto-login user so they can access verification page
         Auth::login($user);
+        $user->startFreeTrialIfEligible();
         
         // Redirect to verification notice page
         return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
@@ -92,3 +93,4 @@ class RegisterController extends Controller
         }
     }
 }
+

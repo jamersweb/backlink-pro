@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AppLayout from '../Components/Layout/AppLayout';
 import Card from '../Components/Shared/Card';
@@ -7,6 +7,30 @@ import { Link } from '@inertiajs/react';
 export default function Dashboard({ user, subscription, stats, recentBacklinks, recentCampaigns, dailyBacklinks, backlinksByType }) {
     const [chartPeriod, setChartPeriod] = useState(7);
     const [activeTab, setActiveTab] = useState('overview');
+    const [trialNow, setTrialNow] = useState(() => Date.now());
+
+    const trialEndsAt = user?.trial_ends_at ? new Date(user.trial_ends_at).getTime() : null;
+    const hasActiveTrial = Boolean(
+        trialEndsAt &&
+        user?.subscription_status === 'trialing' &&
+        trialEndsAt > trialNow
+    );
+
+    useEffect(() => {
+        if (!hasActiveTrial) {
+            return undefined;
+        }
+
+        const intervalId = window.setInterval(() => {
+            setTrialNow(Date.now());
+        }, 1000);
+
+        return () => window.clearInterval(intervalId);
+    }, [hasActiveTrial]);
+
+    const trialTimeLeft = hasActiveTrial
+        ? Math.max(0, trialEndsAt - trialNow)
+        : 0;
 
     const dailyBacklinksData = dailyBacklinks?.map(item => ({
         date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -37,6 +61,14 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                 {status?.replace('_', ' ').toUpperCase()}
             </span>
         );
+    };
+    const formatTrialUnit = (value) => String(Math.max(0, value)).padStart(2, '0');
+
+    const trialCountdown = {
+        days: formatTrialUnit(Math.floor(trialTimeLeft / (1000 * 60 * 60 * 24))),
+        hours: formatTrialUnit(Math.floor((trialTimeLeft / (1000 * 60 * 60)) % 24)),
+        minutes: formatTrialUnit(Math.floor((trialTimeLeft / (1000 * 60)) % 60)),
+        seconds: formatTrialUnit(Math.floor((trialTimeLeft / 1000) % 60)),
     };
 
     /*
@@ -85,28 +117,70 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
 
     const renderOverviewTab = () => (
         <div>
-            {user.plan && (
-                <div className="bp-subscription-bar">
-                    <div>
-                        <h3>Current Subscription</h3>
-                        <p>{user.plan.name} - ${user.plan.price}/{user.plan.billing_interval}</p>
-                        {subscription && (
-                            <p style={{ fontSize: 12, marginTop: 4 }}>
-                                Status: {getStatusBadge(subscription.status)}
-                                {subscription.current_period_end && (
-                                    <span style={{ marginLeft: 8 }}>
-                                        Renews: {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
-                                    </span>
+            {(hasActiveTrial || user.plan) && (
+                <div className={`bp-subscription-bar ${hasActiveTrial ? 'bp-subscription-bar-trial' : ''}`}>
+                    {hasActiveTrial ? (
+                        <>
+                            <div className="bp-trial-main">
+                                <div className="bp-trial-copy">
+                                    <h3>7 Days Trial Running</h3>
+                                    <p>Your free trial started as soon as you logged in.</p>
+                                    <p className="bp-trial-end-text">Trial ends on {new Date(trialEndsAt).toLocaleString()}</p>
+                                </div>
+                                <div className="bp-trial-countdown">
+                                    <div className="bp-trial-time-box">
+                                        <strong>{trialCountdown.days}</strong>
+                                        <span>Days</span>
+                                    </div>
+                                    <div className="bp-trial-time-box">
+                                        <strong>{trialCountdown.hours}</strong>
+                                        <span>Hours</span>
+                                    </div>
+                                    <div className="bp-trial-time-box">
+                                        <strong>{trialCountdown.minutes}</strong>
+                                        <span>Minutes</span>
+                                    </div>
+                                    <div className="bp-trial-time-box">
+                                        <strong>{trialCountdown.seconds}</strong>
+                                        <span>Seconds</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bp-trial-actions">
+                                <span className="bp-trial-badge">Free Trial</span>
+                                <Link href="/plans" className="bp-topbar-btn-primary">
+                                    View Plans
+                                </Link>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div>
+                                <h3>Current Subscription</h3>
+                                <p>{user.plan.name} - ${user.plan.price}/{user.plan.billing_interval}</p>
+                                {subscription && (
+                                    <p style={{ fontSize: 12, marginTop: 4 }}>
+                                        Status: {getStatusBadge(subscription.status)}
+                                        {subscription.current_period_end && (
+                                            <span style={{ marginLeft: 8 }}>
+                                                Renews: {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                    </p>
                                 )}
-                            </p>
-                        )}
-                    </div>
-                    <Link href="/subscription/manage" className="bp-topbar-btn-secondary">
-                        Manage Subscription
-                    </Link>
+                            </div>
+                            <div className="bp-trial-actions">
+                                <Link href="/plans" className="bp-topbar-btn-primary">
+                                    View Plans
+                                </Link>
+                                <Link href="/subscription/manage" className="bp-topbar-btn-secondary">
+                                    Manage Subscription
+                                </Link>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
-
             <div className="bp-stat-grid">
                 <div className="bp-stat-card">
                     <div className="bp-stat-icon indigo"><i className="bi bi-link-45deg"></i></div>
@@ -206,55 +280,6 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
                                 <p>No data available yet</p>
                             </div>
                         )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="bp-lower-grid">
-                <div className="bp-section-card">
-                    <div className="bp-section-header"><h3 className="bp-section-title">Quick Actions</h3></div>
-                    <div className="bp-action-grid">
-                        <Link href="/campaign/create" className="bp-action-card">
-                            <div className="bp-action-icon blue"><i className="bi bi-plus-lg"></i></div>
-                            <span className="bp-action-label">Create Campaign</span>
-                        </Link>
-                        <Link href="/campaign" className="bp-action-card">
-                            <div className="bp-action-icon purple"><i className="bi bi-megaphone"></i></div>
-                            <span className="bp-action-label">View Campaigns</span>
-                        </Link>
-                        <Link href="/backlinks" className="bp-action-card">
-                            <div className="bp-action-icon green"><i className="bi bi-link-45deg"></i></div>
-                            <span className="bp-action-label">View Backlinks</span>
-                        </Link>
-                        <Link href="/reports" className="bp-action-card">
-                            <div className="bp-action-icon amber"><i className="bi bi-bar-chart-line"></i></div>
-                            <span className="bp-action-label">View Reports</span>
-                        </Link>
-                    </div>
-                </div>
-                <div className="bp-section-card">
-                    <div className="bp-section-header"><h3 className="bp-section-title">Quick Links</h3></div>
-                    <div className="bp-links-list">
-                        <Link href="/domains" className="bp-link-item">
-                            <div className="bp-link-icon blue"><i className="bi bi-globe2"></i></div>
-                            <span className="bp-link-label">Domains</span>
-                            <i className="bi bi-chevron-right bp-link-chevron"></i>
-                        </Link>
-                        <Link href="/site-accounts" className="bp-link-item">
-                            <div className="bp-link-icon purple"><i className="bi bi-person-badge"></i></div>
-                            <span className="bp-link-label">Site Accounts</span>
-                            <i className="bi bi-chevron-right bp-link-chevron"></i>
-                        </Link>
-                        <Link href="/gmail" className="bp-link-item">
-                            <div className="bp-link-icon green"><i className="bi bi-envelope"></i></div>
-                            <span className="bp-link-label">Gmail Accounts</span>
-                            <i className="bi bi-chevron-right bp-link-chevron"></i>
-                        </Link>
-                        <Link href="/settings" className="bp-link-item">
-                            <div className="bp-link-icon amber"><i className="bi bi-gear"></i></div>
-                            <span className="bp-link-label">Settings</span>
-                            <i className="bi bi-chevron-right bp-link-chevron"></i>
-                        </Link>
                     </div>
                 </div>
             </div>
@@ -417,40 +442,10 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
         <div className="space-y-6">
             <Card>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO Tracking</h2>
-                <p className="text-gray-600 mb-6">Track keyword rankings, GSC data, and GA4 metrics</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon amber"><i className="bi bi-key"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Rank Tracking</h3>
-                                <p className="text-sm text-gray-600">Track keyword rankings</p>
-                            </div>
-                        </Card>
-                    </Link>
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon blue"><i className="bi bi-search"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Google Search Console</h3>
-                                <p className="text-sm text-gray-600">View GSC data and insights</p>
-                            </div>
-                        </Card>
-                    </Link>
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon green"><i className="bi bi-graph-up-arrow"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Google Analytics 4</h3>
-                                <p className="text-sm text-gray-600">View GA4 metrics and reports</p>
-                            </div>
-                        </Card>
-                    </Link>
-                </div>
+                <p className="text-gray-600 mb-0">This module is temporarily hidden.</p>
             </Card>
         </div>
     );
-
     const renderAnalyticsTab = () => (
         <div className="space-y-6">
             <Card>
@@ -493,36 +488,7 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
         <div className="space-y-6">
             <Card>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Automation</h2>
-                <p className="text-gray-600 mb-6">Fix automation, backlink strategy, and monitoring</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon amber"><i className="bi bi-wrench"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Fix Automation</h3>
-                                <p className="text-sm text-gray-600">Automated code fixes and patches</p>
-                            </div>
-                        </Card>
-                    </Link>
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon purple"><i className="bi bi-diagram-3"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Backlink Strategy</h3>
-                                <p className="text-sm text-gray-600">Generate backlink campaigns</p>
-                            </div>
-                        </Card>
-                    </Link>
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon blue"><i className="bi bi-eye"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Continuous Monitoring</h3>
-                                <p className="text-sm text-gray-600">Monitor and detect changes</p>
-                            </div>
-                        </Card>
-                    </Link>
-                </div>
+                <p className="text-gray-600 mb-0">This module is temporarily hidden.</p>
             </Card>
         </div>
     );
@@ -531,36 +497,7 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
         <div className="space-y-6">
             <Card>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Managed Services</h2>
-                <p className="text-gray-600 mb-6">Manage clients, projects, and deliverables</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon blue"><i className="bi bi-people"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Client Portal</h3>
-                                <p className="text-sm text-gray-600">Manage client projects</p>
-                            </div>
-                        </Card>
-                    </Link>
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon green"><i className="bi bi-clipboard-check"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Deliverables</h3>
-                                <p className="text-sm text-gray-600">Track deliverables and SLAs</p>
-                            </div>
-                        </Card>
-                    </Link>
-                    <Link href="/domains" className="block">
-                        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            <div className="text-center p-6">
-                                <div className="bp-feature-icon purple"><i className="bi bi-check-circle"></i></div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Approval Workflows</h3>
-                                <p className="text-sm text-gray-600">Manage approval processes</p>
-                            </div>
-                        </Card>
-                    </Link>
-                </div>
+                <p className="text-gray-600 mb-0">This module is temporarily hidden.</p>
             </Card>
         </div>
     );
@@ -587,3 +524,12 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
         </AppLayout>
     );
 }
+
+
+
+
+
+
+
+
+

@@ -51,31 +51,66 @@ export default function BpDatePicker({
     const [month, setMonth] = useState(() => parseDate(value) || new Date());
     const containerRef = useRef(null);
     const triggerRef = useRef(null);
+    const popoverRef = useRef(null);
     const [popoverStyle, setPopoverStyle] = useState({});
 
     const selectedDate = parseDate(value);
 
     useLayoutEffect(() => {
         if (!isOpen || !triggerRef.current) return;
+
         const updatePosition = () => {
-            if (triggerRef.current) {
-                const rect = triggerRef.current.getBoundingClientRect();
-                setPopoverStyle({
-                    position: 'fixed',
-                    top: rect.bottom + 8,
-                    left: rect.left,
-                    zIndex: 99999,
-                });
+            if (!triggerRef.current) return;
+
+            const rect = triggerRef.current.getBoundingClientRect();
+            const popoverWidth = popoverRef.current?.offsetWidth || 320;
+            const popoverHeight = popoverRef.current?.offsetHeight || 360;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const gap = 8;
+            const edgePadding = 12;
+
+            let left = rect.left;
+            let top = rect.bottom + gap;
+
+            if (left + popoverWidth > viewportWidth - edgePadding) {
+                left = Math.max(edgePadding, viewportWidth - popoverWidth - edgePadding);
             }
+
+            if (left < edgePadding) {
+                left = edgePadding;
+            }
+
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            if (spaceBelow < popoverHeight + gap && spaceAbove > popoverHeight + gap) {
+                top = Math.max(edgePadding, rect.top - popoverHeight - gap);
+            } else if (top + popoverHeight > viewportHeight - edgePadding) {
+                top = Math.max(edgePadding, viewportHeight - popoverHeight - edgePadding);
+            }
+
+            setPopoverStyle({
+                position: 'fixed',
+                top,
+                left,
+                zIndex: 99999,
+                width: Math.min(popoverWidth, viewportWidth - edgePadding * 2),
+                maxWidth: `calc(100vw - ${edgePadding * 2}px)`,
+            });
         };
+
         updatePosition();
+        const rafId = window.requestAnimationFrame(updatePosition);
         window.addEventListener('scroll', updatePosition, true);
         window.addEventListener('resize', updatePosition);
+
         return () => {
+            window.cancelAnimationFrame(rafId);
             window.removeEventListener('scroll', updatePosition, true);
             window.removeEventListener('resize', updatePosition);
         };
-    }, [isOpen]);
+    }, [isOpen, month]);
 
     useEffect(() => {
         const parsed = parseDate(value);
@@ -160,6 +195,7 @@ export default function BpDatePicker({
 
                 {isOpen && createPortal(
                     <div
+                        ref={popoverRef}
                         className="bp-date-picker-popover rounded-[14px] border border-white/10 bg-[#0B1220] shadow-xl p-4"
                         style={popoverStyle}
                         role="dialog"

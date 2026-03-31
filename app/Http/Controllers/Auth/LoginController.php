@@ -45,6 +45,7 @@ class LoginController extends Controller
         if (Auth::guard($guard)->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
             $user = Auth::user();
+            $user->startFreeTrialIfEligible();
 
             if (config('app.debug')) {
                 Log::channel('single')->debug('Login success', ['user_id' => $user->id]);
@@ -82,3 +83,5 @@ class LoginController extends Controller
         return redirect('/login');
     }
 }
+
+

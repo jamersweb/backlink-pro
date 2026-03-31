@@ -64,7 +64,16 @@ class PageSpeedService
 
             if (!$response->successful()) {
                 $error = $body['error']['message'] ?? 'PageSpeed API error';
-            $result = $this->storeResult($orgId, $url, $strategy, 'failed', $status, $error, $body, null);
+                $result = $this->safeStoreResult(
+                    $orgId,
+                    $url,
+                    $strategy,
+                    'failed',
+                    $status,
+                    $error,
+                    $this->compactPayload($body),
+                    null
+                );
 
                 return [
                     'status' => 'failed',
@@ -72,12 +81,21 @@ class PageSpeedService
                     'kpis' => null,
                     'error' => $error,
                     'source' => $keyInfo['source'],
-                    'fetched_at' => optional($result->fetched_at)->toIso8601String(),
+                    'fetched_at' => optional($result?->fetched_at)->toIso8601String(),
                 ];
             }
 
             $kpis = $this->extractKpis($body);
-            $result = $this->storeResult($orgId, $url, $strategy, 'success', $status, null, $body, $kpis);
+            $result = $this->safeStoreResult(
+                $orgId,
+                $url,
+                $strategy,
+                'success',
+                $status,
+                null,
+                $this->compactPayload($body),
+                $kpis
+            );
 
             return [
                 'status' => 'success',
@@ -85,7 +103,7 @@ class PageSpeedService
                 'kpis' => $kpis,
                 'error' => null,
                 'source' => $keyInfo['source'],
-                'fetched_at' => optional($result->fetched_at)->toIso8601String(),
+                'fetched_at' => optional($result?->fetched_at)->toIso8601String() ?? now()->toIso8601String(),
             ];
         } catch (\Exception $e) {
             Log::warning('PageSpeed API failed', [
@@ -94,15 +112,24 @@ class PageSpeedService
                 'error' => $e->getMessage(),
             ]);
 
-            $result = $this->storeResult($orgId, $url, $strategy, 'failed', null, $e->getMessage(), null, null);
+            $result = $this->safeStoreResult(
+                $orgId,
+                $url,
+                $strategy,
+                'failed',
+                null,
+                $this->truncateError($e->getMessage()),
+                null,
+                null
+            );
 
             return [
                 'status' => 'failed',
                 'cache_hit' => false,
                 'kpis' => null,
-                'error' => $e->getMessage(),
+                'error' => $this->truncateError($e->getMessage()),
                 'source' => $keyInfo['source'],
-                'fetched_at' => optional($result->fetched_at)->toIso8601String(),
+                'fetched_at' => optional($result?->fetched_at)->toIso8601String(),
             ];
         }
     }
@@ -110,6 +137,11 @@ class PageSpeedService
     protected function callApi(string $url, string $strategy, string $apiKey)
     {
         $globalPerMin = (int) config('services.google.pagespeed_global_per_min', 60);
+        $timeoutSeconds = (int) config('services.google.pagespeed_timeout_seconds', 90);
+        $connectTimeoutSeconds = (int) config('services.google.pagespeed_connect_timeout_seconds', 15);
+        $retryTimes = (int) config('services.google.pagespeed_retry_times', 2);
+        $retrySleepMs = (int) config('services.google.pagespeed_retry_sleep_ms', 2000);
+
         try {
             Cache::throttle('pagespeed-global')
                 ->allow($globalPerMin)
@@ -126,8 +158,9 @@ class PageSpeedService
             'key' => $apiKey,
         ];
 
-        return Http::timeout(28)
-            ->retry(1, 1000)
+        return Http::connectTimeout($connectTimeoutSeconds)
+            ->timeout($timeoutSeconds)
+            ->retry($retryTimes, $retrySleepMs)
             ->get('https://www.googleapis.com/pagespeedonline/v5/runPagespeed', $params);
     }
 
@@ -161,6 +194,30 @@ class PageSpeedService
                 'kpis' => $kpis,
             ]
         );
+    }
+
+    protected function safeStoreResult(
+        ?int $orgId,
+        string $url,
+        string $strategy,
+        string $status,
+        ?int $httpStatus,
+        ?string $errorMessage,
+        ?array $payload,
+        ?array $kpis
+    ): ?PageSpeedResult {
+        try {
+            return $this->storeResult($orgId, $url, $strategy, $status, $httpStatus, $errorMessage, $payload, $kpis);
+        } catch (\Throwable $e) {
+            Log::warning('PageSpeed result persistence failed', [
+                'url' => $url,
+                'strategy' => $strategy,
+                'status' => $status,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     protected function extractKpis(array $body): array
@@ -209,6 +266,47 @@ class PageSpeedService
             ],
             'opportunities' => array_slice($opportunities, 0, 8),
         ];
+    }
+
+    protected function compactPayload(array $body): array
+    {
+        $lighthouse = $body['lighthouseResult'] ?? [];
+        $audits = $lighthouse['audits'] ?? [];
+
+        return array_filter([
+            'kind' => $body['kind'] ?? null,
+            'id' => $body['id'] ?? null,
+            'analysis_timestamp' => $body['analysisUTCTimestamp'] ?? ($lighthouse['fetchTime'] ?? null),
+            'captcha_result' => $body['captchaResult'] ?? null,
+            'requested_url' => $lighthouse['requestedUrl'] ?? null,
+            'final_url' => $lighthouse['finalUrl'] ?? null,
+            'performance_score' => data_get($lighthouse, 'categories.performance.score'),
+            'seo_score' => data_get($lighthouse, 'categories.seo.score'),
+            'accessibility_score' => data_get($lighthouse, 'categories.accessibility.score'),
+            'best_practices_score' => data_get($lighthouse, 'categories.best-practices.score'),
+            'fetch_time' => $lighthouse['fetchTime'] ?? null,
+            'run_warnings' => array_slice($lighthouse['runWarnings'] ?? [], 0, 3),
+            'lcp_ms' => data_get($audits, 'largest-contentful-paint.numericValue'),
+            'fcp_ms' => data_get($audits, 'first-contentful-paint.numericValue'),
+            'cls' => data_get($audits, 'cumulative-layout-shift.numericValue'),
+            'tbt_ms' => data_get($audits, 'total-blocking-time.numericValue'),
+            'tti_ms' => data_get($audits, 'interactive.numericValue'),
+        ], fn ($value) => $value !== null && $value !== []);
+    }
+
+    protected function truncateError(?string $message): ?string
+    {
+        if ($message === null) {
+            return null;
+        }
+
+        $message = trim($message);
+
+        if (mb_strlen($message) <= 400) {
+            return $message;
+        }
+
+        return rtrim(mb_substr($message, 0, 397)) . '...';
     }
 
     protected function resolveKey(?Organization $organization): array

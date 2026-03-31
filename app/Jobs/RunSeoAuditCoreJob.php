@@ -7,6 +7,7 @@ use App\Models\AuditPage;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\PageParser;
 use App\Services\SeoAudit\AuditKpiBuilder;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -120,7 +121,7 @@ class RunSeoAuditCoreJob implements ShouldQueue
             $audit->summary = $summary;
 
             $kpiBuilder = new AuditKpiBuilder();
-            $audit->audit_kpis = $kpiBuilder->build($audit);
+            $audit->audit_kpis = $this->sanitizeKpis($kpiBuilder->build($audit));
             $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
             $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
 
@@ -149,11 +150,12 @@ class RunSeoAuditCoreJob implements ShouldQueue
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = $e->getMessage();
-            $audit->progress_stage = 'failed';
-            $audit->finished_at = now();
-            $audit->save();
+            Audit::whereKey($audit->id)->update([
+                'status' => Audit::STATUS_FAILED,
+                'error' => $e->getMessage(),
+                'progress_stage' => 'failed',
+                'finished_at' => now(),
+            ]);
             throw $e;
         }
     }
@@ -215,11 +217,17 @@ class RunSeoAuditCoreJob implements ShouldQueue
     {
         $audit = Audit::find($this->auditId);
         if ($audit && $audit->status !== Audit::STATUS_COMPLETED) {
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = 'Job failed: ' . $e->getMessage();
-            $audit->progress_stage = 'failed';
-            $audit->finished_at = now();
-            $audit->save();
+            Audit::whereKey($audit->id)->update([
+                'status' => Audit::STATUS_FAILED,
+                'error' => 'Job failed: ' . $e->getMessage(),
+                'progress_stage' => 'failed',
+                'finished_at' => now(),
+            ]);
         }
+    }
+
+    protected function sanitizeKpis(array $kpis): array
+    {
+        return app(AuditKpiSanitizer::class)->sanitize($kpis);
     }
 }

@@ -26,19 +26,66 @@ class SubscriptionController extends Controller
      */
     public function index()
     {
-        $plans = Plan::active()->ordered()->get()->map(function($plan) {
+        $query = Plan::active()->ordered();
+
+        // Show only public plans to guests, all active plans to authenticated users.
+        if (!Auth::check()) {
+            $query->public();
+        }
+
+        $plans = $query->get()->map(function (Plan $plan) {
+            $limits = is_array($plan->limits_json) ? $plan->limits_json : [];
+            $displayLimits = is_array($plan->display_limits) ? $plan->display_limits : [];
+            $includes = is_array($plan->includes) ? array_values(array_filter($plan->includes)) : [];
+            $featuresJson = is_array($plan->features_json) ? $plan->features_json : [];
+
+            // Always return a plain array of human-readable feature lines.
+            $featureLines = $includes;
+            if (empty($featureLines)) {
+                foreach ($featuresJson as $key => $value) {
+                    if ($key === 'backlink_types') {
+                        continue;
+                    }
+
+                    if ($value === true) {
+                        $featureLines[] = ucwords(str_replace('_', ' ', (string) $key));
+                    } elseif (is_string($value) && $value !== '') {
+                        $featureLines[] = ucwords(str_replace('_', ' ', (string) $key)) . ': ' . $value;
+                    }
+                }
+            }
+
             return [
                 'id' => $plan->id,
                 'name' => $plan->name,
                 'slug' => $plan->code ?? '',
-                'description' => '',
-                'price' => $plan->price_monthly ? ($plan->price_monthly / 100) : 0,
+                'tagline' => $plan->tagline ?? '',
+                'description' => $plan->tagline ?? '',
+                'badge' => $plan->badge,
+                'is_highlighted' => (bool) $plan->is_highlighted,
+                'is_public' => (bool) $plan->is_public,
+                'price' => $plan->price_monthly !== null ? ($plan->price_monthly / 100) : null,
+                'price_annual' => $plan->price_annual ? ($plan->price_annual / 100) : null,
                 'billing_interval' => 'monthly',
-                'features' => $plan->features_json ?? [],
+                'features' => array_values($featureLines),
+                'display_limits' => $displayLimits,
+                'limits' => [
+                    'projects' => $limits['projects'] ?? null,
+                    'monthly_actions' => $limits['monthly_actions'] ?? null,
+                    'team_seats' => $limits['team_seats'] ?? null,
+                    'domains_max_active' => $limits['domains.max_active'] ?? null,
+                    'audits_per_month' => $limits['audits.runs_per_month'] ?? null,
+                    'automation_jobs_per_month' => $limits['automation.jobs_per_month'] ?? null,
+                ],
+                'backlink_types' => $plan->getBacklinkTypes(),
                 'max_domains' => $plan->getLimit('domains.max_active'),
+                'cta_primary_label' => $plan->cta_primary_label,
+                'cta_primary_href' => $plan->cta_primary_href,
+                'cta_secondary_label' => $plan->cta_secondary_label,
+                'cta_secondary_href' => $plan->cta_secondary_href,
             ];
-        });
-        
+        })->values();
+
         return Inertia::render('Plans', [
             'plans' => $plans,
             'user' => Auth::check() ? Auth::user() : null,
@@ -60,7 +107,7 @@ class SubscriptionController extends Controller
         if ($user->stripe_subscription_id) {
             try {
                 $subscription = StripeSubscription::retrieve($user->stripe_subscription_id);
-                
+
                 // Get customer details
                 if ($user->stripe_customer_id) {
                     $customer = Customer::retrieve($user->stripe_customer_id);
@@ -92,7 +139,7 @@ class SubscriptionController extends Controller
                 'id' => $customer->id,
                 'email' => $customer->email,
             ] : null,
-            'invoices' => array_map(function($invoice) {
+            'invoices' => array_map(function ($invoice) {
                 return [
                     'id' => $invoice->id,
                     'amount_paid' => $invoice->amount_paid / 100, // Convert from cents
@@ -151,6 +198,33 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Show plan checkout page before redirecting to Stripe.
+     */
+    public function checkoutPage(Request $request, $plan)
+    {
+        $planModel = Plan::where('id', $plan)
+            ->orWhere('code', $plan)
+            ->firstOrFail();
+
+        return Inertia::render('Subscription/Checkout', [
+            'plan' => [
+                'id' => $planModel->id,
+                'name' => $planModel->name,
+                'code' => $planModel->code,
+                'tagline' => $planModel->tagline,
+                'price_monthly' => $planModel->price_monthly ? ($planModel->price_monthly / 100) : null,
+                'price_annual' => $planModel->price_annual ? ($planModel->price_annual / 100) : null,
+                'stripe_price_id_monthly' => $planModel->stripe_price_id_monthly,
+                'stripe_price_id_yearly' => $planModel->stripe_price_id_yearly,
+                'is_paid' => (bool) ($planModel->price_monthly && $planModel->price_monthly > 0),
+                'features' => is_array($planModel->includes) ? $planModel->includes : [],
+            ],
+            'user' => Auth::user(),
+            'local_mode' => app()->environment('local'),
+        ]);
+    }
+
+    /**
      * Create Stripe checkout session
      */
     public function checkout(Request $request, $plan)
@@ -159,34 +233,44 @@ class SubscriptionController extends Controller
         $planModel = Plan::where('id', $plan)
             ->orWhere('code', $plan)
             ->firstOrFail();
-        
+
         // If free plan, just assign it directly
         $planPrice = $planModel->price_monthly ? ($planModel->price_monthly / 100) : 0;
         if ($planPrice == 0) {
             if (!Auth::check()) {
                 return redirect()->route('login')->with('error', 'Please login to activate the free plan.');
             }
-            
+
             $user = Auth::user();
             $user->update([
                 'plan_id' => $planModel->id,
                 'subscription_status' => 'active',
             ]);
-            
+
             return redirect()->route('subscription.success')->with('success', 'Free plan activated successfully!');
         }
-        
+
         // Require authentication for paid plans
         if (!Auth::check()) {
             return redirect()->route('login')->with('error', 'Please login to subscribe to a plan.');
         }
-        
+
         $user = Auth::user();
         $interval = $request->get('interval', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
 
         try {
             // Check if Stripe is configured
             if (!config('services.stripe.secret')) {
+                if (app()->environment('local')) {
+                    $user->update([
+                        'plan_id' => $planModel->id,
+                        'subscription_status' => 'active',
+                    ]);
+
+                    return redirect()->route('subscription.manage')
+                        ->with('success', 'Plan activated in local mode (Stripe is not configured).');
+                }
+
                 return back()->with('error', 'Payment processing is not configured. Please contact support.');
             }
 
@@ -210,6 +294,16 @@ class SubscriptionController extends Controller
                 : $planModel->stripe_price_id_monthly;
 
             if (!$priceId) {
+                if (app()->environment('local')) {
+                    $user->update([
+                        'plan_id' => $planModel->id,
+                        'subscription_status' => 'active',
+                    ]);
+
+                    return redirect()->route('subscription.manage')
+                        ->with('success', 'Plan activated in local mode (Stripe price ID missing).');
+                }
+
                 return back()->with('error', 'Stripe price not configured for this plan.');
             }
 
@@ -253,7 +347,7 @@ class SubscriptionController extends Controller
     public function success(Request $request)
     {
         $sessionId = $request->get('session_id');
-        
+
         if (!$sessionId) {
             return Inertia::render('Subscription/Success', [
                 'error' => 'Invalid session'
@@ -262,7 +356,7 @@ class SubscriptionController extends Controller
 
         try {
             $session = Session::retrieve($sessionId);
-            
+
             if ($session->payment_status === 'paid' && $session->subscription) {
                 $userId = $session->metadata->user_id ?? (Auth::check() ? Auth::id() : null);
 
@@ -362,17 +456,17 @@ class SubscriptionController extends Controller
                 $subscription = $event->data->object;
                 $this->handleSubscriptionUpdate($subscription);
                 break;
-            
+
             case 'customer.subscription.deleted':
                 $subscription = $event->data->object;
                 $this->handleSubscriptionCancellation($subscription);
                 break;
-            
+
             case 'invoice.payment_succeeded':
                 $invoice = $event->data->object;
                 $this->handlePaymentSuccess($invoice);
                 break;
-            
+
             case 'invoice.payment_failed':
                 $invoice = $event->data->object;
                 $this->handlePaymentFailure($invoice);
@@ -385,7 +479,7 @@ class SubscriptionController extends Controller
     protected function handleSubscriptionUpdate($subscription)
     {
         $user = \App\Models\User::where('stripe_subscription_id', $subscription->id)->first();
-        
+
         if ($user) {
             $user->update([
                 'subscription_status' => $subscription->status,
@@ -396,7 +490,7 @@ class SubscriptionController extends Controller
     protected function handleSubscriptionCancellation($subscription)
     {
         $user = \App\Models\User::where('stripe_subscription_id', $subscription->id)->first();
-        
+
         if ($user) {
             $freePlan = Plan::where('code', 'free')->orWhere('code', 'starter')->first();
             $user->update([
@@ -414,7 +508,7 @@ class SubscriptionController extends Controller
     protected function handlePaymentFailure($invoice)
     {
         $user = \App\Models\User::where('stripe_customer_id', $invoice->customer)->first();
-        
+
         if ($user) {
             $user->update([
                 'subscription_status' => 'past_due',
@@ -422,3 +516,5 @@ class SubscriptionController extends Controller
         }
     }
 }
+
+

@@ -9,6 +9,8 @@ use App\Services\Auth\DomainAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 class DomainController extends Controller
@@ -188,54 +190,76 @@ class DomainController extends Controller
             ]);
         }
 
-        // Check for duplicate host in team
-        $existingDomain = Domain::where('team_id', $team->id)
+        // Check for duplicate host for this user (matches DB unique key: user_id + host)
+        $existingDomain = Domain::where('user_id', Auth::id())
             ->where('host', $host)
             ->first();
-        
+
         if ($existingDomain) {
-            return back()->withErrors([
-                'url' => 'This domain is already added. Each domain can only be added once.'
-            ])->withInput();
+            return redirect()->route('domains.setup.show', $existingDomain->id)
+                ->with('success', 'This domain is already added. Redirected to existing domain setup.');
         }
 
         // Generate verification token
         $verificationToken = bin2hex(random_bytes(20)); // 40 character token
 
-        $domain = Domain::create([
-            'user_id' => Auth::id(),
-            'team_id' => $team->id,
-            'name' => $validated['name'] ?? $host,
-            'url' => $validated['url'],
-            'host' => $host,
-            'platform' => $validated['platform'],
-            'verification_status' => Domain::VERIFICATION_UNVERIFIED,
-            'verification_token' => $verificationToken,
-            'default_settings' => $validated['default_settings'] ?? [
-                'crawl_limit' => 100,
-                'max_depth' => 3,
-                'include_sitemap' => true,
-                'user_agent' => 'BacklinkProBot/1.0',
-            ],
-            'status' => $validated['status'] ?? Domain::STATUS_ACTIVE,
-        ]);
+        try {
+            $domain = Domain::create([
+                'user_id' => Auth::id(),
+                'team_id' => $team->id,
+                'name' => $validated['name'] ?? $host,
+                'url' => $validated['url'],
+                'host' => $host,
+                'platform' => $validated['platform'],
+                'verification_status' => Domain::VERIFICATION_UNVERIFIED,
+                'verification_token' => $verificationToken,
+                'default_settings' => $validated['default_settings'] ?? [
+                    'crawl_limit' => 100,
+                    'max_depth' => 3,
+                    'include_sitemap' => true,
+                    'user_agent' => 'BacklinkProBot/1.0',
+                ],
+                'status' => $validated['status'] ?? Domain::STATUS_ACTIVE,
+            ]);
+        } catch (QueryException $e) {
+            if ((int) $e->getCode() === 23000) {
+                $existingDomain = Domain::where('user_id', Auth::id())
+                    ->where('host', $host)
+                    ->first();
+
+                if ($existingDomain) {
+                    return redirect()->route('domains.setup.show', $existingDomain->id)
+                        ->with('success', 'This domain already exists. Redirected to existing domain setup.');
+                }
+
+                return back()->withErrors([
+                    'url' => 'This domain is already added. Each domain can only be added once.'
+                ])->withInput();
+            }
+
+            throw $e;
+        }
 
         // Ensure domain access record
         $accessService = app(DomainAccessService::class);
         $accessService->ensureDomainAccess($domain);
 
-        // Create onboarding record
-        \App\Models\DomainOnboarding::create([
-            'domain_id' => $domain->id,
-            'user_id' => Auth::id(),
-            'status' => \App\Models\DomainOnboarding::STATUS_IN_PROGRESS,
-            'steps_json' => [
-                \App\Models\DomainOnboarding::STEP_DOMAIN_ADDED => [
-                    'done' => true,
-                    'at' => now()->toIso8601String(),
+        // Create onboarding record (skip if table missing, e.g. deploy before migrate)
+        if (Schema::hasTable('domain_onboardings')) {
+            \App\Models\DomainOnboarding::create([
+                'domain_id' => $domain->id,
+                'user_id' => Auth::id(),
+                'status' => \App\Models\DomainOnboarding::STATUS_IN_PROGRESS,
+                'steps_json' => [
+                    \App\Models\DomainOnboarding::STEP_DOMAIN_ADDED => [
+                        'done' => true,
+                        'at' => now()->toIso8601String(),
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        } else {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
+        }
 
         // Redirect to setup wizard
         return redirect()->route('domains.setup.show', $domain->id)
@@ -415,4 +439,9 @@ class DomainController extends Controller
             ->with('success', 'Domain deleted successfully');
     }
 }
+
+
+
+
+
 

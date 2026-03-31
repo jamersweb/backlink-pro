@@ -42,7 +42,7 @@ function useExportPdf(auditId) {
             }
         } catch (e) {
             console.error(e);
-            window.print();
+            window.alert('PDF export failed. Please try again.');
         } finally {
             setExporting(false);
         }
@@ -65,6 +65,19 @@ const formatBool = (value) => (value === null || value === undefined ? 'N/A' : v
 const formatMetricSeconds = (value) => (value === null || value === undefined || Number.isNaN(value) ? 'N/A' : `${Number(value).toFixed(2)}s`);
 const formatMegabytes = (value) => (value === null || value === undefined ? 'N/A' : `${Number(value).toFixed(2)} MB`);
 const asArray = (value) => (Array.isArray(value) ? value.filter(Boolean) : []);
+const normalizePsiMetrics = (run, fallback = {}) => {
+    const metrics = run?.kpis || {};
+    const source = Object.keys(metrics).length ? metrics : (fallback || {});
+
+    return {
+        score: source.score ?? source.categories?.performance_score ?? null,
+        lcp: source.lcp ?? source.lcp_ms ?? source.lab_metrics?.lcp_ms ?? null,
+        fcp: source.fcp ?? source.fcp_ms ?? source.lab_metrics?.fcp_ms ?? null,
+        cls: source.cls ?? source.lab_metrics?.cls ?? null,
+        tti: source.tti ?? source.tti_ms ?? source.lab_metrics?.tti_ms ?? null,
+        tbt: source.tbt ?? source.tbt_ms ?? source.lab_metrics?.tbt_ms ?? null,
+    };
+};
 
 function getScoreTone(score) {
     if (score >= 90) return { bg: 'bg-[#12B76A]/10', border: 'border-[#12B76A]/30', text: 'text-[#12B76A]' };
@@ -425,12 +438,13 @@ export default function AuditReportView({ audit }) {
                                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                                         {['mobile', 'desktop'].map((mode) => {
                                             const run = psi?.[mode];
-                                            const metrics = run?.kpis || {};
+                                            const fallback = mode === 'mobile' ? pageData?.lighthouse_mobile : pageData?.lighthouse_desktop;
+                                            const metrics = normalizePsiMetrics(run, fallback);
 
                                             return (
                                                 <Card key={mode} variant="elevated">
                                                     <h3 className="text-lg font-semibold capitalize text-[var(--admin-text)]">{mode} PageSpeed</h3>
-                                                    {run?.status === 'failed' ? (
+                                                    {run?.status === 'failed' && metrics.score === null ? (
                                                         <SectionMessage>{run.error || 'PageSpeed run failed.'}</SectionMessage>
                                                     ) : (
                                                         <div className="mt-4 grid grid-cols-2 gap-3">
