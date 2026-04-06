@@ -1,51 +1,107 @@
 <template>
-    <section id="final-cta" class="final-cta py-20">
-        <div class="marketing-container max-w-3xl mx-auto text-center">
-            <h2 class="text-3xl md:text-4xl font-bold mb-6 text-text" data-reveal>
-                Get your free backlink plan in 60 seconds.
-            </h2>
-            <p class="text-lg text-muted mb-8" data-reveal>
-                No credit card required. See your opportunities and risk score instantly.
-            </p>
-            
-            <div class="max-w-md mx-auto" data-reveal>
-                <form @submit.prevent="scrollToHero" class="flex gap-3">
-                    <input
-                        v-model="url"
-                        type="url"
-                        placeholder="Enter your website URL"
-                        required
-                        class="flex-1 px-4 py-4 rounded-lg bg-surface2 border border-border text-text placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <button type="submit" class="btn-primary px-8">
-                        Get Plan
-                    </button>
-                </form>
-                <p class="text-sm text-muted mt-4">
-                    No PBNs. Human approvals. Full evidence.
+    <section id="final-cta" class="final-cta">
+        <div class="marketing-container final-cta-shell">
+            <div class="final-cta-copy">
+                <span class="final-cta-kicker">Need a rollout plan?</span>
+                <h2>Get a guided backlink plan built around your goals.</h2>
+                <p>
+                    Talk with the team about approvals, reporting, placements, and the right workflow for your site.
                 </p>
+            </div>
+
+            <div class="final-cta-actions">
+                <Link href="/contact" class="final-cta-primary">Contact Sales</Link>
+                <Link href="/pricing" class="final-cta-secondary">View Pricing</Link>
             </div>
         </div>
     </section>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-
-const url = ref('');
-
-const scrollToHero = () => {
-    const hero = document.getElementById('hero-section');
-    if (hero) {
-        hero.scrollIntoView({ behavior: 'smooth' });
-        // Set the URL in the hero form if it exists
-        setTimeout(() => {
-            const heroInput = document.querySelector('#hero-section #url');
-            if (heroInput) {
-                heroInput.value = url.value;
-                heroInput.dispatchEvent(new Event('input'));
-            }
-        }, 500);
-    }
-};
+import { Link } from '@inertiajs/vue3';
 </script>
+
+<style scoped>
+.final-cta {
+    padding: 6rem 0 0;
+}
+
+.final-cta-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) auto;
+    gap: 2rem;
+    align-items: center;
+    padding: 2rem;
+    border-radius: 2rem;
+    background:
+        radial-gradient(circle at top left, rgba(255, 110, 64, 0.18), transparent 28%),
+        linear-gradient(180deg, rgba(18, 14, 14, 0.98), rgba(10, 10, 10, 0.99));
+    border: 1px solid rgba(255, 110, 64, 0.24);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+.final-cta-kicker {
+    display: inline-flex;
+    margin-bottom: 0.9rem;
+    color: #ff8a65;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.final-cta-copy h2 {
+    color: #fff7f2;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    margin: 0 0 0.9rem;
+}
+
+.final-cta-copy p {
+    margin: 0;
+    max-width: 38rem;
+    color: rgba(255, 244, 239, 0.62);
+    line-height: 1.75;
+}
+
+.final-cta-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.final-cta-primary,
+.final-cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.4rem;
+    padding: 0 1.4rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.final-cta-primary {
+    color: #16100d;
+    background: linear-gradient(180deg, #fff7f2, #ffe7db);
+    border: 1px solid rgba(255, 224, 208, 0.72);
+}
+
+.final-cta-secondary {
+    color: #fff7f2;
+    border: 1px solid rgba(255, 110, 64, 0.28);
+    background: rgba(255, 110, 64, 0.08);
+}
+
+@media (max-width: 860px) {
+    .final-cta-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .final-cta-actions {
+        flex-wrap: wrap;
+    }
+}
+</style>

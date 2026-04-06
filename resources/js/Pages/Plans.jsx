@@ -33,47 +33,47 @@ function PlanCard({ plan, isAuthenticated, isWide = false }) {
         <div
             className={`relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${
                 highlighted
-                    ? 'border-indigo-400/60 bg-gradient-to-b from-indigo-500/20 to-slate-900/80 shadow-[0_20px_60px_-24px_rgba(99,102,241,0.6)]'
-                    : 'border-slate-700/80 bg-slate-900/70 hover:border-slate-500'
+                    ? 'border-[rgba(255,110,64,0.3)] bg-[radial-gradient(circle_at_top,rgba(255,110,64,0.1),transparent_32%),linear-gradient(180deg,rgba(22,18,18,0.96),rgba(10,10,10,0.98))] shadow-[0_24px_60px_rgba(0,0,0,0.24)]'
+                    : 'border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))] shadow-[0_24px_60px_rgba(0,0,0,0.2)] hover:border-[rgba(255,138,101,0.3)]'
             } ${isWide ? 'md:col-span-2 xl:col-span-3 xl:grid xl:grid-cols-[minmax(340px,0.9fr)_minmax(0,1.1fr)] xl:gap-8' : ''}`}
         >
             <div>
                 {plan.badge && (
-                    <span className="absolute right-4 top-4 rounded-full border border-indigo-400/40 bg-indigo-500/20 px-3 py-1 text-xs font-semibold text-indigo-200">
+                    <span className="absolute right-4 top-4 rounded-full border border-[rgba(255,110,64,0.26)] bg-[rgba(255,110,64,0.1)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
                         {plan.badge}
                     </span>
                 )}
 
                 <div className={`mb-5 ${isWide ? 'pr-0 xl:max-w-md' : 'pr-24'}`}>
-                    <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
-                    <p className="mt-1 text-sm text-slate-300">{plan.tagline || 'SEO growth plan'}</p>
+                    <h3 className="text-2xl font-bold text-[#fff7f2]">{plan.name}</h3>
+                    <p className="mt-1 text-sm text-[rgba(255,240,232,0.62)]">{plan.tagline || 'SEO growth plan'}</p>
                 </div>
 
                 <div className="mb-5 flex items-end gap-2">
-                    <span className="text-4xl font-extrabold text-white">{formatMoney(plan.price)}</span>
-                    <span className="pb-1 text-sm text-slate-300">{plan.price === null ? '' : '/ month'}</span>
+                    <span className="text-4xl font-extrabold text-[#fff7f2]">{formatMoney(plan.price)}</span>
+                    <span className="pb-1 text-sm text-[rgba(255,240,232,0.62)]">{plan.price === null ? '' : '/ month'}</span>
                 </div>
 
                 {plan.price_annual && (
-                    <p className="mb-5 text-xs text-emerald-300">Annual: {formatMoney(plan.price_annual)} / month billed yearly</p>
+                    <p className="mb-5 text-xs text-[#ff8a65]">Annual: {formatMoney(plan.price_annual)} / month billed yearly</p>
                 )}
 
                 <div className="mb-5 grid grid-cols-2 gap-3 text-xs">
-                    <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-                        <p className="text-slate-400">Domains</p>
-                        <p className="mt-1 font-semibold text-slate-100">{formatLimit(plan?.limits?.domains_max_active)}</p>
+                    <div className="rounded-xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.04)] p-3">
+                        <p className="text-[rgba(255,240,232,0.58)]">Domains</p>
+                        <p className="mt-1 font-semibold text-[#fff7f2]">{formatLimit(plan?.limits?.domains_max_active)}</p>
                     </div>
-                    <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-                        <p className="text-slate-400">Projects</p>
-                        <p className="mt-1 font-semibold text-slate-100">{formatLimit(plan?.limits?.projects)}</p>
+                    <div className="rounded-xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.04)] p-3">
+                        <p className="text-[rgba(255,240,232,0.58)]">Projects</p>
+                        <p className="mt-1 font-semibold text-[#fff7f2]">{formatLimit(plan?.limits?.projects)}</p>
                     </div>
-                    <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-                        <p className="text-slate-400">Monthly Actions</p>
-                        <p className="mt-1 font-semibold text-slate-100">{formatLimit(plan?.limits?.monthly_actions)}</p>
+                    <div className="rounded-xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.04)] p-3">
+                        <p className="text-[rgba(255,240,232,0.58)]">Monthly Actions</p>
+                        <p className="mt-1 font-semibold text-[#fff7f2]">{formatLimit(plan?.limits?.monthly_actions)}</p>
                     </div>
-                    <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-                        <p className="text-slate-400">Team Seats</p>
-                        <p className="mt-1 font-semibold text-slate-100">{formatLimit(plan?.limits?.team_seats)}</p>
+                    <div className="rounded-xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.04)] p-3">
+                        <p className="text-[rgba(255,240,232,0.58)]">Team Seats</p>
+                        <p className="mt-1 font-semibold text-[#fff7f2]">{formatLimit(plan?.limits?.team_seats)}</p>
                     </div>
                 </div>
             </div>
@@ -81,10 +81,10 @@ function PlanCard({ plan, isAuthenticated, isWide = false }) {
             <div className={isWide ? 'xl:flex xl:flex-col xl:justify-between' : ''}>
                 <div>
                     <div className="mb-6">
-                        <p className="mb-2 text-sm font-semibold text-slate-200">Backlink Types</p>
+                        <p className="mb-2 text-sm font-semibold text-[#fff7f2]">Backlink Types</p>
                         <div className="flex flex-wrap gap-2">
                             {(plan.backlink_types || []).map((type) => (
-                                <span key={`${plan.id}-${type}`} className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-200 capitalize">
+                                <span key={`${plan.id}-${type}`} className="rounded-full border border-[rgba(255,110,64,0.24)] bg-[rgba(255,110,64,0.08)] px-2.5 py-1 text-xs text-[#ffcfb9] capitalize">
                                     {type}
                                 </span>
                             ))}
@@ -92,11 +92,11 @@ function PlanCard({ plan, isAuthenticated, isWide = false }) {
                     </div>
 
                     <div className="mb-6">
-                        <p className="mb-2 text-sm font-semibold text-slate-200">What You Get</p>
-                        <ul className={`text-sm text-slate-300 ${isWide ? 'grid gap-x-6 gap-y-2 md:grid-cols-2' : 'space-y-2'}`}>
+                        <p className="mb-2 text-sm font-semibold text-[#fff7f2]">What You Get</p>
+                        <ul className={`text-sm text-[rgba(255,240,232,0.62)] ${isWide ? 'grid gap-x-6 gap-y-2 md:grid-cols-2' : 'space-y-2'}`}>
                             {(plan.features || []).slice(0, 6).map((feature, idx) => (
                                 <li key={`${plan.id}-f-${idx}`} className="flex items-start gap-2">
-                                    <span className="mt-1 h-2 w-2 rounded-full bg-emerald-400"></span>
+                                    <span className="mt-1 h-2 w-2 rounded-full bg-[#ff8a65]"></span>
                                     <span>{feature}</span>
                                 </li>
                             ))}
@@ -135,10 +135,10 @@ function PlanCard({ plan, isAuthenticated, isWide = false }) {
 function PlansContent({ plans, isAuthenticated }) {
     return (
         <div className="space-y-8">
-            <div className="rounded-2xl border border-slate-700/80 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/70 p-7">
-                <p className="text-xs font-semibold tracking-[0.18em] text-indigo-300">PRICING</p>
-                <h1 className="mt-2 text-3xl font-extrabold text-white">Choose A Plan That Fits Your Workflow</h1>
-                <p className="mt-2 max-w-3xl text-sm text-slate-300">
+            <div className="rounded-2xl border border-[rgba(255,110,64,0.18)] bg-[radial-gradient(circle_at_top,rgba(255,110,64,0.08),transparent_30%),linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))] p-7 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+                <p className="text-xs font-semibold tracking-[0.18em] text-[#ffcfb9]">PRICING</p>
+                <h1 className="mt-2 text-3xl font-extrabold text-[#fff7f2]">Choose A Plan That Fits Your Workflow</h1>
+                <p className="mt-2 max-w-3xl text-sm text-[rgba(255,240,232,0.62)]">
                     Each plan shows detailed limits, backlink types, and automation capacity so users can compare clearly.
                 </p>
             </div>
@@ -159,9 +159,9 @@ function PlansContent({ plans, isAuthenticated }) {
                     })}
                 </div>
             ) : (
-                <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-10 text-center">
-                    <p className="text-lg font-semibold text-white">No active plans found.</p>
-                    <p className="mt-2 text-sm text-slate-300">Please add or activate plans from admin panel.</p>
+                <div className="rounded-2xl border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))] p-10 text-center">
+                    <p className="text-lg font-semibold text-[#fff7f2]">No active plans found.</p>
+                    <p className="mt-2 text-sm text-[rgba(255,240,232,0.62)]">Please add or activate plans from admin panel.</p>
                 </div>
             )}
         </div>

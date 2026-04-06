@@ -68,11 +68,15 @@ class RegisterController extends Controller
         $user->startFreeTrialIfEligible();
 
         if (!empty($data['audit_url'])) {
-            $this->createOnboardingAudit($user, $data['audit_url']);
+            $audit = $this->createOnboardingAudit($user, $data['audit_url']);
 
-            return redirect()
-                ->route('audit-report.index')
-                ->with('status', 'verification-link-sent');
+            $reportUrl = route('audit-report.show', ['id' => $audit->id]);
+
+            if ($request->header('X-Inertia')) {
+                return Inertia::location($reportUrl);
+            }
+
+            return redirect($reportUrl)->with('status', 'verification-link-sent');
         }
         
         // Redirect to verification notice page

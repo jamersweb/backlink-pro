@@ -142,7 +142,14 @@ class RunSeoAuditJob implements ShouldQueue
     {
         $response = Http::timeout(25)
             ->retry(2, 1000)
-            ->withUserAgent('BacklinkProBot/1.0')
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language' => 'en-US,en;q=0.9',
+                'Cache-Control' => 'no-cache',
+                'Pragma' => 'no-cache',
+                'Upgrade-Insecure-Requests' => '1',
+            ])
             ->withOptions([
                 'allow_redirects' => [
                     'max' => 5,
@@ -152,6 +159,8 @@ class RunSeoAuditJob implements ShouldQueue
                 ],
             ])
             ->get($audit->normalized_url);
+
+        $this->assertFetchableResponse($response, $audit->normalized_url);
 
         $statusCode = $response->status();
         $finalUrl = $response->effectiveUri() ?? $audit->normalized_url;
@@ -214,6 +223,31 @@ class RunSeoAuditJob implements ShouldQueue
         $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
         $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
         $audit->save();
+    }
+
+    protected function assertFetchableResponse($response, string $url): void
+    {
+        $status = $response->status();
+        $body = strtolower(substr((string) $response->body(), 0, 4000));
+
+        if ($status >= 200 && $status < 400 && !str_contains($body, 'just a moment')) {
+            return;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST) ?: $url;
+
+        if (
+            $status === 403 &&
+            (
+                str_contains($body, 'just a moment') ||
+                str_contains($body, 'cloudflare') ||
+                str_contains($body, 'attention required')
+            )
+        ) {
+            throw new \RuntimeException("This website is protected by bot/security checks and blocked the audit request. Please try auditing your own site or a URL without Cloudflare-style protection. ({$host})");
+        }
+
+        throw new \RuntimeException("The website blocked the audit request with HTTP {$status}. Please try another URL or a page that allows automated analysis. ({$host})");
     }
 
     protected function runPageSpeed(Audit $audit, array &$kpis): void

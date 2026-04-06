@@ -20,7 +20,7 @@ export default function Checkout({ plan, local_mode = false }) {
         : !!plan?.stripe_price_id_monthly;
 
     const isPaidPlan = !!plan?.is_paid;
-    const canProceed = !isPaidPlan || hasStripePrice || local_mode;
+    const canProceed = !isPaidPlan || hasStripePrice;
 
     const handleCheckout = (e) => {
         e.preventDefault();
@@ -81,22 +81,22 @@ export default function Checkout({ plan, local_mode = false }) {
                         </ul>
                     </div>
 
-                    {isPaidPlan && !hasStripePrice && !local_mode && (
+                    {isPaidPlan && !hasStripePrice && (
                         <div className="mb-5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
                             This plan is visible, but Stripe price ID is missing for {interval}. Please contact support/admin to enable checkout.
                         </div>
                     )}
 
-                    {isPaidPlan && !hasStripePrice && local_mode && (
-                        <div className="mb-5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-                            Local mode: Stripe is not configured, so this will activate your plan directly for testing.
+                    {isPaidPlan && local_mode && (
+                        <div className="mb-5 rounded-xl border border-slate-600/60 bg-slate-950/70 p-4 text-sm text-slate-300">
+                            Local mode is enabled, but paid plans still require Stripe pricing to be configured before checkout can continue.
                         </div>
                     )}
 
                     <form onSubmit={handleCheckout} className="flex flex-wrap gap-3">
                         {isPaidPlan ? (
                             <Button type="submit" variant="primary" disabled={processing || !canProceed}>
-                                {processing ? 'Processing...' : (local_mode && !hasStripePrice ? 'Activate Plan (Local)' : 'Continue To Secure Checkout')}
+                                {processing ? 'Processing...' : 'Continue To Secure Checkout'}
                             </Button>
                         ) : (
                             <a href="/contact">

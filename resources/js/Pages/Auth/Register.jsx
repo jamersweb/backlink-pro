@@ -1,13 +1,16 @@
-import { Link, useForm, Head } from '@inertiajs/react';
+import { Link, useForm, Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import SocialLoginButtons from '@/Components/Auth/SocialLoginButtons';
 
 export default function Register() {
+    const { props } = usePage();
+    const prefill = props.prefill || {};
     const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        email: '',
+        name: prefill.name || '',
+        email: prefill.email || '',
         password: '',
         password_confirmation: '',
+        audit_url: prefill.audit_url || '',
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,7 +39,7 @@ export default function Register() {
                 </div>
 
                 <div className="relative z-10 w-full max-w-6xl">
-                    <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(24rem,26.5rem)] lg:gap-10">
+                    <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(28rem,32rem)] lg:gap-10">
                         <section className="hidden lg:block">
                             <Link href="/" className="group inline-flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.06)] backdrop-blur-md transition-all duration-300 group-hover:border-[#ff875c]/50 group-hover:bg-[rgba(255,255,255,0.09)]">
@@ -78,7 +81,7 @@ export default function Register() {
                             </div>
                         </section>
 
-                        <section className="w-full max-w-[26.5rem] justify-self-center lg:justify-self-end">
+                        <section className="w-full max-w-[32rem] justify-self-center lg:justify-self-end">
                             <div className="text-center lg:hidden">
                                 <Link href="/" className="group inline-flex items-center gap-3">
                                     <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.06)] backdrop-blur-md transition-all duration-300 group-hover:border-[#ff875c]/50 group-hover:bg-[rgba(255,255,255,0.09)]">
@@ -101,7 +104,7 @@ export default function Register() {
                             </div>
 
                             <form onSubmit={submit} noValidate className="mt-6 lg:mt-0">
-                                <div className="rounded-[28px] border border-[#ffffff12] bg-[linear-gradient(180deg,rgba(26,18,16,0.92),rgba(12,10,10,0.96))] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.46)] backdrop-blur-xl">
+                                <div className="rounded-[30px] border border-[#ffffff12] bg-[linear-gradient(180deg,rgba(26,18,16,0.92),rgba(12,10,10,0.96))] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.46)] backdrop-blur-xl sm:p-7">
                                     <div className="mb-5 hidden lg:block">
                                         <h2 className="text-[2rem] font-bold tracking-tight text-white">Create your account</h2>
                                         <p className="mt-1.5 text-sm text-[#c9b9ae]">
@@ -110,7 +113,9 @@ export default function Register() {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <div>
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <input type="hidden" name="audit_url" value={data.audit_url} />
+                                            <div>
                                             <label htmlFor="name" className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#f1e9e4]">
                                                 Full Name
                                             </label>
@@ -134,9 +139,9 @@ export default function Register() {
                                                 />
                                             </div>
                                             {errors.name ? <p className="mt-2 text-sm text-red-400">{errors.name}</p> : null}
-                                        </div>
+                                            </div>
 
-                                        <div>
+                                            <div>
                                             <label htmlFor="email" className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#f1e9e4]">
                                                 Email Address
                                             </label>
@@ -159,9 +164,9 @@ export default function Register() {
                                                 />
                                             </div>
                                             {errors.email ? <p className="mt-2 text-sm text-red-400">{errors.email}</p> : null}
-                                        </div>
+                                            </div>
 
-                                        <div>
+                                            <div>
                                             <label htmlFor="password" className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#f1e9e4]">
                                                 Password
                                             </label>
@@ -200,9 +205,9 @@ export default function Register() {
                                                 </button>
                                             </div>
                                             {errors.password ? <p className="mt-2 text-sm text-red-400">{errors.password}</p> : null}
-                                        </div>
+                                            </div>
 
-                                        <div>
+                                            <div>
                                             <label htmlFor="password_confirmation" className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-[#f1e9e4]">
                                                 Confirm Password
                                             </label>
@@ -241,12 +246,13 @@ export default function Register() {
                                                 </button>
                                             </div>
                                             {errors.password_confirmation ? <p className="mt-2 text-sm text-red-400">{errors.password_confirmation}</p> : null}
+                                            </div>
                                         </div>
 
                                         <button
                                             type="submit"
                                             disabled={processing}
-                                            className="group relative w-full overflow-hidden rounded-full border border-[#ffe0d0] bg-[linear-gradient(180deg,#fff7f2,#ffe7db)] px-6 py-3.5 text-sm font-semibold text-[#16100d] shadow-[0_18px_40px_rgba(255,110,64,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,#fff1ea,#ffdccc)] focus:outline-none focus:ring-2 focus:ring-[#ff875c]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="group relative w-full overflow-hidden rounded-full border border-[#ffe0d0] bg-[linear-gradient(180deg,#fff7f2,#ffe7db)] px-6 py-3.5 text-sm font-semibold text-[#16100d] shadow-[0_18px_40px_rgba(255,110,64,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,#fff1ea,#ffdccc)] focus:outline-none focus:ring-2 focus:ring-[#ff875c]/30 disabled:cursor-not-allowed disabled:opacity-50 md:mt-1"
                                         >
                                             <span className="relative z-10 flex items-center justify-center gap-2">
                                                 {processing ? (

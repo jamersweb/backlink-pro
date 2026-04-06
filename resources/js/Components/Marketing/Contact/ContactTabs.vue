@@ -37,7 +37,7 @@ const emit = defineEmits(['update:tab']);
 const activeTab = ref('contact');
 
 const tabs = [
-    { value: 'contact', label: 'Contact' },
+    { value: 'contact', label: 'Contact sales' },
     { value: 'demo', label: 'Book a demo' },
 ];
 

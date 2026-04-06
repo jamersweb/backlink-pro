@@ -25,7 +25,7 @@ class SettingsController extends Controller
             ->get();
 
         return Inertia::render('Settings/Index', [
-            'user' => $user->only(['id', 'name', 'email', 'created_at', 'plan_id', 'subscription_status', 'stripe_customer_id', 'trial_ends_at']),
+            'user' => $user->only(['id', 'name', 'email', 'email_verified_at', 'created_at', 'plan_id', 'subscription_status', 'stripe_customer_id', 'trial_ends_at']),
             'plan' => $plan ? [
                 'id' => $plan->id,
                 'name' => $plan->name,
@@ -73,4 +73,3 @@ class SettingsController extends Controller
         return back()->with('success', 'Password updated successfully');
     }
 }
-

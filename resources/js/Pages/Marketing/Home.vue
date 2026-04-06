@@ -37,7 +37,7 @@
 
                 <div class="stitch-actions">
                     <a class="stitch-text-link" href="/login">Sign In</a>
-                    <a class="stitch-button stitch-button-light" href="/free-plan">Talk to us</a>
+                    <a class="stitch-button stitch-button-light" href="/contact">Contact Sales</a>
                 </div>
             </div>
 
@@ -134,7 +134,7 @@
                     </p>
 
                     <div class="stitch-hero-actions">
-                        <a class="stitch-button stitch-button-light stitch-button-lg" href="/free-plan">Talk to us</a>
+                        <a class="stitch-button stitch-button-light stitch-button-lg" href="/contact">Contact Sales</a>
                     </div>
 
                     <div class="stitch-logo-row">
@@ -152,6 +152,59 @@
                     <div class="stitch-stat-card" v-for="item in statHighlights" :key="item.label">
                         <div class="stitch-stat-label">{{ item.label }}</div>
                         <div class="stitch-stat-value">{{ item.value }}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="stitch-section stitch-section-audit">
+                <div class="stitch-shell">
+                    <div class="stitch-feature-band">
+                        <div class="stitch-feature-copy">
+                            <div class="stitch-section-label">Free SEO Audit Report</div>
+                            <h2 class="stitch-section-heading">Turn one URL into a technical action plan.</h2>
+                            <p>
+                                Run a guided audit before you launch backlinks. Surface indexability issues,
+                                on-page blockers, and quick wins so your campaigns start from a stronger base.
+                            </p>
+
+                            <div class="stitch-feature-points">
+                                <article v-for="item in auditHighlights" :key="item.title">
+                                    <h3>{{ item.title }}</h3>
+                                    <p>{{ item.copy }}</p>
+                                </article>
+                            </div>
+
+                            <div class="stitch-feature-actions">
+                                <a class="stitch-button stitch-button-light" href="/seo-audit-report">Run Free SEO Audit</a>
+                                <a class="stitch-button stitch-button-ghost" href="/product">See platform overview</a>
+                            </div>
+                        </div>
+
+                        <div class="stitch-feature-visual">
+                            <div class="stitch-audit-card">
+                                <div class="stitch-audit-card-head">
+                                    <span class="stitch-mini-label">Included in the report</span>
+                                    <strong>SEO Audit Snapshot</strong>
+                                </div>
+
+                                <div class="stitch-audit-list">
+                                    <div v-for="item in auditChecks" :key="item.title" class="stitch-audit-list-item">
+                                        <span class="stitch-audit-dot"></span>
+                                        <div>
+                                            <h4>{{ item.title }}</h4>
+                                            <p>{{ item.copy }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="stitch-audit-stats">
+                                    <article v-for="item in auditStats" :key="item.label">
+                                        <strong>{{ item.value }}</strong>
+                                        <span>{{ item.label }}</span>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -207,6 +260,35 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="stitch-section stitch-section-campaign">
+                <div class="stitch-shell">
+                    <div class="stitch-campaign-shell">
+                        <div class="stitch-campaign-head">
+                            <div>
+                                <div class="stitch-section-label">Create Campaign</div>
+                                <h2 class="stitch-section-heading">Spin up backlink operations without spreadsheet chaos.</h2>
+                            </div>
+                            <p>
+                                Build a campaign around one target page, define your guardrails, and let BacklinkPro
+                                handle discovery, approvals, and reporting from one controlled workspace.
+                            </p>
+                        </div>
+
+                        <div class="stitch-campaign-grid">
+                            <article
+                                v-for="item in campaignFlow"
+                                :key="item.step"
+                                class="stitch-campaign-card"
+                            >
+                                <span class="stitch-campaign-step">{{ item.step }}</span>
+                                <h3>{{ item.title }}</h3>
+                                <p>{{ item.copy }}</p>
+                            </article>
                         </div>
                     </div>
                 </div>
@@ -360,7 +442,7 @@
                 <div class="stitch-shell stitch-shell-narrow stitch-centered-copy">
                     <h2 class="stitch-cta-title">Ready to see BacklinkPro in action?</h2>
                     <p>Join 2,000+ SEO curators who have automated their authority growth with BacklinkPro.</p>
-                    <a class="stitch-button stitch-button-dark stitch-button-lg" href="/free-plan">Talk to us</a>
+                    <a class="stitch-button stitch-button-dark stitch-button-lg" href="/contact">Contact Sales</a>
                 </div>
             </section>
         </main>
@@ -425,6 +507,7 @@ const navGroups = [
             { label: 'How It Works', href: '/how-it-works', copy: 'See the workflow from strategy to reporting.' },
             { label: 'Pricing', href: '/pricing', copy: 'Compare plans for startups, agencies, and teams.' },
             { label: 'Free Plan', href: '/free-plan', copy: 'Start with a guided backlink growth plan.' },
+            { label: 'SEO Audit Report', href: '/seo-audit-report', copy: 'Review technical SEO findings, risks, and optimization priorities.' },
         ],
     },
     {
@@ -455,6 +538,24 @@ const statHighlights = [
     { label: 'Niche Coverage', value: '94%' },
 ];
 
+const auditHighlights = [
+    { title: 'Spot blockers first', copy: 'Catch crawl, metadata, and technical issues before link velocity starts.' },
+    { title: 'Give the team a brief', copy: 'Walk into campaign setup with a clearer page target and cleaner priorities.' },
+    { title: 'Connect report to execution', copy: 'Move from audit insight to backlink action without leaving the platform.' },
+];
+
+const auditChecks = [
+    { title: 'Technical health score', copy: 'Page readiness, crawlability, and page hygiene in one view.' },
+    { title: 'Top-priority issues', copy: 'Missing metadata, slow assets, and weak page structure ranked by impact.' },
+    { title: 'Actionable next steps', copy: 'A clear handoff your team can use before launching a backlink sprint.' },
+];
+
+const auditStats = [
+    { value: 'Free', label: 'Forever' },
+    { value: '0', label: 'Credit card' },
+    { value: 'Fast', label: 'Results' },
+];
+
 const problems = [
     {
         icon: '01',
@@ -474,6 +575,13 @@ const problems = [
 ];
 
 const consoleLinks = ['Connect Target Domains', 'Define Niche Parameters', 'Review Quality Control'];
+
+const campaignFlow = [
+    { step: '01', title: 'Choose target URL', copy: 'Select the page you want to grow and set the exact goal of the sprint.' },
+    { step: '02', title: 'Set filters & risk rules', copy: 'Define DR ranges, niche fit, anchor preferences, and approval thresholds.' },
+    { step: '03', title: 'Launch discovery', copy: 'BacklinkPro scans vetted opportunities and stages the best placements for review.' },
+    { step: '04', title: 'Approve and track', copy: 'Push campaigns live, monitor wins, and review proof from the same dashboard.' },
+];
 
 const smartSignals = [
     { icon: 'P', title: 'Performance', copy: 'Real-time rank tracking for every link.' },
@@ -1282,6 +1390,165 @@ onUnmounted(() => {
     padding-top: 9rem;
 }
 
+.stitch-section-audit {
+    padding-top: 6.5rem;
+    padding-bottom: 2rem;
+}
+
+.stitch-section-campaign {
+    padding-top: 2rem;
+}
+
+.stitch-feature-band,
+.stitch-campaign-shell {
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 110, 64, 0.14);
+    background:
+        radial-gradient(circle at top left, rgba(255, 110, 64, 0.12), transparent 34%),
+        linear-gradient(180deg, rgba(23, 15, 14, 0.96), rgba(9, 9, 9, 0.98));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.stitch-feature-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.stitch-feature-copy {
+    padding: 1rem;
+}
+
+.stitch-feature-copy .stitch-section-heading {
+    max-width: 40rem;
+}
+
+.stitch-feature-copy > p,
+.stitch-campaign-head p {
+    max-width: 38rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.8;
+    font-size: 1rem;
+}
+
+.stitch-feature-points {
+    display: grid;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.stitch-feature-points article {
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 110, 64, 0.12);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.stitch-feature-points h3,
+.stitch-audit-list-item h4,
+.stitch-campaign-card h3 {
+    margin: 0 0 0.35rem;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.stitch-feature-points p,
+.stitch-audit-list-item p,
+.stitch-campaign-card p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.7;
+}
+
+.stitch-feature-actions {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-top: 1.4rem;
+}
+
+.stitch-feature-visual {
+    display: flex;
+    align-items: stretch;
+}
+
+.stitch-audit-card {
+    width: 100%;
+    border-radius: 1.6rem;
+    border: 1px solid rgba(255, 110, 64, 0.22);
+    background: rgba(14, 10, 10, 0.78);
+    padding: 1.5rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.stitch-audit-card-head strong {
+    display: block;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-top: 0.45rem;
+}
+
+.stitch-audit-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.stitch-audit-list-item {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 110, 64, 0.14);
+}
+
+.stitch-audit-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    background: #ff7a4f;
+    box-shadow: 0 0 16px rgba(255, 122, 79, 0.45);
+    margin-top: 0.45rem;
+    flex: none;
+}
+
+.stitch-audit-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    margin-top: 0.35rem;
+}
+
+.stitch-audit-stats article {
+    padding: 1rem 0.8rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 110, 64, 0.12);
+    background: rgba(255, 255, 255, 0.02);
+    text-align: center;
+}
+
+.stitch-audit-stats strong {
+    display: block;
+    color: white;
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+.stitch-audit-stats span {
+    display: block;
+    margin-top: 0.35rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
 .stitch-two-col {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1534,6 +1801,41 @@ onUnmounted(() => {
 .stitch-faq-grid,
 .stitch-footer-grid {
     display: grid;
+}
+
+.stitch-campaign-shell {
+    padding: 2rem;
+}
+
+.stitch-campaign-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.78fr);
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 2rem;
+}
+
+.stitch-campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.stitch-campaign-card {
+    padding: 1.35rem;
+    min-height: 14.5rem;
+    border-radius: 1.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 110, 64, 0.15);
+}
+
+.stitch-campaign-step {
+    display: inline-flex;
+    margin-bottom: 1.25rem;
+    color: rgba(255, 255, 255, 0.28);
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
 }
 
 .stitch-mini-grid {
@@ -1979,7 +2281,10 @@ onUnmounted(() => {
     .stitch-demo-card,
     .stitch-stats-grid,
     .stitch-footer-grid,
-    .stitch-pricing-grid {
+    .stitch-pricing-grid,
+    .stitch-feature-band,
+    .stitch-campaign-head,
+    .stitch-campaign-grid {
         grid-template-columns: 1fr;
     }
 
@@ -2002,6 +2307,10 @@ onUnmounted(() => {
         padding-left: 0;
         padding-top: 1rem;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .stitch-campaign-card {
+        min-height: auto;
     }
 }
 
@@ -2146,6 +2455,10 @@ onUnmounted(() => {
 
     .stitch-step-grid,
     .stitch-faq-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stitch-audit-stats {
         grid-template-columns: 1fr;
     }
 

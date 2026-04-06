@@ -63,8 +63,8 @@ export default function BpDatePicker({
             if (!triggerRef.current) return;
 
             const rect = triggerRef.current.getBoundingClientRect();
-            const popoverWidth = popoverRef.current?.offsetWidth || 320;
-            const popoverHeight = popoverRef.current?.offsetHeight || 360;
+            const popoverWidth = Math.min(popoverRef.current?.offsetWidth || 304, 304);
+            const popoverHeight = Math.min(popoverRef.current?.offsetHeight || 332, 332);
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const gap = 8;
@@ -167,7 +167,7 @@ export default function BpDatePicker({
     return (
         <div className={`bp-date-picker ${className}`} ref={containerRef}>
             {label && (
-                <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-[var(--admin-text)]">
                     {label}
                 </label>
             )}
@@ -184,7 +184,7 @@ export default function BpDatePicker({
                     className={`bp-date-picker-trigger w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
                         error
                             ? 'border-[#F04438] focus:border-[#F04438]'
-                            : 'border-[var(--admin-border)] focus:border-[#2F6BFF] focus:ring-2 focus:ring-[#2F6BFF]/20'
+                            : 'border-[var(--admin-border)] focus:border-[var(--admin-primary)] focus:ring-2 focus:ring-[var(--admin-primary)]/20'
                     } bg-[var(--admin-bg)] text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                     <span className={selectedDate ? '' : 'text-[var(--admin-text-dim)]'}>
@@ -196,7 +196,7 @@ export default function BpDatePicker({
                 {isOpen && createPortal(
                     <div
                         ref={popoverRef}
-                        className="bp-date-picker-popover rounded-[14px] border border-white/10 bg-[#0B1220] shadow-xl p-4"
+                        className="bp-date-picker-popover rounded-[14px] border border-[rgba(242,140,56,0.18)] bg-[#121014] shadow-xl p-3"
                         style={popoverStyle}
                         role="dialog"
                         aria-modal="true"

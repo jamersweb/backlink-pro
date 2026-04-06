@@ -27,10 +27,10 @@
             </p>
             <div class="flex flex-wrap gap-4 justify-center">
                 <button @click="scrollToForm" class="btn-primary text-lg px-8 py-4">
-                    Email us for a demo slot
+                    Request a demo slot
                 </button>
-                <a href="#final-cta" @click.prevent="scrollToFinalCTA" class="btn-secondary text-lg px-8 py-4">
-                    Start with Free Backlink Plan
+                <a href="/pricing" class="btn-secondary text-lg px-8 py-4">
+                    View pricing
                 </a>
             </div>
         </div>
@@ -66,10 +66,4 @@ const scrollToForm = () => {
     }
 };
 
-const scrollToFinalCTA = () => {
-    const cta = document.getElementById('final-cta');
-    if (cta) {
-        cta.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-};
 </script>

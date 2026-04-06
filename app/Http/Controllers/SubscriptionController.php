@@ -161,7 +161,7 @@ class SubscriptionController extends Controller
         $user = Auth::user();
 
         if (!$user->stripe_subscription_id) {
-            return back()->with('error', 'No active subscription found.');
+            return back()->with('error', 'This plan is active only inside the app. No Stripe subscription is linked yet, so there is nothing to cancel in billing.');
         }
 
         try {
@@ -183,7 +183,7 @@ class SubscriptionController extends Controller
         $user = Auth::user();
 
         if (!$user->stripe_subscription_id) {
-            return back()->with('error', 'No subscription found.');
+            return back()->with('error', 'No Stripe subscription is linked to this account yet.');
         }
 
         try {
@@ -259,18 +259,8 @@ class SubscriptionController extends Controller
         $interval = $request->get('interval', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
 
         try {
-            // Check if Stripe is configured
+            // Paid plans must always require a valid Stripe configuration.
             if (!config('services.stripe.secret')) {
-                if (app()->environment('local')) {
-                    $user->update([
-                        'plan_id' => $planModel->id,
-                        'subscription_status' => 'active',
-                    ]);
-
-                    return redirect()->route('subscription.manage')
-                        ->with('success', 'Plan activated in local mode (Stripe is not configured).');
-                }
-
                 return back()->with('error', 'Payment processing is not configured. Please contact support.');
             }
 
@@ -294,16 +284,6 @@ class SubscriptionController extends Controller
                 : $planModel->stripe_price_id_monthly;
 
             if (!$priceId) {
-                if (app()->environment('local')) {
-                    $user->update([
-                        'plan_id' => $planModel->id,
-                        'subscription_status' => 'active',
-                    ]);
-
-                    return redirect()->route('subscription.manage')
-                        ->with('success', 'Plan activated in local mode (Stripe price ID missing).');
-                }
-
                 return back()->with('error', 'Stripe price not configured for this plan.');
             }
 

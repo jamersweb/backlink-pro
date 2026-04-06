@@ -1,6 +1,9 @@
 <template>
     <div class="contact-form marketing-card p-8">
-        <h2 class="text-2xl font-bold mb-6 text-text">Contact Us</h2>
+        <h2 class="text-2xl font-bold mb-2 text-text">Sales Request</h2>
+        <p class="mb-6 text-sm text-muted">
+            Share a few details and our team will recommend the right plan, workflow, or rollout path.
+        </p>
 
         <!-- Error Summary -->
         <div v-if="Object.keys(form.errors).length > 0" class="mb-6 p-4 bg-danger/10 border border-danger/20 rounded-lg">
@@ -199,7 +202,7 @@
                 class="btn-primary w-full text-lg px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <span v-if="form.processing">Sending...</span>
-                <span v-else>Send message</span>
+                <span v-else>Contact sales</span>
             </button>
 
             <!-- Disclaimer -->

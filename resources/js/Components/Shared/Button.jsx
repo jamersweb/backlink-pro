@@ -22,14 +22,14 @@ export default function Button({
     };
 
     const variants = {
-        primary: 'text-white bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] hover:from-[#2457D6] hover:to-[#1E4BB8] focus:ring-[#2F6BFF] shadow-lg shadow-[#2F6BFF]/20 hover:shadow-xl hover:shadow-[#2F6BFF]/30',
-        secondary: 'text-[var(--admin-text)] bg-[var(--admin-surface-2)] hover:bg-[var(--admin-surface-3)] focus:ring-[#2F6BFF] border border-[var(--admin-border)]',
+        primary: 'text-white bg-gradient-to-r from-[var(--admin-primary)] to-[var(--admin-primary-hover)] hover:from-[var(--admin-primary-hover)] hover:to-[var(--admin-primary-hover)] focus:ring-[var(--admin-primary)] shadow-lg hover:shadow-xl',
+        secondary: 'text-[var(--admin-text)] bg-[var(--admin-surface-2)] hover:bg-[var(--admin-surface-3)] focus:ring-[var(--admin-primary)] border border-[var(--admin-border)]',
         danger: 'text-white bg-gradient-to-r from-[#F04438] to-[#DC2626] hover:from-[#DC2626] hover:to-[#B91C1C] focus:ring-[#F04438] shadow-lg shadow-[#F04438]/20',
         success: 'text-white bg-gradient-to-r from-[#12B76A] to-[#0D9458] hover:from-[#0D9458] hover:to-[#0A7A48] focus:ring-[#12B76A] shadow-lg shadow-[#12B76A]/20',
         warning: 'text-white bg-gradient-to-r from-[#F79009] to-[#D97706] hover:from-[#D97706] hover:to-[#B45309] focus:ring-[#F79009] shadow-lg shadow-[#F79009]/20',
         lime: 'text-[var(--admin-bg)] bg-gradient-to-r from-[#B6F400] to-[#A3DB00] hover:from-[#A3DB00] hover:to-[#8BC400] focus:ring-[#B6F400] shadow-lg shadow-[#B6F400]/20',
-        outline: 'text-[var(--admin-text)] bg-transparent border border-[var(--admin-border)] hover:bg-[var(--admin-hover-bg)] hover:border-[var(--admin-hover-border)] focus:ring-[#2F6BFF]',
-        ghost: 'text-[var(--admin-text-muted)] bg-transparent hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)] focus:ring-[#2F6BFF]',
+        outline: 'text-[var(--admin-text)] bg-transparent border border-[var(--admin-border)] hover:bg-[var(--admin-hover-bg)] hover:border-[var(--admin-hover-border)] focus:ring-[var(--admin-primary)]',
+        ghost: 'text-[var(--admin-text-muted)] bg-transparent hover:bg-[var(--admin-hover-bg)] hover:text-[var(--admin-text)] focus:ring-[var(--admin-primary)]',
         white: 'text-[#0F172A] bg-white hover:bg-gray-100 focus:ring-white shadow-lg',
     };
 

@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page how-it-works-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -13,9 +13,7 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
-        <SideNav />
 
         <main id="main-content">
             <HowHero @demo-open="showDemoModal = true" />
@@ -39,13 +37,11 @@
 import { ref, onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { useReveal } from '../../Composables/useReveal.js';
-import AnnouncementBar from '../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../Components/Marketing/Footer.vue';
 import FinalCTA from '../../Components/Marketing/FinalCTA.vue';
 import StickyMobileCTA from '../../Components/Marketing/StickyMobileCTA.vue';
 import DemoModal from '../../Components/Marketing/DemoModal.vue';
-import SideNav from '../../Components/Marketing/HowItWorks/SideNav.vue';
 import HowHero from '../../Components/Marketing/HowItWorks/HowHero.vue';
 import WorkflowDiagram from '../../Components/Marketing/HowItWorks/WorkflowDiagram.vue';
 import StepByStep from '../../Components/Marketing/HowItWorks/StepByStep.vue';
@@ -54,6 +50,7 @@ import EvidenceReporting from '../../Components/Marketing/HowItWorks/EvidenceRep
 import WorkflowCards from '../../Components/Marketing/HowItWorks/WorkflowCards.vue';
 import IntegrationsTeaser from '../../Components/Marketing/HowItWorks/IntegrationsTeaser.vue';
 import FAQ from '../../Components/Marketing/HowItWorks/FAQ.vue';
+import './shared-linked-page-theme.css';
 
 const props = defineProps({
     meta: {

@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page security-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -22,10 +22,7 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
-        <SecuritySideNav />
-        <DisclosureBar :disclosures="disclosures" />
 
         <main id="main-content">
             <SecurityHero />
@@ -65,21 +62,19 @@
 import { onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { useReveal } from '../../Composables/useReveal.js';
-import AnnouncementBar from '../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../Components/Marketing/Footer.vue';
 import FinalCTA from '../../Components/Marketing/FinalCTA.vue';
 import StickyMobileCTA from '../../Components/Marketing/StickyMobileCTA.vue';
 import SecurityHero from '../../Components/Marketing/Security/SecurityHero.vue';
 import TrustHighlights from '../../Components/Marketing/Security/TrustHighlights.vue';
-import SecuritySideNav from '../../Components/Marketing/Security/SecuritySideNav.vue';
 import SecuritySection from '../../Components/Marketing/Security/SecuritySection.vue';
 import DataHandling from '../../Components/Marketing/Security/DataHandling.vue';
 import GuardrailsBlock from '../../Components/Marketing/Security/GuardrailsBlock.vue';
 import ReliabilityBlock from '../../Components/Marketing/Security/ReliabilityBlock.vue';
 import VulnDisclosure from '../../Components/Marketing/Security/VulnDisclosure.vue';
 import SecurityFAQ from '../../Components/Marketing/Security/SecurityFAQ.vue';
-import DisclosureBar from '../../Components/Marketing/Security/DisclosureBar.vue';
+import './shared-linked-page-theme.css';
 
 const props = defineProps({
     meta: {
