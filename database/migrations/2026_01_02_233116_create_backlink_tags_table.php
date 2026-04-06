@@ -72,36 +72,20 @@ return new class extends Migration
             Schema::dropIfExists('backlink_item_tag');
             Schema::dropIfExists('backlink_tags');
         }
-        Schema::create('backlink_tags', function (Blueprint $table) use ($isSqlite) {
+        Schema::create('backlink_tags', function (Blueprint $table) {
             $table->id();
-            if ($isSqlite) {
-                $table->foreignId('domain_id')->constrained('domains')->cascadeOnDelete();
-            } else {
-                $table->unsignedBigInteger('domain_id')->index();
-            }
+            $table->foreignId('domain_id')->constrained('domains')->cascadeOnDelete();
             $table->string('name');
             $table->string('color', 7)->nullable();
             $table->timestamps();
             $table->unique(['domain_id', 'name']);
         });
-        if (!$isSqlite) {
-            DB::statement('ALTER TABLE backlink_tags ADD CONSTRAINT backlink_tags_domain_id_foreign FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE');
-        }
 
-        Schema::create('backlink_item_tag', function (Blueprint $table) use ($isSqlite) {
-            if ($isSqlite) {
-                $table->foreignId('backlink_item_id')->constrained('domain_backlinks')->cascadeOnDelete();
-                $table->foreignId('backlink_tag_id')->constrained('backlink_tags')->cascadeOnDelete();
-            } else {
-                $table->unsignedBigInteger('backlink_item_id');
-                $table->unsignedBigInteger('backlink_tag_id');
-            }
+        Schema::create('backlink_item_tag', function (Blueprint $table) {
+            $table->foreignId('backlink_item_id')->constrained('domain_backlinks')->cascadeOnDelete();
+            $table->foreignId('backlink_tag_id')->constrained('backlink_tags')->cascadeOnDelete();
             $table->primary(['backlink_item_id', 'backlink_tag_id']);
         });
-        if (!$isSqlite) {
-            DB::statement('ALTER TABLE backlink_item_tag ADD CONSTRAINT backlink_item_tag_backlink_item_id_foreign FOREIGN KEY (backlink_item_id) REFERENCES domain_backlinks(id) ON DELETE CASCADE');
-            DB::statement('ALTER TABLE backlink_item_tag ADD CONSTRAINT backlink_item_tag_backlink_tag_id_foreign FOREIGN KEY (backlink_tag_id) REFERENCES backlink_tags(id) ON DELETE CASCADE');
-        }
     }
 
     /**

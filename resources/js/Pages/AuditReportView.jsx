@@ -1,6 +1,6 @@
 import AppLayout from '../Components/Layout/AppLayout';
 import Card from '../Components/Shared/Card';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 
 function useExportPdf(auditId) {
@@ -57,6 +57,7 @@ const tabs = [
     { id: 'technical', label: 'Technical', icon: 'bi-gear' },
     { id: 'performance', label: 'Performance', icon: 'bi-lightning' },
     { id: 'integrations', label: 'Integrations', icon: 'bi-plug' },
+    { id: 'modules', label: 'Modules', icon: 'bi-grid-3x3-gap' },
 ];
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : 'N/A');
@@ -177,6 +178,127 @@ export default function AuditReportView({ audit }) {
     const ga4 = audit?.ga4 || null;
     const gsc = audit?.gsc || null;
     const categoryScores = audit?.category_scores || {};
+    const reportModules = audit?.report_modules?.modules || [];
+    const moduleOrder = audit?.report_modules?.module_order || [];
+    const orderedModules = moduleOrder.length
+        ? moduleOrder
+            .map((key) => reportModules.find((module) => module.module_key === key))
+            .filter(Boolean)
+        : reportModules;
+    const [activeModuleKey, setActiveModuleKey] = useState(orderedModules[0]?.module_key || null);
+    const activeModule = orderedModules.find((module) => module.module_key === activeModuleKey) || orderedModules[0] || null;
+    const [jsRenderPreset, setJsRenderPreset] = useState('all');
+    const [segmentFilter, setSegmentFilter] = useState('all');
+    const [spellingGrammarPreset, setSpellingGrammarPreset] = useState('all');
+    const [customRuleKeyFilter, setCustomRuleKeyFilter] = useState('all');
+    const [extractionPreset, setExtractionPreset] = useState('all');
+    const [linkMetricsPreset, setLinkMetricsPreset] = useState('all');
+    const [linkMetricsIssueType, setLinkMetricsIssueType] = useState('all');
+    const [linkMetricsMinRd, setLinkMetricsMinRd] = useState(0);
+    const [linkMetricsMinBl, setLinkMetricsMinBl] = useState(0);
+
+    useEffect(() => {
+        setJsRenderPreset('all');
+        setSegmentFilter('all');
+        setSpellingGrammarPreset('all');
+        setCustomRuleKeyFilter('all');
+        setExtractionPreset('all');
+        setLinkMetricsPreset('all');
+        setLinkMetricsIssueType('all');
+        setLinkMetricsMinRd(0);
+        setLinkMetricsMinBl(0);
+    }, [activeModuleKey]);
+
+    const filteredModuleIssues = useMemo(() => {
+        const list = activeModule?.issues || [];
+        let out = list;
+        if (segmentFilter !== 'all') {
+            out = out.filter((issue) => {
+                const issueSegment = issue.segment || issue.details_json?.segment || 'other';
+                return issueSegment === segmentFilter;
+            });
+        }
+        if (activeModule?.module_key === 'spelling_grammar' && spellingGrammarPreset !== 'all') {
+            out = out.filter((issue) => {
+                if (spellingGrammarPreset === 'high_confidence') {
+                    return (issue.details_json?.filter_tags || []).includes('high_confidence');
+                }
+                return issue.details_json?.issue_kind === spellingGrammarPreset;
+            });
+        }
+        if (activeModule?.module_key === 'js_rendering' && jsRenderPreset !== 'all') {
+            out = out.filter((issue) => {
+                const tags = issue.details_json?.filter_tags || [];
+                return tags.includes(jsRenderPreset);
+            });
+        }
+        if (activeModule?.module_key === 'custom_source_search' && customRuleKeyFilter !== 'all') {
+            out = out.filter((issue) => (issue.details_json?.rule_key || '') === customRuleKeyFilter);
+        }
+        if (activeModule?.module_key === 'link_metrics') {
+            const minRd = Number(linkMetricsMinRd) || 0;
+            const minBl = Number(linkMetricsMinBl) || 0;
+            out = out.filter((issue) => {
+                const eq = issue.details_json?.link_equity;
+                if (!eq) return false;
+                const rd = Number(eq.referring_domains ?? 0);
+                const bl = Number(eq.backlinks ?? 0);
+                if (rd < minRd || bl < minBl) return false;
+                if (linkMetricsIssueType !== 'all' && issue.issue_type !== linkMetricsIssueType) return false;
+                if (linkMetricsPreset === 'high_tier_only' && eq.tier !== 'high') return false;
+                if (linkMetricsPreset === 'medium_or_high' && eq.tier !== 'high' && eq.tier !== 'medium') return false;
+                return true;
+            });
+        }
+        return out;
+    }, [activeModule, jsRenderPreset, segmentFilter, spellingGrammarPreset, customRuleKeyFilter, linkMetricsPreset, linkMetricsIssueType, linkMetricsMinRd, linkMetricsMinBl]);
+
+    const filteredModuleTables = useMemo(() => {
+        const tables = activeModule?.tables || [];
+        if (!activeModule) {
+            return tables;
+        }
+        return tables.map((table) => {
+            let rows = Array.isArray(table.rows) ? [...table.rows] : [];
+            if (segmentFilter !== 'all') {
+                rows = rows.filter((r) => (r.segment || 'other') === segmentFilter);
+            }
+            if (activeModule.module_key === 'custom_source_search' && customRuleKeyFilter !== 'all') {
+                if (table.key === 'custom_search_results' || table.key === 'custom_search_rule_summaries') {
+                    rows = rows.filter((r) => r.rule_key === customRuleKeyFilter);
+                }
+            }
+            if (activeModule.module_key === 'custom_extraction') {
+                if (customRuleKeyFilter !== 'all') {
+                    if (
+                        table.key === 'custom_extraction_per_url' ||
+                        table.key === 'custom_extraction_rules' ||
+                        table.key === 'custom_extraction_duplicates'
+                    ) {
+                        rows = rows.filter((r) => r.rule_key === customRuleKeyFilter);
+                    }
+                }
+                if (extractionPreset === 'missing_only' && table.key === 'custom_extraction_per_url') {
+                    rows = rows.filter((r) => r.missing);
+                }
+            }
+            if (activeModule.module_key === 'link_metrics') {
+                const minRd = Number(linkMetricsMinRd) || 0;
+                const minBl = Number(linkMetricsMinBl) || 0;
+                rows = rows.filter((r) => {
+                    const rd = Number(r.referring_domains ?? 0);
+                    const bl = Number(r.backlinks ?? 0);
+                    if (rd < minRd || bl < minBl) return false;
+                    if (linkMetricsPreset === 'high_tier_only' && r.equity_tier !== 'high') return false;
+                    if (linkMetricsPreset === 'medium_or_high' && r.equity_tier !== 'high' && r.equity_tier !== 'medium') {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            return { ...table, rows };
+        });
+    }, [activeModule, segmentFilter, customRuleKeyFilter, extractionPreset, linkMetricsPreset, linkMetricsMinRd, linkMetricsMinBl]);
 
     const duplicateTitles = asArray(onPage.duplicate_titles_table);
     const missingMeta = asArray(onPage.missing_meta_table);
@@ -577,6 +699,409 @@ export default function AuditReportView({ audit }) {
                                         </div>
                                     </Card>
                                 </div>
+                            </div>
+                        ) : null}
+
+                        {activeTab === 'modules' ? (
+                            <div className="space-y-6">
+                                {orderedModules.length ? (
+                                    <>
+                                        <div className="flex flex-wrap gap-2">
+                                            {orderedModules.map((module) => (
+                                                <button
+                                                    key={module.module_key}
+                                                    onClick={() => setActiveModuleKey(module.module_key)}
+                                                    className={`rounded-lg px-3 py-2 text-sm ${
+                                                        activeModule?.module_key === module.module_key
+                                                            ? 'bg-[#2F6BFF] text-white'
+                                                            : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                    }`}
+                                                >
+                                                    {module.module_title}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {activeModule ? (
+                                            <>
+                                                {activeModule.filters?.segments?.length ? (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm text-[var(--admin-text-muted)]">Segment:</span>
+                                                        <select
+                                                            value={segmentFilter}
+                                                            onChange={(e) => setSegmentFilter(e.target.value)}
+                                                            className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-sm text-[var(--admin-text)]"
+                                                        >
+                                                            <option value="all">All</option>
+                                                            {activeModule.filters.segments.map((segment) => (
+                                                                <option key={segment} value={segment}>
+                                                                    {segment}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                ) : null}
+
+                                                {activeModule.module_key === 'js_rendering' &&
+                                                (activeModule.filters?.presets?.length ? (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm text-[var(--admin-text-muted)]">Filter:</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setJsRenderPreset('all')}
+                                                            className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                jsRenderPreset === 'all'
+                                                                    ? 'bg-[#2F6BFF] text-white'
+                                                                    : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                            }`}
+                                                        >
+                                                            All
+                                                        </button>
+                                                        {activeModule.filters.presets.map((preset) => (
+                                                            <button
+                                                                type="button"
+                                                                key={preset.key}
+                                                                onClick={() => setJsRenderPreset(preset.key)}
+                                                                className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                    jsRenderPreset === preset.key
+                                                                        ? 'bg-[#2F6BFF] text-white'
+                                                                        : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                                }`}
+                                                            >
+                                                                {preset.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : null)}
+                                                {activeModule.module_key === 'spelling_grammar' &&
+                                                (activeModule.filters?.presets?.length ? (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm text-[var(--admin-text-muted)]">Filter:</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSpellingGrammarPreset('all')}
+                                                            className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                spellingGrammarPreset === 'all'
+                                                                    ? 'bg-[#2F6BFF] text-white'
+                                                                    : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                            }`}
+                                                        >
+                                                            All
+                                                        </button>
+                                                        {activeModule.filters.presets.map((preset) => (
+                                                            <button
+                                                                type="button"
+                                                                key={preset.key}
+                                                                onClick={() => setSpellingGrammarPreset(preset.key)}
+                                                                className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                    spellingGrammarPreset === preset.key
+                                                                        ? 'bg-[#2F6BFF] text-white'
+                                                                        : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                                }`}
+                                                            >
+                                                                {preset.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : null)}
+                                                {(activeModule.module_key === 'custom_source_search' ||
+                                                    activeModule.module_key === 'custom_extraction') &&
+                                                (activeModule.filters?.rule_keys?.length ? (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm text-[var(--admin-text-muted)]">Rule:</span>
+                                                        <select
+                                                            value={customRuleKeyFilter}
+                                                            onChange={(e) => setCustomRuleKeyFilter(e.target.value)}
+                                                            className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-sm text-[var(--admin-text)]"
+                                                        >
+                                                            <option value="all">All rules</option>
+                                                            {activeModule.filters.rule_keys.map((key) => (
+                                                                <option key={key} value={key}>
+                                                                    {key}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                ) : null)}
+                                                {activeModule.module_key === 'custom_extraction' &&
+                                                (activeModule.filters?.presets?.length ? (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm text-[var(--admin-text-muted)]">Rows:</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExtractionPreset('all')}
+                                                            className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                extractionPreset === 'all'
+                                                                    ? 'bg-[#2F6BFF] text-white'
+                                                                    : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                            }`}
+                                                        >
+                                                            All
+                                                        </button>
+                                                        {activeModule.filters.presets.map((preset) => (
+                                                            <button
+                                                                type="button"
+                                                                key={preset.key}
+                                                                onClick={() => setExtractionPreset(preset.key)}
+                                                                className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                    extractionPreset === preset.key
+                                                                        ? 'bg-[#2F6BFF] text-white'
+                                                                        : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                                                }`}
+                                                            >
+                                                                {preset.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : null)}
+                                                {activeModule.module_key === 'link_metrics' ? (
+                                                    <div className="flex flex-col gap-3 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-2)] p-4">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="text-sm text-[var(--admin-text-muted)]">Equity:</span>
+                                                            {(activeModule.filters?.presets || []).map((preset) => (
+                                                                <button
+                                                                    type="button"
+                                                                    key={preset.key}
+                                                                    onClick={() => setLinkMetricsPreset(preset.key)}
+                                                                    className={`rounded-lg px-3 py-1.5 text-sm ${
+                                                                        linkMetricsPreset === preset.key
+                                                                            ? 'bg-[#2F6BFF] text-white'
+                                                                            : 'bg-[var(--admin-surface)] text-[var(--admin-text-muted)]'
+                                                                    }`}
+                                                                >
+                                                                    {preset.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
+                                                                Min referring domains
+                                                                <input
+                                                                    type="number"
+                                                                    min={0}
+                                                                    className="w-24 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
+                                                                    value={linkMetricsMinRd}
+                                                                    onChange={(e) => setLinkMetricsMinRd(e.target.value)}
+                                                                />
+                                                            </label>
+                                                            <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
+                                                                Min backlinks
+                                                                <input
+                                                                    type="number"
+                                                                    min={0}
+                                                                    className="w-24 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
+                                                                    value={linkMetricsMinBl}
+                                                                    onChange={(e) => setLinkMetricsMinBl(e.target.value)}
+                                                                />
+                                                            </label>
+                                                            {activeModule.filters?.issue_types?.length ? (
+                                                                <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
+                                                                    Issue type
+                                                                    <select
+                                                                        value={linkMetricsIssueType}
+                                                                        onChange={(e) => setLinkMetricsIssueType(e.target.value)}
+                                                                        className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
+                                                                    >
+                                                                        <option value="all">All</option>
+                                                                        {activeModule.filters.issue_types.map((t) => (
+                                                                            <option key={t} value={t}>
+                                                                                {t}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </label>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                ) : null}
+
+                                                {activeModule.module_key === 'spelling_grammar' ? (
+                                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                                                        <MetricCard label="Pages with issues" value={formatNumber(activeModule.card?.affected_urls)} />
+                                                        <MetricCard label="Total issues" value={formatNumber(activeModule.card?.overview_count)} />
+                                                        <MetricCard
+                                                            label="Highest-confidence issues"
+                                                            value={formatNumber(activeModule.card?.high_confidence_issues)}
+                                                        />
+                                                        <MetricCard label="Warning" value={formatNumber(activeModule.severity_counts?.warning)} />
+                                                        <MetricCard label="Info" value={formatNumber(activeModule.severity_counts?.info)} />
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                                                        <MetricCard label="Overview Count" value={formatNumber(activeModule.card?.overview_count)} />
+                                                        <MetricCard label="Affected URLs" value={formatNumber(activeModule.card?.affected_urls)} />
+                                                        <MetricCard label="Critical" value={formatNumber(activeModule.severity_counts?.critical)} />
+                                                        <MetricCard label="Warning" value={formatNumber(activeModule.severity_counts?.warning)} />
+                                                        <MetricCard label="Info" value={formatNumber(activeModule.severity_counts?.info)} />
+                                                    </div>
+                                                )}
+
+                                                <DataTable
+                                                    title="Grouped Issues"
+                                                    rows={filteredModuleIssues}
+                                                    columns={
+                                                        activeModule.module_key === 'link_metrics'
+                                                            ? [
+                                                                  { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
+                                                                  {
+                                                                      key: 'details_json',
+                                                                      label: 'Equity',
+                                                                      render: (_v, row) => {
+                                                                          const eq = row.details_json?.link_equity || {};
+                                                                          return (
+                                                                              <span className="text-xs">
+                                                                                  <span className="font-semibold uppercase text-[var(--admin-text-muted)]">{eq.tier || '—'}</span>
+                                                                                  {' · RD '}
+                                                                                  {formatNumber(eq.referring_domains ?? 0)}
+                                                                                  {' · BL '}
+                                                                                  {formatNumber(eq.backlinks ?? 0)}
+                                                                              </span>
+                                                                          );
+                                                                      },
+                                                                  },
+                                                                  { key: 'module_key', label: 'Module' },
+                                                                  { key: 'issue_type', label: 'Issue type' },
+                                                                  { key: 'url', label: 'URL' },
+                                                                  { key: 'score_penalty', label: 'Penalty', render: (v) => formatNumber(v) },
+                                                                  { key: 'message', label: 'Message' },
+                                                              ]
+                                                            : activeModule.module_key === 'js_rendering'
+                                                            ? [
+                                                                  { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
+                                                                  {
+                                                                      key: 'details_json',
+                                                                      label: 'Diff type',
+                                                                      render: (_v, row) => row.details_json?.diff_type || row.issue_type || '—',
+                                                                  },
+                                                                  { key: 'url', label: 'URL' },
+                                                                  { key: 'message', label: 'Message' },
+                                                                  {
+                                                                      key: 'details_json',
+                                                                      label: 'Raw vs rendered',
+                                                                      render: (_v, row) => {
+                                                                          const d = row.details_json || {};
+                                                                          return (
+                                                                              <span className="text-xs text-[var(--admin-text-muted)]">
+                                                                                  {d.raw != null && d.rendered != null
+                                                                                      ? 'See CSV/JSON export for full payload'
+                                                                                      : '—'}
+                                                                              </span>
+                                                                          );
+                                                                      },
+                                                                  },
+                                                              ]
+                                                            : activeModule.module_key === 'spelling_grammar'
+                                                              ? [
+                                                                    {
+                                                                        key: 'severity',
+                                                                        label: 'Severity',
+                                                                        render: (v) => <IssueBadge severity={v || 'info'} />,
+                                                                    },
+                                                                    {
+                                                                        key: 'details_json',
+                                                                        label: 'Kind',
+                                                                        render: (_v, row) => row.details_json?.issue_kind || row.issue_type || '—',
+                                                                    },
+                                                                    {
+                                                                        key: 'details_json',
+                                                                        label: 'Text / fix',
+                                                                        render: (_v, row) => {
+                                                                            const d = row.details_json || {};
+                                                                            const fix = d.suggested_correction;
+                                                                            return (
+                                                                                <span className="text-sm">
+                                                                                    <span className="font-medium">{d.issue_text || '—'}</span>
+                                                                                    {fix ? (
+                                                                                        <span className="text-[var(--admin-text-muted)]">
+                                                                                            {' '}
+                                                                                            → {fix}
+                                                                                        </span>
+                                                                                    ) : null}
+                                                                                </span>
+                                                                            );
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        key: 'details_json',
+                                                                        label: 'Confidence',
+                                                                        render: (_v, row) =>
+                                                                            row.details_json?.confidence != null
+                                                                                ? `${row.details_json.confidence}`
+                                                                                : '—',
+                                                                    },
+                                                                    {
+                                                                        key: 'details_json',
+                                                                        label: 'Context',
+                                                                        render: (_v, row) => (
+                                                                            <span className="text-xs text-[var(--admin-text-muted)]">
+                                                                                {row.details_json?.context_snippet || '—'}
+                                                                            </span>
+                                                                        ),
+                                                                    },
+                                                                    { key: 'url', label: 'URL' },
+                                                                ]
+                                                              : [
+                                                                    { key: 'severity', label: 'Severity', render: (value) => <IssueBadge severity={value || 'info'} /> },
+                                                                    { key: 'issue_type', label: 'Issue Type' },
+                                                                    { key: 'status', label: 'Status' },
+                                                                    { key: 'url', label: 'URL' },
+                                                                    { key: 'message', label: 'Message' },
+                                                                ]
+                                                    }
+                                                    emptyText="No issues detected for this module."
+                                                />
+
+                                                {filteredModuleTables.map((table) => (
+                                                    <DataTable
+                                                        key={table.key}
+                                                        title={table.title || 'Table'}
+                                                        rows={Array.isArray(table.rows) ? table.rows : []}
+                                                        columns={Array.isArray(table.rows) && table.rows.length
+                                                            ? Object.keys(table.rows[0]).slice(0, 4).map((key) => ({ key, label: key.replaceAll('_', ' ') }))
+                                                            : [{ key: 'value', label: 'Value' }]}
+                                                    />
+                                                ))}
+
+                                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                                    {(activeModule.charts || []).map((chart) => (
+                                                        <Card key={chart.key} variant="elevated">
+                                                            <h3 className="text-lg font-semibold text-[var(--admin-text)]">{chart.title || 'Chart Dataset'}</h3>
+                                                            <pre className="mt-3 overflow-auto rounded-lg bg-[var(--admin-surface-2)] p-3 text-xs text-[var(--admin-text-muted)]">
+                                                                {JSON.stringify(chart.dataset || {}, null, 2)}
+                                                            </pre>
+                                                        </Card>
+                                                    ))}
+                                                </div>
+
+                                                <Card variant="elevated">
+                                                    <h3 className="text-lg font-semibold text-[var(--admin-text)]">Recommended Actions</h3>
+                                                    <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--admin-text)]">
+                                                        {(activeModule.card?.recommended_actions || []).map((item, idx) => (
+                                                            <li key={`${activeModule.module_key}-rec-${idx}`}>{item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </Card>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    <a
+                                                        href={`/audit/${audit.id}/export/modules.csv?module_key=${encodeURIComponent(activeModule.module_key)}`}
+                                                        className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]"
+                                                    >
+                                                        Export Module CSV
+                                                    </a>
+                                                    <a
+                                                        href={`/audit/${audit.id}/export/modules.json?module_key=${encodeURIComponent(activeModule.module_key)}`}
+                                                        className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]"
+                                                    >
+                                                        Export Module JSON
+                                                    </a>
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    <SectionMessage>No module report data found for this audit.</SectionMessage>
+                                )}
                             </div>
                         ) : null}
                     </div>

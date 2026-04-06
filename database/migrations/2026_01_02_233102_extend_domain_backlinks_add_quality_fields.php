@@ -35,42 +35,33 @@ return new class extends Migration
             }
         });
 
-        // Add foreign key constraint separately if column was just added
-        if (!Schema::hasColumn('domain_backlinks', 'ref_domain_id')) {
-            // Column doesn't exist, it was added above, now add foreign key
-            try {
-                $constraints = DB::select("
-                    SELECT CONSTRAINT_NAME 
-                    FROM information_schema.KEY_COLUMN_USAGE 
-                    WHERE TABLE_SCHEMA = DATABASE() 
-                    AND TABLE_NAME = 'domain_backlinks' 
-                    AND COLUMN_NAME = 'ref_domain_id' 
-                    AND REFERENCED_TABLE_NAME IS NOT NULL
-                ");
-                
-                if (empty($constraints)) {
-                    DB::statement('ALTER TABLE domain_backlinks ADD CONSTRAINT domain_backlinks_ref_domain_id_foreign FOREIGN KEY (ref_domain_id) REFERENCES backlink_ref_domains(id) ON DELETE SET NULL');
+        if (Schema::hasColumn('domain_backlinks', 'ref_domain_id')) {
+            $driver = Schema::getConnection()->getDriverName();
+            if ($driver === 'sqlite') {
+                try {
+                    Schema::table('domain_backlinks', function (Blueprint $table) {
+                        $table->foreign('ref_domain_id')->references('id')->on('backlink_ref_domains')->nullOnDelete();
+                    });
+                } catch (\Throwable $e) {
+                    // May already exist on re-run.
                 }
-            } catch (\Exception $e) {
-                // Ignore if constraint already exists or table doesn't exist
-            }
-        } else {
-            // Column exists, check if foreign key exists
-            try {
-                $constraints = DB::select("
-                    SELECT CONSTRAINT_NAME 
-                    FROM information_schema.KEY_COLUMN_USAGE 
-                    WHERE TABLE_SCHEMA = DATABASE() 
-                    AND TABLE_NAME = 'domain_backlinks' 
-                    AND COLUMN_NAME = 'ref_domain_id' 
-                    AND REFERENCED_TABLE_NAME IS NOT NULL
-                ");
-                
-                if (empty($constraints)) {
-                    DB::statement('ALTER TABLE domain_backlinks ADD CONSTRAINT domain_backlinks_ref_domain_id_foreign FOREIGN KEY (ref_domain_id) REFERENCES backlink_ref_domains(id) ON DELETE SET NULL');
+            } else {
+                try {
+                    $constraints = DB::select("
+                        SELECT CONSTRAINT_NAME 
+                        FROM information_schema.KEY_COLUMN_USAGE 
+                        WHERE TABLE_SCHEMA = DATABASE() 
+                        AND TABLE_NAME = 'domain_backlinks' 
+                        AND COLUMN_NAME = 'ref_domain_id' 
+                        AND REFERENCED_TABLE_NAME IS NOT NULL
+                    ");
+
+                    if (empty($constraints)) {
+                        DB::statement('ALTER TABLE domain_backlinks ADD CONSTRAINT domain_backlinks_ref_domain_id_foreign FOREIGN KEY (ref_domain_id) REFERENCES backlink_ref_domains(id) ON DELETE SET NULL');
+                    }
+                } catch (\Exception $e) {
+                    // Ignore if constraint already exists
                 }
-            } catch (\Exception $e) {
-                // Ignore if constraint already exists
             }
         }
 

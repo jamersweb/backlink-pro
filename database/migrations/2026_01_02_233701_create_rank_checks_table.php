@@ -42,8 +42,8 @@ return new class extends Migration
         
         Schema::create('rank_checks', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('domain_id')->index();
-            $table->unsignedBigInteger('user_id')->index();
+            $table->foreignId('domain_id')->constrained('domains')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('provider_code');
             $table->enum('status', ['queued', 'running', 'completed', 'failed'])->default('queued')->index();
             $table->unsignedInteger('keywords_count')->default(0);
@@ -55,10 +55,6 @@ return new class extends Migration
 
             $table->index(['domain_id', 'created_at']);
         });
-        
-        // Add foreign keys with explicit names
-        DB::statement('ALTER TABLE rank_checks ADD CONSTRAINT rank_checks_domain_id_foreign FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE rank_checks ADD CONSTRAINT rank_checks_user_id_foreign FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE');
     }
 
     /**

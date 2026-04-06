@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\SeoAudit\LinkMetrics\DomainBacklinkLinkMetricsProvider;
+use App\Services\SeoAudit\LinkMetrics\LinkMetricsProviderContract;
+use App\Services\SeoAudit\LinkMetrics\NullLinkMetricsProvider;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 
@@ -12,7 +15,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(LinkMetricsProviderContract::class, function ($app) {
+            return match (config('seo_audit.link_metrics.driver', 'null')) {
+                'domain_backlinks' => $app->make(DomainBacklinkLinkMetricsProvider::class),
+                default => $app->make(NullLinkMetricsProvider::class),
+            };
+        });
     }
 
     /**

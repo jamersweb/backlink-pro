@@ -42,9 +42,9 @@ return new class extends Migration
         
         Schema::create('rank_results', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('rank_check_id')->index();
-            $table->unsignedBigInteger('domain_id')->index();
-            $table->unsignedBigInteger('rank_keyword_id')->index();
+            $table->foreignId('rank_check_id')->constrained('rank_checks')->cascadeOnDelete();
+            $table->foreignId('domain_id')->constrained('domains')->cascadeOnDelete();
+            $table->foreignId('rank_keyword_id')->constrained('rank_keywords')->cascadeOnDelete();
             $table->string('keyword')->index();
             $table->unsignedSmallInteger('position')->nullable(); // 1..100, null if not found
             $table->text('found_url')->nullable();
@@ -57,11 +57,6 @@ return new class extends Migration
             $table->index(['domain_id', 'rank_keyword_id', 'fetched_at']);
             $table->index(['domain_id', 'keyword', 'fetched_at']);
         });
-        
-        // Add foreign keys with explicit names
-        DB::statement('ALTER TABLE rank_results ADD CONSTRAINT rank_results_rank_check_id_foreign FOREIGN KEY (rank_check_id) REFERENCES rank_checks(id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE rank_results ADD CONSTRAINT rank_results_domain_id_foreign FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE rank_results ADD CONSTRAINT rank_results_rank_keyword_id_foreign FOREIGN KEY (rank_keyword_id) REFERENCES rank_keywords(id) ON DELETE CASCADE');
     }
 
     /**

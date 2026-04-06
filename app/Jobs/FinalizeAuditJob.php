@@ -3,12 +3,24 @@
 namespace App\Jobs;
 
 use App\Models\Audit;
+use App\Models\AuditIssue;
 use App\Models\AuditLink;
 use App\Models\AuditPage;
 use App\Jobs\RunPageSpeedJob;
 use App\Services\SeoAudit\RulesEngine;
+use App\Services\SeoAudit\JsRenderingService;
+use App\Services\SeoAudit\NearDuplicateContentService;
+use App\Services\SeoAudit\SegmentationService;
+use App\Services\SeoAudit\SpellingGrammarService;
+use App\Services\SeoAudit\CustomSourceSearchService;
+use App\Services\SeoAudit\CustomExtractionService;
+use App\Services\SeoAudit\FormsAuthIssueService;
+use App\Services\SeoAudit\FormsAuthService;
 use App\Services\SeoAudit\AuditKpiBuilder;
 use App\Services\SeoAudit\AuditKpiSanitizer;
+use App\Services\SeoAudit\ReportModuleBuilder;
+use App\Services\SeoAudit\LinkMetrics\LinkEquityPrioritizer;
+use App\Services\SeoAudit\LinkMetrics\LinkMetricsEnrichmentService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,7 +33,7 @@ class FinalizeAuditJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 600; // 10 minutes for large audits
+    public $timeout = 900; // allow headless renders on larger crawls
     public $tries = 2;
 
     /**
@@ -51,20 +63,72 @@ class FinalizeAuditJob implements ShouldQueue
             $rulesEngine = new RulesEngine();
             $evaluation = $rulesEngine->evaluateCollection($audit);
 
+            $categoryPenalties = $evaluation['categoryPenalties'];
+
+            if (! empty($audit->crawl_module_flags['forms_auth_enabled'])) {
+                $f = app(FormsAuthIssueService::class);
+                $f->refreshStateFromPages($audit);
+                $audit->refresh();
+                $categoryPenalties['technical'] += $f->sync($audit);
+            }
+
+            $jsRendering = app(JsRenderingService::class);
+            if ($jsRendering->shouldRun($audit)) {
+                $categoryPenalties['technical'] += $jsRendering->runForAudit($audit);
+            }
+
+            $flags = $audit->crawl_module_flags ?? [];
+            if (!empty($flags['near_duplicate_enabled'])) {
+                app(NearDuplicateContentService::class)->run($audit);
+            }
+            if (!empty($flags['segmentation_enabled'])) {
+                app(SegmentationService::class)->run($audit);
+            }
+
+            if (!empty($flags['custom_source_search_enabled'])) {
+                app(CustomSourceSearchService::class)->syncSegments($audit);
+                app(CustomSourceSearchService::class)->runRenderedScope($audit);
+                $categoryPenalties['technical'] += app(CustomSourceSearchService::class)->createIssues($audit);
+            }
+            if (!empty($flags['custom_extraction_enabled'])) {
+                app(CustomExtractionService::class)->syncSegments($audit);
+                app(CustomExtractionService::class)->runRenderedScope($audit);
+            }
+
+            if (!empty($flags['spelling_grammar_enabled'])) {
+                $categoryPenalties['onpage'] += app(SpellingGrammarService::class)->run($audit);
+            }
+
+            if (! empty($flags['link_metrics_enabled'])) {
+                app(LinkMetricsEnrichmentService::class)->enrich($audit);
+                foreach (app(LinkEquityPrioritizer::class)->apply($audit) as $cat => $delta) {
+                    if (isset($categoryPenalties[$cat])) {
+                        $categoryPenalties[$cat] += $delta;
+                    }
+                }
+            }
+
+            $audit->refresh();
+            $categoryPenalties['onpage'] += (int) $audit->issues()
+                ->where('module_key', 'near_duplicate_content')
+                ->sum('score_penalty');
+
             // Calculate scores
-            $categoryScores = $rulesEngine->calculateCategoryScores($evaluation['categoryPenalties']);
+            $categoryScores = $rulesEngine->calculateCategoryScores($categoryPenalties);
             $overallScore = $rulesEngine->calculateOverallScore($categoryScores);
             $overallGrade = $rulesEngine->scoreToGrade($overallScore);
 
             // Calculate crawl stats
             $crawlStats = $this->calculateCrawlStats($audit);
 
-            // Create summary
+            $issueRows = $audit->issues()->get();
+
+            // Create summary (includes module issues such as JS rendering)
             $summary = [
-                'total_issues' => count($evaluation['issues']),
-                'high_impact_issues' => collect($evaluation['issues'])->where('impact', 'high')->count(),
-                'medium_impact_issues' => collect($evaluation['issues'])->where('impact', 'medium')->count(),
-                'low_impact_issues' => collect($evaluation['issues'])->where('impact', 'low')->count(),
+                'total_issues' => $issueRows->count(),
+                'high_impact_issues' => $issueRows->where('impact', AuditIssue::IMPACT_HIGH)->count(),
+                'medium_impact_issues' => $issueRows->where('impact', AuditIssue::IMPACT_MEDIUM)->count(),
+                'low_impact_issues' => $issueRows->where('impact', AuditIssue::IMPACT_LOW)->count(),
                 'pages_scanned' => $audit->pages_scanned,
                 'pages_discovered' => $audit->pages_discovered,
             ];
@@ -82,9 +146,15 @@ class FinalizeAuditJob implements ShouldQueue
             $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpiBuilder->build($audit));
             $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
             $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
+            $audit->report_modules = app(ReportModuleBuilder::class)->build($audit);
 
             $audit->status = Audit::STATUS_COMPLETED;
             $audit->finished_at = now();
+
+            if (! empty($audit->crawl_module_flags['forms_auth_enabled'])) {
+                FormsAuthService::scrubSecrets($audit);
+            }
+
             $audit->save();
 
             $organization = $audit->organization;
@@ -117,6 +187,10 @@ class FinalizeAuditJob implements ShouldQueue
                 'audit_id' => $this->auditId,
                 'exception' => $e,
             ]);
+
+            if (! empty($audit->crawl_module_flags['forms_auth_enabled'])) {
+                FormsAuthService::scrubSecrets($audit);
+            }
 
             $audit->status = Audit::STATUS_FAILED;
             $audit->error = $e->getMessage();

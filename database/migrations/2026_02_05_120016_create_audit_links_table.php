@@ -13,10 +13,11 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('audit_links')) {
-            // Table was created in a previous run; add prefix index if missing
-            $indexes = DB::select("SHOW INDEX FROM audit_links WHERE Key_name = 'audit_links_to_url_normalized_index'");
-            if (empty($indexes)) {
-                DB::statement('CREATE INDEX audit_links_to_url_normalized_index ON audit_links (to_url_normalized(768))');
+            if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+                $indexes = DB::select("SHOW INDEX FROM audit_links WHERE Key_name = 'audit_links_to_url_normalized_index'");
+                if (empty($indexes)) {
+                    DB::statement('CREATE INDEX audit_links_to_url_normalized_index ON audit_links (to_url_normalized(768))');
+                }
             }
             return;
         }
@@ -42,7 +43,13 @@ return new class extends Migration
             $table->index('is_broken');
             $table->index('type');
         });
-        DB::statement('CREATE INDEX audit_links_to_url_normalized_index ON audit_links (to_url_normalized(768))');
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('audit_links', function (Blueprint $table) {
+                $table->index('to_url_normalized', 'audit_links_to_url_normalized_index');
+            });
+        } else {
+            DB::statement('CREATE INDEX audit_links_to_url_normalized_index ON audit_links (to_url_normalized(768))');
+        }
     }
 
     /**

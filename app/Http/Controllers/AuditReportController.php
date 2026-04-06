@@ -19,11 +19,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Audit;
 use App\Models\ConnectedAccount;
+use App\Models\Organization;
 use App\Jobs\RunSeoAuditJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
+use App\Services\SeoAudit\CrawlModuleConfig;
+use App\Services\SeoAudit\CustomAuditRulesValidator;
 use Inertia\Inertia;
 
 class AuditReportController extends Controller
@@ -62,11 +65,99 @@ class AuditReportController extends Controller
             'url' => 'required|url|max:2048',
             'email' => 'nullable|email',
             'send_to_email' => 'boolean',
+            'js_rendering_enabled' => 'nullable|boolean',
+            'near_duplicate_enabled' => 'nullable|boolean',
+            'spelling_grammar_enabled' => 'nullable|boolean',
+            'custom_source_search_enabled' => 'nullable|boolean',
+            'custom_extraction_enabled' => 'nullable|boolean',
+            'forms_auth_enabled' => 'nullable|boolean',
+            'segmentation_enabled' => 'nullable|boolean',
+            'link_metrics_enabled' => 'nullable|boolean',
+            'site_visualisation_enabled' => 'nullable|boolean',
+            'spelling_allowlist' => 'nullable|array|max:200',
+            'spelling_allowlist.*' => 'string|max:120',
+            'custom_source_search_rules' => 'nullable|array',
+            'custom_extraction_rules' => 'nullable|array',
+            'forms_auth_login_url' => 'nullable|string|max:2048',
+            'forms_auth_username' => 'nullable|string|max:255',
+            'forms_auth_password' => 'nullable|string|max:512',
+            'forms_auth_username_selector' => 'nullable|string|max:512',
+            'forms_auth_password_selector' => 'nullable|string|max:512',
+            'forms_auth_submit_selector' => 'nullable|string|max:512',
+            'forms_auth_success_indicator' => 'nullable|string|max:512',
         ]);
 
         $user = Auth::user();
         $normalizedUrl = $this->normalizeUrl($validated['url']);
-        
+
+        $orgAllow = [];
+        if ($user) {
+            $orgUser = $user->organizationUsers()->first();
+            if ($orgUser) {
+                $org = Organization::query()->find($orgUser->organization_id);
+                $orgAllow = $org?->spelling_allowlist ?? [];
+            }
+        }
+        $spellingAllow = array_values(array_unique(array_filter(array_map(
+            'strtolower',
+            array_map('trim', array_merge($orgAllow, $validated['spelling_allowlist'] ?? []))
+        ))));
+
+        $crawlModuleFlags = app(CrawlModuleConfig::class)->normalizeFlags($validated);
+
+        if (! empty($crawlModuleFlags['forms_auth_enabled'])) {
+            $login = trim((string) ($validated['forms_auth_login_url'] ?? ''));
+            $fu = trim((string) ($validated['forms_auth_username'] ?? ''));
+            $fp = (string) ($validated['forms_auth_password'] ?? '');
+            if ($login === '' || $fu === '' || $fp === '') {
+                return back()->withErrors([
+                    'forms_auth_login_url' => 'Forms authentication requires login URL, username, and password.',
+                ])->withInput();
+            }
+        }
+
+        $customSearchRulesPayload = null;
+        if (array_key_exists('custom_source_search_rules', $validated) && $validated['custom_source_search_rules'] !== null) {
+            $v = CustomAuditRulesValidator::validateSearchPayload($validated['custom_source_search_rules']);
+            if (! $v['valid']) {
+                return back()->withErrors(['custom_source_search_rules' => implode(' ', $v['errors'])])->withInput();
+            }
+            if ($v['rules'] !== []) {
+                $customSearchRulesPayload = ['rules' => $v['rules']];
+            }
+        }
+        $customExtractionRulesPayload = null;
+        if (array_key_exists('custom_extraction_rules', $validated) && $validated['custom_extraction_rules'] !== null) {
+            $v = CustomAuditRulesValidator::validateExtractionPayload($validated['custom_extraction_rules']);
+            if (! $v['valid']) {
+                return back()->withErrors(['custom_extraction_rules' => implode(' ', $v['errors'])])->withInput();
+            }
+            if ($v['rules'] !== []) {
+                $customExtractionRulesPayload = ['rules' => $v['rules']];
+            }
+        }
+
+        $formsAuthPayload = [
+            'forms_auth_login_url' => null,
+            'forms_auth_username' => null,
+            'forms_auth_password' => null,
+            'forms_auth_username_selector' => null,
+            'forms_auth_password_selector' => null,
+            'forms_auth_submit_selector' => null,
+            'forms_auth_success_indicator' => null,
+        ];
+        if (! empty($crawlModuleFlags['forms_auth_enabled'])) {
+            $formsAuthPayload = [
+                'forms_auth_login_url' => $validated['forms_auth_login_url'] ?? null,
+                'forms_auth_username' => $validated['forms_auth_username'] ?? null,
+                'forms_auth_password' => $validated['forms_auth_password'] ?? null,
+                'forms_auth_username_selector' => $validated['forms_auth_username_selector'] ?? null,
+                'forms_auth_password_selector' => $validated['forms_auth_password_selector'] ?? null,
+                'forms_auth_submit_selector' => $validated['forms_auth_submit_selector'] ?? null,
+                'forms_auth_success_indicator' => $validated['forms_auth_success_indicator'] ?? null,
+            ];
+        }
+
         $audit = Audit::create([
             'user_id' => $user->id,
             'url' => $validated['url'],
@@ -79,6 +170,11 @@ class AuditReportController extends Controller
             'crawl_depth' => 0,
             'started_at' => now(),
             'progress_percent' => 0,
+            'crawl_module_flags' => $crawlModuleFlags,
+            'spelling_allowlist' => $spellingAllow !== [] ? $spellingAllow : null,
+            'custom_source_search_rules' => $customSearchRulesPayload,
+            'custom_extraction_rules' => $customExtractionRulesPayload,
+            ...$formsAuthPayload,
         ]);
         
         \Log::info('User audit created', [
@@ -214,6 +310,8 @@ class AuditReportController extends Controller
             'finished_at' => $audit->finished_at?->toIso8601String(),
             'error' => $audit->error,
             'progress_percent' => $audit->progress_percent,
+            'crawl_module_flags' => $audit->crawl_module_flags ?? [],
+            'report_modules' => $audit->report_modules ?? null,
             'psi_ready_at' => optional($audit->psi_ready_at)->toIso8601String(),
             'ga4_ready_at' => optional($audit->ga4_ready_at)->toIso8601String(),
             'gsc_ready_at' => optional($audit->gsc_ready_at)->toIso8601String(),
@@ -248,12 +346,20 @@ class AuditReportController extends Controller
             // Issues (severity for AuditReportView: high->critical, medium->warning, low->info)
             'issues' => $audit->issues->map(fn($i) => [
                 'id' => $i->id,
+                'audit_run_id' => $i->audit_run_id ?? $i->audit_id,
+                'url' => $i->url,
+                'module_key' => $i->module_key,
+                'issue_type' => $i->issue_type ?? $i->code,
+                'status' => $i->status,
+                'message' => $i->message ?? $i->title,
+                'details_json' => $i->details_json,
+                'discovered_at' => optional($i->discovered_at)->toIso8601String(),
                 'code' => $i->code,
                 'category' => $i->category ?? 'general',
                 'title' => $i->title,
                 'description' => $i->description,
                 'impact' => $i->impact,
-                'severity' => match ($i->impact ?? '') { 'high' => 'critical', 'medium' => 'warning', 'low' => 'info', default => 'info' },
+                'severity' => $i->severity ?: match ($i->impact ?? '') { 'high' => 'critical', 'medium' => 'warning', 'low' => 'info', default => 'info' },
                 'effort' => $i->effort,
                 'score_penalty' => $i->score_penalty,
                 'affected_count' => $i->affected_count,
@@ -284,7 +390,7 @@ class AuditReportController extends Controller
 
         $page = $audit->pages()->first();
         $issues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->get();
 

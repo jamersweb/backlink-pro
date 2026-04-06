@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Audit;
 use App\Models\AuditUrlQueue;
+use App\Services\SeoAudit\FormsAuthService;
 use App\Services\SeoAudit\SitemapDiscovery;
 use App\Services\SeoAudit\UrlNormalizer;
 use Illuminate\Bus\Queueable;
@@ -52,6 +53,11 @@ class StartAuditPipelineJob implements ShouldQueue
             $baseHost = UrlNormalizer::extractHost($audit->normalized_url);
             if (!$baseHost) {
                 throw new \Exception("Invalid normalized URL");
+            }
+
+            if (! empty($audit->crawl_module_flags['forms_auth_enabled'])) {
+                app(FormsAuthService::class)->establishWithRetries($audit);
+                $audit->refresh();
             }
 
             // Seed URL queue with start URL

@@ -7,6 +7,7 @@ use App\Models\AuditPage;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\AuditKpiBuilder;
 use App\Services\SeoAudit\AuditKpiSanitizer;
+use App\Services\SeoAudit\ReportModuleBuilder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -84,6 +85,7 @@ class FinalizePerformanceSummaryJob implements ShouldQueue
             $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpiBuilder->build($audit));
             $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? $audit->category_grades;
             $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $audit->recommendations_count;
+            $audit->report_modules = app(ReportModuleBuilder::class)->build($audit);
 
             
             // Generate public summary if gated
@@ -208,7 +210,7 @@ class FinalizePerformanceSummaryJob implements ShouldQueue
     protected function generatePublicSummary(Audit $audit): array
     {
         $topIssues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->limit(5)
             ->get()

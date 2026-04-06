@@ -948,9 +948,50 @@ class RulesEngine
      */
     protected function createIssueRecord(array $data): AuditIssue
     {
-        unset($data['category'], $data['sample_urls']);
+        $impact = $data['impact'] ?? AuditIssue::IMPACT_LOW;
+        $severity = match ($impact) {
+            AuditIssue::IMPACT_HIGH => AuditIssue::SEVERITY_CRITICAL,
+            AuditIssue::IMPACT_MEDIUM => AuditIssue::SEVERITY_WARNING,
+            default => AuditIssue::SEVERITY_INFO,
+        };
+
+        $sampleUrls = $data['sample_urls'] ?? [];
+        $primaryUrl = is_array($sampleUrls) ? ($sampleUrls[0] ?? null) : null;
+        $moduleKey = $this->normalizeModuleKey($data['module_key'] ?? ($data['category'] ?? 'overview'));
+
+        $data['audit_run_id'] = $data['audit_run_id'] ?? ($data['audit_id'] ?? null);
+        $data['url'] = $data['url'] ?? $primaryUrl;
+        $data['module_key'] = $moduleKey;
+        $data['issue_type'] = $data['issue_type'] ?? ($data['code'] ?? 'generic_issue');
+        $data['severity'] = $data['severity'] ?? $severity;
+        $data['status'] = $data['status'] ?? AuditIssue::STATUS_OPEN;
+        $data['message'] = $data['message'] ?? ($data['title'] ?? $data['description'] ?? 'Issue detected');
+        $data['details_json'] = $data['details_json'] ?? [
+            'description' => $data['description'] ?? null,
+            'recommendation' => $data['recommendation'] ?? null,
+            'fix_steps' => $data['fix_steps'] ?? null,
+            'sample_urls' => $sampleUrls,
+        ];
+        $data['discovered_at'] = $data['discovered_at'] ?? now();
 
         return AuditIssue::create($data);
+    }
+
+    /**
+     * Persist an audit issue from module-specific analyzers (e.g. JS rendering diffs).
+     */
+    public function createCustomIssue(Audit $audit, array $data): AuditIssue
+    {
+        return $this->createIssueRecord(array_merge(['audit_id' => $audit->id], $data));
+    }
+
+    protected function normalizeModuleKey(string $moduleKey): string
+    {
+        return match ($moduleKey) {
+            'onpage' => 'on_page_seo',
+            'social', 'local', 'security', 'usability' => 'integrations',
+            default => $moduleKey,
+        };
     }
 
     /**

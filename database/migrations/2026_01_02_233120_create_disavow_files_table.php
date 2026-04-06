@@ -74,11 +74,10 @@ return new class extends Migration
             Schema::dropIfExists('disavow_files');
         }
         
-        // Create tables with explicit constraint names
         Schema::create('disavow_files', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('domain_id')->index();
-            $table->unsignedBigInteger('user_id');
+            $table->foreignId('domain_id')->constrained('domains')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->unsignedInteger('version');
             $table->enum('status', ['draft', 'exported', 'archived'])->default('draft')->index();
             $table->text('notes')->nullable();
@@ -88,14 +87,10 @@ return new class extends Migration
 
             $table->unique(['domain_id', 'version']);
         });
-        
-        // Add foreign keys with explicit names
-        DB::statement('ALTER TABLE disavow_files ADD CONSTRAINT disavow_files_domain_id_foreign FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE disavow_files ADD CONSTRAINT disavow_files_user_id_foreign FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE');
 
         Schema::create('disavow_entries', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('disavow_file_id')->index();
+            $table->foreignId('disavow_file_id')->constrained('disavow_files')->cascadeOnDelete();
             $table->enum('entry_type', ['domain', 'url'])->index();
             $table->text('value'); // "example.com" or full URL
             $table->char('value_hash', 64)->index();
@@ -104,9 +99,6 @@ return new class extends Migration
 
             $table->unique(['disavow_file_id', 'entry_type', 'value_hash']);
         });
-        
-        // Add foreign key with explicit name
-        DB::statement('ALTER TABLE disavow_entries ADD CONSTRAINT disavow_entries_disavow_file_id_foreign FOREIGN KEY (disavow_file_id) REFERENCES disavow_files(id) ON DELETE CASCADE');
     }
 
     /**

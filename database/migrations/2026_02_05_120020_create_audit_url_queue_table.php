@@ -27,13 +27,15 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Add indexes (using prefix for url_normalized due to length)
         Schema::table('audit_url_queue', function (Blueprint $table) {
-            // Use a composite index instead of unique (application will handle uniqueness)
             $table->index(['audit_id', 'status', 'depth']);
-            // Add index on url_normalized with prefix (first 255 chars)
-            \DB::statement('CREATE INDEX audit_url_queue_url_normalized_idx ON audit_url_queue (audit_id, url_normalized(255))');
+            if (Schema::getConnection()->getDriverName() === 'sqlite') {
+                $table->index(['audit_id', 'url_normalized'], 'audit_url_queue_url_normalized_idx');
+            }
         });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            \DB::statement('CREATE INDEX audit_url_queue_url_normalized_idx ON audit_url_queue (audit_id, url_normalized(255))');
+        }
     }
 
     /**

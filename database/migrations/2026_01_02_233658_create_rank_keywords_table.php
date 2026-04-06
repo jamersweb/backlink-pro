@@ -42,7 +42,7 @@ return new class extends Migration
         
         Schema::create('rank_keywords', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('domain_id')->index();
+            $table->foreignId('domain_id')->constrained('domains')->cascadeOnDelete();
             $table->string('keyword')->index();
             $table->text('target_url')->nullable();
             $table->string('location_code')->nullable();
@@ -55,9 +55,6 @@ return new class extends Migration
 
             $table->unique(['domain_id', 'keyword', 'location_code', 'device']);
         });
-        
-        // Add foreign key with explicit name
-        DB::statement('ALTER TABLE rank_keywords ADD CONSTRAINT rank_keywords_domain_id_foreign FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE');
     }
 
     /**

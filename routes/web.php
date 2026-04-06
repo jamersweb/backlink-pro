@@ -186,6 +186,8 @@ Route::get('/audit/{audit}/export/links.csv', [AuditExportController::class, 'li
 Route::get('/audit/{audit}/export/broken-links.csv', [AuditExportController::class, 'brokenLinksCsv'])->name('audit.export.broken-links.csv');
 Route::get('/audit/{audit}/export/lighthouse.json', [AuditExportController::class, 'lighthouseJson'])->name('audit.export.lighthouse.json');
 Route::get('/audit/{audit}/export/assets.csv', [AuditExportController::class, 'assetsCsv'])->name('audit.export.assets.csv');
+Route::get('/audit/{audit}/export/modules.csv', [AuditExportController::class, 'modulesCsv'])->name('audit.export.modules.csv');
+Route::get('/audit/{audit}/export/modules.json', [AuditExportController::class, 'modulesJson'])->name('audit.export.modules.json');
 
 Route::get('/Backlink/auditreport', function (Illuminate\Http\Request $request) {
     $auditId = $request->query('audit_id');
