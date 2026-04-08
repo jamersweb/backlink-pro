@@ -90,11 +90,11 @@ class SecurityHeaders
     {
         $policies = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net https://www.googletagmanager.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:",
-            "img-src 'self' data: https: blob:",
-            "connect-src 'self' https://api.stripe.com wss:",
+            "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com",
+            "connect-src 'self' https://api.stripe.com wss: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com",
             "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://backlinkproreport.lovable.app",
             "object-src 'none'",
             "base-uri 'self'",
