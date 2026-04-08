@@ -5,6 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-5N3P6BMEKT"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-5N3P6BMEKT');
+        </script>
         <script>
             (function() {
                 var root = document.documentElement;
@@ -41,4 +49,3 @@
         @inertia
     </body>
 </html>
-

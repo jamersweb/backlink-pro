@@ -5,6 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title inertia>{{ config('app.name', 'BacklinkPro') }}</title>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-5N3P6BMEKT"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-5N3P6BMEKT');
+        </script>
         
         <!-- Default Meta (fallback if not overridden by page) -->
         <meta name="description" content="Automate backlink workflows with guardrails, approvals, and evidence logs. No PBNs. Human oversight. Full transparency." />
