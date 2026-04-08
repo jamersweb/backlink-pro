@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=794">
+    <title>SEO.Core | Digital Audit Report — www.xpertbid.com</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+    <style>
+        /* Pixel-aligned with Stitch export: tmp/stitch_v2/code.html (SEO.Core dark, print-safe, no Tailwind runtime) */
+        :root {
+            --bg: #131313;
+            --surface: #201f1f;
+            --surface-low: #1c1b1b;
+            --surface-high: #2a2a2a;
+            --surface-container: #2a2a2a;
+            --on-surface: #e5e2e1;
+            --on-surface-muted: #a3a3a3;
+            --on-surface-dim: #737373;
+            --primary-container: #ff5626;
+            --on-primary-container: #541000;
+            --outline-variant: #5d4038;
+            --error: #ffb4ab;
+            --error-container: #93000a;
+            --on-error-container: #ffdad6;
+            --secondary-container: #324c5f;
+            --on-secondary-container: #a1bcd3;
+            --border-subtle: rgba(255,255,255,0.05);
+            --neutral-900: #171717;
+            --neutral-950: #0a0a0a;
+            --green: #22c55e;
+            --orange-400: #fb923c;
+        }
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--on-surface);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 13px;
+            line-height: 1.45;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .pdf-root {
+            width: 794px;
+            max-width: 794px;
+            margin: 0 auto;
+            padding: 24px 48px 40px;
+            background: var(--bg);
+        }
+        .mono {
+            font-family: 'Geist Mono', ui-monospace, monospace;
+            letter-spacing: 0.08em;
+        }
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 1em;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            -webkit-font-smoothing: antialiased;
+        }
+        .page-break { page-break-before: always; }
+        .avoid-break { page-break-inside: avoid; }
+        @media print {
+            .pdf-root { padding: 0; width: 100%; max-width: none; }
+            footer {
+                margin: 32px 0 0;
+                padding: 24px 0 0;
+                background: transparent;
+            }
+        }
+
+        /* Top bar — matches nav shell (non-fixed for PDF) */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 64px;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--neutral-900);
+        }
+        .brand { font-size: 20px; font-weight: 900; letter-spacing: -0.05em; color: #fafafa; }
+        .nav-faux { display: flex; gap: 32px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+        .nav-faux span { color: #737373; }
+        .nav-faux .on { color: #f97316; border-bottom: 2px solid #f97316; padding-bottom: 4px; }
+
+        /* Hero */
+        .hero { margin-bottom: 48px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; }
+        .hero-left { max-width: 520px; }
+        .kicker {
+            font-family: 'Geist Mono', monospace;
+            color: var(--primary-container);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 16px;
+        }
+        .hero h1 {
+            font-size: 72px;
+            line-height: 0.9;
+            font-weight: 900;
+            letter-spacing: -0.045em;
+            margin: 0;
+        }
+        .hero h1 .muted { color: rgba(93, 64, 56, 0.4); }
+        .hero-lead { margin-top: 32px; color: #737373; max-width: 448px; font-size: 14px; line-height: 1.65; }
+        .hero-meta { text-align: right; }
+        .hero-meta .line {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            color: #525252;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Bento grid */
+        .bento {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+        .card-main {
+            grid-column: span 8;
+            background: var(--surface-low);
+            border-radius: 12px;
+            padding: 40px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 48px;
+            border-left: 4px solid var(--primary-container);
+            position: relative;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        .card-main .glow {
+            position: absolute;
+            right: -80px;
+            bottom: -80px;
+            width: 280px;
+            height: 280px;
+            background: rgba(255, 86, 38, 0.08);
+            border-radius: 50%;
+            filter: blur(60px);
+            pointer-events: none;
+        }
+        .ring-wrap { position: relative; width: 256px; height: 256px; flex-shrink: 0; }
+        .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .ring-score { font-size: 60px; font-weight: 900; letter-spacing: -0.04em; color: #fafafa; }
+        .ring-grade {
+            font-family: 'Geist Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary-container);
+            letter-spacing: 0.22em;
+            margin-top: 6px;
+        }
+        .card-main-copy h2 { font-size: 30px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.02em; }
+        .card-main-copy p { color: #a3a3a3; font-size: 14px; line-height: 1.65; margin: 0 0 24px; }
+        .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mini-tile {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .mini-tile .lbl {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #737373;
+            letter-spacing: 0.12em;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .mini-tile .val { font-size: 20px; font-weight: 700; }
+
+        .card-side {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .stat-tile {
+            background: var(--surface-high);
+            border-radius: 12px;
+            padding: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            page-break-inside: avoid;
+        }
+        .stat-tile .lbl {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #737373;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .stat-tile .num { font-size: 30px; font-weight: 900; }
+        .stat-tile .icon-orng {
+            color: var(--primary-container);
+            font-size: 36px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .stat-tile .icon-orng.warn { color: #fb923c; }
+
+        /* Visibility section */
+        .panel {
+            background: var(--surface-low);
+            border-radius: 12px;
+            padding: 40px;
+            border: 1px solid var(--neutral-900);
+            margin-bottom: 48px;
+            page-break-inside: avoid;
+        }
+        .panel-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; }
+        .panel-head h3 { font-size: 24px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.02em; }
+        .panel-head p { color: #737373; font-size: 14px; margin: 0; line-height: 1.5; }
+        .legend { display: flex; gap: 16px; align-items: center; }
+        .legend span { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #a3a3a3; display: flex; align-items: center; gap: 8px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot-cur { background: var(--primary-container); }
+        .dot-proj { background: #525252; }
+        .chart-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 256px;
+            padding-top: 48px;
+        }
+        .chart-bar {
+            flex: 1;
+            border-radius: 2px 2px 0 0;
+            background: #201f1f;
+            min-height: 20px;
+        }
+        .chart-bar.proj { background: rgba(255, 86, 38, 0.22); border-top: 2px solid var(--primary-container); }
+        .chart-bar.proj.t2 { background: rgba(255, 86, 38, 0.3); }
+        .chart-bar.proj.t3 { background: rgba(255, 86, 38, 0.4); }
+        .chart-bar.proj.t4 { background: rgba(255, 86, 38, 0.5); }
+
+        /* Lighthouse + ledger */
+        .row-3 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        .lh-panel { background: var(--surface-low); border-radius: 12px; padding: 40px; page-break-inside: avoid; }
+        .lh-title {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: #737373;
+            margin-bottom: 32px;
+        }
+        .lh-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; text-align: center; }
+        .lh-item .small-ring { position: relative; width: 96px; height: 96px; margin: 0 auto 16px; }
+        .lh-item .small-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .lh-item .sc {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .lh-item .lb { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #a3a3a3; letter-spacing: 0.02em; }
+
+        .ledger-panel { background: var(--surface-low); border-radius: 12px; padding: 40px; page-break-inside: avoid; }
+        .ledger-title {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: #737373;
+            margin-bottom: 24px;
+        }
+        .ledger-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            background: var(--surface);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .ledger-row:last-child { margin-bottom: 0; }
+        .ledger-ic { font-size: 18px; display: flex; align-items: center; }
+        .ledger-ic.ok { color: #22c55e; }
+        .ledger-ic.warn { color: #fb923c; }
+
+        /* Table */
+        .table-wrap {
+            background: var(--surface-low);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 48px;
+            page-break-inside: avoid;
+        }
+        .table-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .table-head h3 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+        .pill-count {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: rgba(255, 180, 171, 0.1);
+            border: 1px solid rgba(255, 180, 171, 0.2);
+            color: var(--error);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #737373;
+            text-align: left;
+            padding: 0 12px 16px 0;
+            border-bottom: 1px solid #262626;
+        }
+        td { padding: 24px 12px 24px 0; vertical-align: top; border-bottom: 1px solid #171717; }
+        td .t { font-weight: 800; display: block; }
+        td .d { font-size: 11px; color: #737373; margin-top: 4px; }
+        .sev {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 999px;
+            display: inline-block;
+        }
+        .sev-crit { background: var(--error-container); color: var(--on-error-container); }
+        .sev-high { background: rgba(251, 146, 60, 0.2); color: var(--orange-400); }
+        .sev-med { background: var(--secondary-container); color: var(--on-secondary-container); }
+
+        /* Bottom bento */
+        .bento-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 0; }
+        .insight {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            border-radius: 12px;
+            padding: 40px;
+            page-break-inside: avoid;
+        }
+        .insight .k { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.7; margin-bottom: 16px; display: block; }
+        .insight h4 { font-size: 30px; font-weight: 900; margin: 0 0 16px; letter-spacing: -0.02em; }
+        .insight p { line-height: 1.65; opacity: 0.9; margin: 0; font-size: 14px; }
+        .insight-foot {
+            margin-top: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 2px solid rgba(84, 16, 0, 0.28);
+            padding-bottom: 4px;
+            width: fit-content;
+        }
+        .insight-foot .material-symbols-outlined { font-size: 22px; opacity: 0.85; }
+        .back-card {
+            background: var(--surface-low);
+            border-radius: 12px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        .back-card .bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        .back-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,86,38,0.14) 0%, transparent 55%);
+            pointer-events: none;
+        }
+        .back-card .inner { position: relative; z-index: 1; }
+        .back-card .k { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #737373; margin-bottom: 16px; display: block; }
+        .back-card h4 { font-size: 30px; font-weight: 900; margin: 0 0 16px; color: #fafafa; letter-spacing: -0.02em; }
+        .back-card p { color: #a3a3a3; line-height: 1.65; font-size: 14px; margin: 0 0 24px; }
+        .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tags span {
+            background: var(--surface);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            color: #a3a3a3;
+        }
+        .act-link {
+            font-family: 'Geist Mono', monospace;
+            font-size: 12px;
+            color: #ffb5a1;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+        .detail-section {
+            margin-top: 44px;
+            background: var(--surface-low);
+            border-radius: 12px;
+            padding: 36px;
+            page-break-inside: avoid;
+        }
+        .detail-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .detail-head h3 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: -0.02em;
+            font-weight: 800;
+        }
+        .detail-sub {
+            margin: 6px 0 0;
+            color: #8c8c8c;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(50, 76, 95, 0.35);
+            color: #cbe6fe;
+            font-family: 'Geist Mono', monospace;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .meta-kpi {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .meta-kpi .k {
+            display: block;
+            font-family: 'Geist Mono', monospace;
+            color: #7c7c7c;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .meta-kpi .v {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f2f2f2;
+        }
+        .long-table td, .long-table th { padding-right: 10px; }
+        .long-table td { padding-top: 14px; padding-bottom: 14px; }
+        .page-meta {
+            color: #8b8b8b;
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+        }
+        .roadmap-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 12px;
+        }
+        .roadmap-item {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 12px 14px;
+            page-break-inside: avoid;
+        }
+        .roadmap-item .t {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .roadmap-item .d {
+            color: #9a9a9a;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        footer {
+            border-top: 1px solid var(--neutral-900);
+            background: #0a0a0a;
+            margin: 40px -48px -40px;
+            padding: 32px 48px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        footer .f-brand { font-weight: 700; color: #fafafa; font-size: 15px; }
+        footer .f-copy {
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #525252;
+            max-width: 340px;
+            line-height: 1.5;
+        }
+        footer .f-links {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            font-family: 'Geist Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #525252;
+        }
+    </style>
+</head>
+<body>
+
+<div class="pdf-root">
+    <header class="top-bar avoid-break">
+        <div class="brand">SEO.Core</div>
+        <div class="nav-faux">
+            <span class="on">Overview</span>
+            <span>Technical</span>
+            <span>Content</span>
+            <span>Backlinks</span>
+            <span>Strategy</span>
+        </div>
+    </header>
+
+    <section class="hero avoid-break">
+        <div class="hero-left">
+            <span class="kicker">Executive Summary</span>
+            <h1>Technical <br/><span class="muted">Audit</span> 2026</h1>
+            <p class="hero-lead">This audit summarizes crawl health, Core Web Vitals signals, indexation checks, and prioritized issues for your property. Verified at 15:37 UTC.</p>
+        </div>
+        <div class="hero-meta">
+            <span class="line">Property ID: 47-WWWX...</span>
+            <span class="line">Status: COMPLETED</span>
+        </div>
+    </section>
+
+    <div class="bento">
+        <div class="card-main">
+            <div class="glow"></div>
+            <div class="ring-wrap">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                    <circle cx="50" cy="50" r="45" fill="transparent" stroke="#1c1b1b" stroke-width="8"/>
+                    <circle cx="50" cy="50" r="45" fill="transparent" stroke="#ff5626" stroke-width="8"
+                            stroke-dasharray="282.74333882308"
+                            stroke-dashoffset="19.792033717616"
+                            style="filter: drop-shadow(0 0 12px rgba(255,86,38,0.45));"/>
+                </svg>
+                <div class="ring-center">
+                    <span class="ring-score">93</span>
+                    <span class="ring-grade">GRADE A</span>
+                </div>
+            </div>
+            <div class="card-main-copy" style="flex:1;">
+                <h2>Overall Health Score</h2>
+                <p>This audit summarizes crawl health, Core Web Vitals signals, indexation checks, and prioritized issues for your property.</p>
+                <div class="mini-grid">
+                    <div class="mini-tile avoid-break">
+                        <span class="lbl">Crawl Capacity</span>
+                        <span class="val">0%</span>
+                    </div>
+                    <div class="mini-tile avoid-break">
+                        <span class="lbl">Indexability</span>
+                        <span class="val">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-side">
+            <div class="stat-tile avoid-break">
+                <div>
+                    <span class="lbl">Internal Links</span>
+                    <span class="num">0</span>
+                </div>
+                <span class="material-symbols-outlined icon-orng" aria-hidden="true">hub</span>
+            </div>
+            <div class="stat-tile avoid-break">
+                <div>
+                    <span class="lbl">Domain Rating</span>
+                    <span class="num">—</span>
+                </div>
+                <span class="material-symbols-outlined icon-orng warn" aria-hidden="true">star_half</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="panel avoid-break">
+        <div class="panel-head">
+            <div>
+                <h3>Projected Visibility Growth</h3>
+                <p>Estimated traffic recovery based on suggested technical fixes.</p>
+            </div>
+            <div class="legend">
+                <span><i class="dot dot-cur"></i> Current</span>
+                <span><i class="dot dot-proj"></i> Projected</span>
+            </div>
+        </div>
+        <div class="chart-row">
+                                            <div class="chart-bar " style="height: 40%;"></div>
+                                            <div class="chart-bar " style="height: 45%;"></div>
+                                            <div class="chart-bar " style="height: 42%;"></div>
+                                            <div class="chart-bar " style="height: 55%;"></div>
+                                            <div class="chart-bar " style="height: 60%;"></div>
+                                            <div class="chart-bar " style="height: 58%;"></div>
+                                            <div class="chart-bar proj" style="height: 75%;"></div>
+                                            <div class="chart-bar proj t2" style="height: 85%;"></div>
+                                            <div class="chart-bar proj t3" style="height: 92%;"></div>
+                                            <div class="chart-bar proj t4" style="height: 100%;"></div>
+                    </div>
+    </section>
+
+    <div class="row-3">
+        <div class="lh-panel avoid-break">
+            <div class="lh-title">Lighthouse Diagnostics</div>
+            <div class="lh-grid">
+                                    <div class="lh-item">
+                        <div class="small-ring">
+                            <svg viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#2a2a2a" stroke-width="3"/>
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#22c55e" stroke-width="3"
+                                        stroke-dasharray="100" stroke-dashoffset="44"/>
+                            </svg>
+                            <div class="sc">56</div>
+                        </div>
+                        <div class="lb">Performance</div>
+                    </div>
+                                    <div class="lh-item">
+                        <div class="small-ring">
+                            <svg viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#2a2a2a" stroke-width="3"/>
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#525252" stroke-width="3"
+                                        stroke-dasharray="100" stroke-dashoffset="100"/>
+                            </svg>
+                            <div class="sc">—</div>
+                        </div>
+                        <div class="lb">Accessibility</div>
+                    </div>
+                                    <div class="lh-item">
+                        <div class="small-ring">
+                            <svg viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#2a2a2a" stroke-width="3"/>
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#525252" stroke-width="3"
+                                        stroke-dasharray="100" stroke-dashoffset="100"/>
+                            </svg>
+                            <div class="sc">—</div>
+                        </div>
+                        <div class="lb">Best Practices</div>
+                    </div>
+                                    <div class="lh-item">
+                        <div class="small-ring">
+                            <svg viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#2a2a2a" stroke-width="3"/>
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#525252" stroke-width="3"
+                                        stroke-dasharray="100" stroke-dashoffset="100"/>
+                            </svg>
+                            <div class="sc">—</div>
+                        </div>
+                        <div class="lb">SEO Score</div>
+                    </div>
+                            </div>
+        </div>
+        <div class="ledger-panel avoid-break">
+            <div class="ledger-title">Status Ledger</div>
+            <div class="ledger-row"><span>HTTPS Protocol</span><span class="material-symbols-outlined ledger-ic ok" aria-hidden="true">check_circle</span></div>
+            <div class="ledger-row"><span>XML Sitemap</span><span class="material-symbols-outlined ledger-ic ok" aria-hidden="true">check_circle</span></div>
+            <div class="ledger-row"><span>Robots.txt</span><span class="material-symbols-outlined ledger-ic ok" aria-hidden="true">check_circle</span></div>
+            <div class="ledger-row"><span>Canonical Tags</span><span class="material-symbols-outlined ledger-ic ok" aria-hidden="true">check_circle</span></div>
+        </div>
+    </div>
+
+    <section class="table-wrap avoid-break">
+        <div class="table-head">
+            <h3>Top Issues by Severity</h3>
+            <div class="pill-count">1 Critical Findings</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Issue Type</th>
+                    <th>Affected URLs</th>
+                    <th>Severity</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                                            <tr>
+                    <td>
+                        <span class="t">Missing H1 Tag</span>
+                        <span class="d">The page does not have an H1 heading. H1 tags help search engines understand page structure.</span>                    </td>
+                    <td class="mono">1</td>
+                    <td><span class="sev sev-crit">Critical</span></td>
+                    <td><span class="act-link">View Details</span></td>
+                </tr>
+                                            <tr>
+                    <td>
+                        <span class="t">Low Word Count</span>
+                        <span class="d">The page has less than 300 words. Thin content may not rank well in search engines.</span>                    </td>
+                    <td class="mono">1</td>
+                    <td><span class="sev sev-high">High</span></td>
+                    <td><span class="act-link">View Details</span></td>
+                </tr>
+                                            <tr>
+                    <td>
+                        <span class="t">Missing Viewport Meta Tag</span>
+                        <span class="d">The page does not include a viewport meta tag, which can harm mobile rendering.</span>                    </td>
+                    <td class="mono">1</td>
+                    <td><span class="sev sev-high">High</span></td>
+                    <td><span class="act-link">View Details</span></td>
+                </tr>
+                                            <tr>
+                    <td>
+                        <span class="t">Missing HTML Lang Attribute</span>
+                        <span class="d">The page is missing the HTML lang attribute. This helps search engines and accessibility tools understand language.</span>                    </td>
+                    <td class="mono">1</td>
+                    <td><span class="sev sev-med">Medium</span></td>
+                    <td><span class="act-link">View Details</span></td>
+                </tr>
+                                            <tr>
+                    <td>
+                        <span class="t">Missing Favicon</span>
+                        <span class="d">The page does not declare a favicon. Favicons improve brand visibility and UX.</span>                    </td>
+                    <td class="mono">1</td>
+                    <td><span class="sev sev-med">Medium</span></td>
+                    <td><span class="act-link">View Details</span></td>
+                </tr>
+                                            <tr>
+                    <td>
+                        <span class="t">Missing Twitter Card Tags</span>
+                        <span class="d">The page does not have Twitter Card meta tags. These improve how your page appears when shared on Twitter.</span>                    </td>
+                    <td class="mono">1</td>
+                    <td><span class="sev sev-med">Medium</span></td>
+                    <td><span class="act-link">View Details</span></td>
+                </tr>
+                        </tbody>
+        </table>
+    </section>
+
+    <div class="bento-2">
+        <div class="insight avoid-break">
+            <span class="k">Strategic Insight</span>
+            <h4>Priority Technical Focus</h4>
+            <p>This audit summarizes crawl health, Core Web Vitals signals, indexation checks, and prioritized issues for your property.</p>
+            <div class="insight-foot">
+                Read Full Analysis
+                <span class="material-symbols-outlined" aria-hidden="true">trending_up</span>
+            </div>
+        </div>
+        <div class="back-card avoid-break">
+            <img class="bg-img" alt="" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYtII_gKdecxThE3gs41KNKWVygBqsZAu9BrLAQK4JbNGcYYOxg9tPHJrHCuiGg5oG8k_jUmkFLyUQqaUrlLWigokGD-7hKSI56RwAvbhvVt09MmYp2Cys0l5g5d3Et2MR2TaMKj1jyucOIMHBcimM2W-5MPuVLv7i4F2w3FTm_3RBPmnn-P5vw92JJ__ukADKnFKQdssKgIKpRPOMSB4kf2HPPFmutW4X978HD45eMJsONP2F-h9SjLbOOpenEeM9rA0WhQess8ve" width="600" height="400" loading="eager" decoding="async">
+            <div class="inner">
+                <span class="k">Backlink Profile</span>
+                <h4>Natural Growth Detected</h4>
+                <p>
+                                            Connect link metrics or expand crawl to enrich backlink context for this export.
+                                    </p>
+                <div class="tags">
+                    <span>Backlink Pro</span>
+                    <span>Audit ID 47</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <section class="detail-section page-break">
+            <div class="detail-head">
+                <div>
+                    <h3>Complete Issue Ledger</h3>
+                    <p class="detail-sub">Full dynamic findings exported from your live audit report. Includes severity, impact scope, and recommended actions.</p>
+                </div>
+                <span class="chip">6 Total Findings</span>
+            </div>
+
+            <div class="meta-grid">
+                <div class="meta-kpi">
+                    <span class="k">Critical</span>
+                    <span class="v">1</span>
+                </div>
+                <div class="meta-kpi">
+                    <span class="k">High / Warning</span>
+                    <span class="v">2</span>
+                </div>
+                <div class="meta-kpi">
+                    <span class="k">Medium / Info</span>
+                    <span class="v">3</span>
+                </div>
+                <div class="meta-kpi">
+                    <span class="k">Pages Crawled</span>
+                    <span class="v">0</span>
+                </div>
+            </div>
+
+                                            <div class="detail-head" style="margin-bottom:12px;">
+                    <span class="page-meta">Issue Page 1 / 1</span>
+                </div>
+                <table class="long-table">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Affected</th>
+                            <th>Severity</th>
+                            <th>Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                                                                    <tr>
+                            <td>
+                                <span class="t">Missing H1 Tag</span>
+                                <span class="d">The page does not have an H1 heading. H1 tags help search engines understand page structure.</span>                            </td>
+                            <td class="mono">1</td>
+                            <td><span class="sev sev-crit">Critical</span></td>
+                            <td class="d">Add a single H1 heading that describes the main topic of your page.</td>
+                        </tr>
+                                                                    <tr>
+                            <td>
+                                <span class="t">Low Word Count</span>
+                                <span class="d">The page has less than 300 words. Thin content may not rank well in search engines.</span>                            </td>
+                            <td class="mono">1</td>
+                            <td><span class="sev sev-high">High</span></td>
+                            <td class="d">Add more valuable content to your page. Aim for at least 300 words of quality content.</td>
+                        </tr>
+                                                                    <tr>
+                            <td>
+                                <span class="t">Missing Viewport Meta Tag</span>
+                                <span class="d">The page does not include a viewport meta tag, which can harm mobile rendering.</span>                            </td>
+                            <td class="mono">1</td>
+                            <td><span class="sev sev-high">High</span></td>
+                            <td class="d">Review and fix this issue to improve your SEO score.</td>
+                        </tr>
+                                                                    <tr>
+                            <td>
+                                <span class="t">Missing HTML Lang Attribute</span>
+                                <span class="d">The page is missing the HTML lang attribute. This helps search engines and accessibility tools understand language.</span>                            </td>
+                            <td class="mono">1</td>
+                            <td><span class="sev sev-med">Medium</span></td>
+                            <td class="d">Review and fix this issue to improve your SEO score.</td>
+                        </tr>
+                                                                    <tr>
+                            <td>
+                                <span class="t">Missing Favicon</span>
+                                <span class="d">The page does not declare a favicon. Favicons improve brand visibility and UX.</span>                            </td>
+                            <td class="mono">1</td>
+                            <td><span class="sev sev-med">Medium</span></td>
+                            <td class="d">Review and fix this issue to improve your SEO score.</td>
+                        </tr>
+                                                                    <tr>
+                            <td>
+                                <span class="t">Missing Twitter Card Tags</span>
+                                <span class="d">The page does not have Twitter Card meta tags. These improve how your page appears when shared on Twitter.</span>                            </td>
+                            <td class="mono">1</td>
+                            <td><span class="sev sev-med">Medium</span></td>
+                            <td class="d">Add Twitter Card meta tags (twitter:card, twitter:title, twitter:description) for better Twitter sharing.</td>
+                        </tr>
+                                        </tbody>
+                </table>
+                    </section>
+    
+            <section class="detail-section">
+            <div class="detail-head">
+                <div>
+                    <h3>Crawl Inventory Snapshot</h3>
+                    <p class="detail-sub">Top discovered URLs with HTTP status, metadata health and canonicalization checks from the same report run.</p>
+                </div>
+                <span class="chip">1 URLs Shown</span>
+            </div>
+            <table class="long-table">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Title Length</th>
+                        <th>Meta Length</th>
+                    </tr>
+                </thead>
+                <tbody>
+                                    <tr>
+                        <td>
+                            <span class="t">https://www.xpertbid.com</span>
+                            <span class="d">Canonical: https://www.xpertbid.com</span>
+                        </td>
+                        <td class="mono">200</td>
+                        <td class="mono">—</td>
+                        <td class="mono">—</td>
+                    </tr>
+                                </tbody>
+            </table>
+        </section>
+    
+            <section class="detail-section">
+            <div class="detail-head">
+                <div>
+                    <h3>Priority Action Roadmap</h3>
+                    <p class="detail-sub">Ordered remediation actions generated from audit findings and recommendations.</p>
+                </div>
+                <span class="chip">6 Actions</span>
+            </div>
+            <ul class="roadmap-list">
+                                                        <li class="roadmap-item">
+                        <span class="t">1. Missing H1 Tag</span>
+                        <span class="d">{&quot;steps&quot;:[&quot;Open your HTML file or template&quot;,&quot;Locate the main content area&quot;,&quot;Add a single H1 tag describing the page topic&quot;],&quot;snippet&quot;:&quot;Main Page Heading&quot;,&quot;laravel_hint&quot;:&quot;In Laravel Blade: {{ $pageHeading }}&quot;}</span>
+                    </li>
+                                                        <li class="roadmap-item">
+                        <span class="t">2. Low Word Count</span>
+                        <span class="d">{&quot;steps&quot;:[&quot;Review your page content&quot;,&quot;Add valuable, relevant content&quot;,&quot;Aim for at least 300 words&quot;],&quot;snippet&quot;:null,&quot;laravel_hint&quot;:&quot;Add more content sections or expand existing ones&quot;}</span>
+                    </li>
+                                                        <li class="roadmap-item">
+                        <span class="t">3. Missing Viewport Meta Tag</span>
+                        <span class="d">{&quot;steps&quot;:[&quot;Review the issue description and implement the recommended fix.&quot;],&quot;snippet&quot;:null,&quot;laravel_hint&quot;:null}</span>
+                    </li>
+                                                        <li class="roadmap-item">
+                        <span class="t">4. Missing HTML Lang Attribute</span>
+                        <span class="d">{&quot;steps&quot;:[&quot;Review the issue description and implement the recommended fix.&quot;],&quot;snippet&quot;:null,&quot;laravel_hint&quot;:null}</span>
+                    </li>
+                                                        <li class="roadmap-item">
+                        <span class="t">5. Missing Favicon</span>
+                        <span class="d">{&quot;steps&quot;:[&quot;Review the issue description and implement the recommended fix.&quot;],&quot;snippet&quot;:null,&quot;laravel_hint&quot;:null}</span>
+                    </li>
+                                                        <li class="roadmap-item">
+                        <span class="t">6. Missing Twitter Card Tags</span>
+                        <span class="d">{&quot;steps&quot;:[&quot;Open your HTML file or template&quot;,&quot;Locate the  section&quot;,&quot;Add Twitter Card meta tags&quot;],&quot;snippet&quot;:&quot;\n\n&quot;,&quot;laravel_hint&quot;:&quot;Add Twitter Card meta tags in your Blade layout&quot;}</span>
+                    </li>
+                            </ul>
+        </section>
+    
+    <footer>
+        <div class="f-brand">SEO.Core</div>
+        <p class="f-copy">© 2026 SEO.Core Digital Curator Systems. Confidential Audit Report · www.xpertbid.com</p>
+        <div class="f-links">
+            <span>Privacy Policy</span>
+            <span>Technical Documentation</span>
+            <span>Contact Support</span>
+        </div>
+    </footer>
+</div>
+</body>
+</html>

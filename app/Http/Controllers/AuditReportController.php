@@ -25,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
+use App\Services\Audit\ChromiumPdfRenderer;
 use App\Services\SeoAudit\CrawlModuleConfig;
 use App\Services\SeoAudit\CustomAuditRulesValidator;
 use Inertia\Inertia;
@@ -371,7 +372,7 @@ class AuditReportController extends Controller
             'kpis' => $kpis,
             
             // PSI shortcuts
-            'psi' => $kpis['google']['pagespeed'] ?? null,
+            'psi' => \Illuminate\Support\Arr::get($kpis, 'google.pagespeed'),
             
             // GA4 data
             'ga4' => $kpis['ga4'] ?? null,
@@ -385,7 +386,6 @@ class AuditReportController extends Controller
     {
         $audit = Audit::with(['pages', 'issues'])
             ->where('user_id', Auth::id())
-            ->where('status', Audit::STATUS_COMPLETED)
             ->findOrFail($id);
 
         $page = $audit->pages()->first();
@@ -394,21 +394,53 @@ class AuditReportController extends Controller
             ->orderBy('score_penalty', 'desc')
             ->get();
 
-        $html = View::make('audit.pdf', [
-            'audit' => $audit,
-            'page' => $page,
-            'issues' => $issues,
-        ])->render();
+        $auditUi = $this->formatAuditForFrontend($audit);
+        $filename = 'seo-audit-' . $audit->id . '-' . date('Y-m-d') . '.pdf';
 
         try {
+            $html = View::make('audit.pdf_chromium', [
+                'audit' => $audit,
+                'page' => $page,
+                'issues' => $issues,
+                'auditUi' => $auditUi,
+            ])->render();
+        } catch (\Throwable $e) {
+            \Log::error('audit PDF (Chromium) view render failed', [
+                'audit_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            abort(500, 'Could not build PDF.');
+        }
+
+        try {
+            $binary = app(ChromiumPdfRenderer::class)->htmlToPdf($html);
+
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                'Content-Length' => (string) strlen($binary),
+                'Cache-Control' => 'private, no-store, must-revalidate',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Chromium PDF export failed; falling back to DomPDF', [
+                'audit_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            // Same Stitch-style HTML as Chromium path (`audit.pdf_chromium`), not legacy `audit.pdf`.
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('A4');
             if (method_exists($pdf, 'setOption')) {
                 $pdf->setOption('isRemoteEnabled', true);
             }
-            $filename = 'seo-audit-' . $audit->id . '-' . date('Y-m-d') . '.pdf';
+
             return $pdf->download($filename);
         } catch (\Throwable $e) {
-            \Log::warning('PDF export failed, returning HTML', ['audit_id' => $id, 'error' => $e->getMessage()]);
+            \Log::warning('DomPDF fallback failed, returning HTML', ['audit_id' => $id, 'error' => $e->getMessage()]);
+
             return response($html, 200, [
                 'Content-Type' => 'text/html; charset=utf-8',
                 'Content-Disposition' => 'inline; filename="audit-' . $audit->id . '.html"',

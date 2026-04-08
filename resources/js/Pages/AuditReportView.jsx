@@ -3,6 +3,43 @@ import Card from '../Components/Shared/Card';
 import { useState, useMemo, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 
+function isPdfArrayBuffer(buf) {
+    if (!buf || buf.byteLength < 5) return false;
+    const u = new Uint8Array(buf);
+    return u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46;
+}
+
+function parseDownloadFilename(contentDisposition, fallback) {
+    if (!contentDisposition || typeof contentDisposition !== 'string') return fallback;
+    const star = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+    if (star) {
+        try {
+            return decodeURIComponent(star[1].trim());
+        } catch {
+            /* ignore */
+        }
+    }
+    const quoted = contentDisposition.match(/filename\s*=\s*"([^"]+)"/i);
+    if (quoted) return quoted[1];
+    const bare = contentDisposition.match(/filename\s*=\s*([^;\n]+)/i);
+    if (bare) return bare[1].replace(/^["']|["']$/g, '').trim();
+    return fallback;
+}
+
+function triggerPdfDownload(arrayBuffer, filename) {
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
 function useExportPdf(auditId) {
     const [exporting, setExporting] = useState(false);
 
@@ -10,39 +47,34 @@ function useExportPdf(auditId) {
         if (!auditId) return;
 
         setExporting(true);
-
         try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const defaultName = `seo-audit-${auditId}-${new Date().toISOString().slice(0, 10)}.pdf`;
             const res = await fetch(`/audit-report/${auditId}/export-pdf`, {
-                method: 'POST',
+                method: 'GET',
+                credentials: 'same-origin',
                 headers: {
                     Accept: 'application/pdf',
-                    'X-CSRF-TOKEN': csrf,
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
 
-            if (!res.ok) throw new Error('Export failed');
+            const buf = await res.arrayBuffer();
+            const disposition = res.headers.get('Content-Disposition');
+            const filename = parseDownloadFilename(disposition, defaultName);
 
-            const blob = await res.blob();
-            const isPdf = res.headers.get('Content-Type')?.includes('pdf');
-
-            if (isPdf) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `audit-report-${auditId}-${new Date().toISOString().slice(0, 10)}.pdf`;
-                a.click();
-                URL.revokeObjectURL(url);
-            } else {
-                const text = await blob.text();
-                const w = window.open('', '_blank');
-                w.document.write(text);
-                w.document.close();
+            if (!res.ok) {
+                throw new Error(`Export failed (${res.status})`);
             }
+
+            if (isPdfArrayBuffer(buf)) {
+                triggerPdfDownload(buf, filename);
+                return;
+            }
+
+            throw new Error('Server did not return a valid PDF file.');
         } catch (e) {
             console.error(e);
-            window.alert('PDF export failed. Please try again.');
+            window.alert(e instanceof Error ? e.message : 'PDF export failed. Please try again.');
         } finally {
             setExporting(false);
         }
@@ -57,8 +89,33 @@ const tabs = [
     { id: 'technical', label: 'Technical', icon: 'bi-gear' },
     { id: 'performance', label: 'Performance', icon: 'bi-lightning' },
     { id: 'integrations', label: 'Integrations', icon: 'bi-plug' },
-    { id: 'modules', label: 'Modules', icon: 'bi-grid-3x3-gap' },
 ];
+
+/** Core report modules: data already shown in the five tabs above (not duplicated as “advanced” sections). */
+const CORE_MODULE_KEYS_DUPLICATING_TABS = new Set(['overview', 'on_page_seo', 'technical', 'performance', 'integrations']);
+
+/** Where each optional crawl module appears after its core tab content (`onpage` = On-Page SEO tab id). */
+const EXTENDED_MODULE_TAB = {
+    segmentation: 'overview',
+    near_duplicate_content: 'onpage',
+    spelling_grammar: 'onpage',
+    js_rendering: 'technical',
+    site_visualisations: 'technical',
+    custom_source_search: 'technical',
+    custom_extraction: 'technical',
+    forms_auth_summary: 'technical',
+    link_metrics: 'integrations',
+};
+
+const SEVERITY_CHART_COLORS = {
+    critical: '#F04438',
+    warning: '#F79009',
+    info: '#2F6BFF',
+    likely_authenticated: '#12B76A',
+    http_blocked: '#F04438',
+    login_redirect_suspected: '#F79009',
+};
+const BAR_PALETTE = ['#2F6BFF', '#2457D6', '#12B76A', '#7C3AED', '#F79009', '#06B6D4'];
 
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : 'N/A');
 const formatNumber = (value) => (value === null || value === undefined || value === '' ? 'N/A' : Intl.NumberFormat('en-US').format(value));
@@ -152,6 +209,588 @@ function DataTable({ title, columns, rows, emptyText = 'No data available.' }) {
     );
 }
 
+function chartEntriesFromDataset(dataset) {
+    if (!dataset || typeof dataset !== 'object' || Array.isArray(dataset)) {
+        return [];
+    }
+    return Object.entries(dataset).map(([k, v]) => ({
+        rawKey: k,
+        label: String(k).replaceAll('_', ' '),
+        raw: v,
+        num: typeof v === 'number' && !Number.isNaN(v) ? v : Number(v),
+    }));
+}
+
+function ModuleChartCard({ chart }) {
+    const entries = useMemo(() => chartEntriesFromDataset(chart?.dataset), [chart?.dataset]);
+    const title = chart?.title || 'Chart';
+    const type = chart?.type || 'bar';
+
+    if (!entries.length) {
+        return (
+            <Card variant="elevated">
+                <h3 className="text-lg font-semibold text-[var(--admin-text)]">{title}</h3>
+                <SectionMessage>No data for this visualization.</SectionMessage>
+            </Card>
+        );
+    }
+
+    if (type === 'pie') {
+        const numeric = entries.map((e) => ({
+            ...e,
+            n: Number.isFinite(e.num) && e.num > 0 ? e.num : 0,
+        }));
+        const total = numeric.reduce((s, e) => s + e.n, 0);
+        if (total <= 0) {
+            return (
+                <Card variant="elevated">
+                    <h3 className="text-lg font-semibold text-[var(--admin-text)]">{title}</h3>
+                    <SectionMessage>All values are zero — nothing to chart.</SectionMessage>
+                </Card>
+            );
+        }
+        let acc = 0;
+        const slices = numeric
+            .filter((e) => e.n > 0)
+            .map((e) => {
+                const pct = (e.n / total) * 100;
+                const start = acc;
+                acc += pct;
+                const color = SEVERITY_CHART_COLORS[e.rawKey] || BAR_PALETTE[Math.abs(String(e.rawKey).length) % BAR_PALETTE.length];
+                return { ...e, color, start, end: acc };
+            });
+        const gradient = slices.map((s) => `${s.color} ${s.start.toFixed(2)}% ${s.end.toFixed(2)}%`).join(', ');
+
+        return (
+            <Card variant="elevated">
+                <h3 className="text-lg font-semibold text-[var(--admin-text)]">{title}</h3>
+                <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+                    <div
+                        className="h-40 w-40 shrink-0 rounded-full border-4 border-[var(--admin-border)] shadow-inner"
+                        style={{ background: `conic-gradient(${gradient})` }}
+                        aria-hidden
+                    />
+                    <ul className="min-w-0 flex-1 space-y-2 text-sm">
+                        {slices.map((s) => (
+                            <li key={s.rawKey} className="flex items-center justify-between gap-3">
+                                <span className="flex min-w-0 items-center gap-2">
+                                    <span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: s.color }} />
+                                    <span className="capitalize text-[var(--admin-text)]">{s.label}</span>
+                                </span>
+                                <span className="shrink-0 font-medium tabular-nums text-[var(--admin-text-muted)]">
+                                    {formatNumber(s.n)}
+                                    <span className="text-[var(--admin-text-dim)]"> ({((s.n / total) * 100).toFixed(1)}%)</span>
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </Card>
+        );
+    }
+
+    const numericForBar = entries.map((e, i) => {
+        const n = Number.isFinite(e.num) ? e.num : null;
+        return { ...e, n, display: n === null || Number.isNaN(n) ? (e.raw === null || e.raw === undefined ? '—' : String(e.raw)) : formatNumber(n), color: BAR_PALETTE[i % BAR_PALETTE.length] };
+    });
+    const maxBar = Math.max(...numericForBar.map((e) => (e.n !== null && !Number.isNaN(e.n) ? Math.abs(e.n) : 0)), 1);
+
+    return (
+        <Card variant="elevated">
+            <h3 className="text-lg font-semibold text-[var(--admin-text)]">{title}</h3>
+            <ul className="mt-4 space-y-3">
+                {numericForBar.map((e) => {
+                    const pct = e.n !== null && !Number.isNaN(e.n) ? Math.min(100, (Math.abs(e.n) / maxBar) * 100) : 0;
+                    return (
+                        <li key={e.rawKey}>
+                            <div className="mb-1 flex items-center justify-between gap-2 text-xs text-[var(--admin-text-muted)]">
+                                <span className="min-w-0 truncate capitalize">{e.label}</span>
+                                <span className="shrink-0 font-semibold tabular-nums text-[var(--admin-text)]">{e.display}</span>
+                            </div>
+                            <div className="h-2.5 overflow-hidden rounded-full bg-[var(--admin-surface-2)]">
+                                <div
+                                    className="h-full rounded-full transition-all"
+                                    style={{ width: `${pct}%`, backgroundColor: e.color }}
+                                />
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+        </Card>
+    );
+}
+
+function ExtendedModulesInTab({ audit, modules }) {
+    if (!modules?.length) {
+        return null;
+    }
+    return (
+        <div className="mt-10 space-y-10 border-t border-[var(--admin-border)] pt-8">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-text-muted)]">Advanced crawl modules</p>
+                <p className="mt-1 text-sm text-[var(--admin-text-dim)]">Optional features enabled for this audit appear below.</p>
+            </div>
+            {modules.map((m) => (
+                <AuditExtendedModuleSection key={m.module_key} audit={audit} module={m} />
+            ))}
+        </div>
+    );
+}
+
+function AuditExtendedModuleSection({ audit, module: mod }) {
+    const [jsRenderPreset, setJsRenderPreset] = useState('all');
+    const [segmentFilter, setSegmentFilter] = useState('all');
+    const [spellingGrammarPreset, setSpellingGrammarPreset] = useState('all');
+    const [customRuleKeyFilter, setCustomRuleKeyFilter] = useState('all');
+    const [extractionPreset, setExtractionPreset] = useState('all');
+    const [linkMetricsPreset, setLinkMetricsPreset] = useState('all');
+    const [linkMetricsIssueType, setLinkMetricsIssueType] = useState('all');
+    const [linkMetricsMinRd, setLinkMetricsMinRd] = useState(0);
+    const [linkMetricsMinBl, setLinkMetricsMinBl] = useState(0);
+
+    useEffect(() => {
+        setJsRenderPreset('all');
+        setSegmentFilter('all');
+        setSpellingGrammarPreset('all');
+        setCustomRuleKeyFilter('all');
+        setExtractionPreset('all');
+        setLinkMetricsPreset('all');
+        setLinkMetricsIssueType('all');
+        setLinkMetricsMinRd(0);
+        setLinkMetricsMinBl(0);
+    }, [mod.module_key]);
+
+    const filteredModuleIssues = useMemo(() => {
+        const list = mod?.issues || [];
+        let out = list;
+        if (segmentFilter !== 'all') {
+            out = out.filter((issue) => {
+                const issueSegment = issue.segment || issue.details_json?.segment || 'other';
+                return issueSegment === segmentFilter;
+            });
+        }
+        if (mod?.module_key === 'spelling_grammar' && spellingGrammarPreset !== 'all') {
+            out = out.filter((issue) => {
+                if (spellingGrammarPreset === 'high_confidence') {
+                    return (issue.details_json?.filter_tags || []).includes('high_confidence');
+                }
+                return issue.details_json?.issue_kind === spellingGrammarPreset;
+            });
+        }
+        if (mod?.module_key === 'js_rendering' && jsRenderPreset !== 'all') {
+            out = out.filter((issue) => {
+                const tags = issue.details_json?.filter_tags || [];
+                return tags.includes(jsRenderPreset);
+            });
+        }
+        if (mod?.module_key === 'custom_source_search' && customRuleKeyFilter !== 'all') {
+            out = out.filter((issue) => (issue.details_json?.rule_key || '') === customRuleKeyFilter);
+        }
+        if (mod?.module_key === 'link_metrics') {
+            const minRd = Number(linkMetricsMinRd) || 0;
+            const minBl = Number(linkMetricsMinBl) || 0;
+            out = out.filter((issue) => {
+                const eq = issue.details_json?.link_equity;
+                if (!eq) return false;
+                const rd = Number(eq.referring_domains ?? 0);
+                const bl = Number(eq.backlinks ?? 0);
+                if (rd < minRd || bl < minBl) return false;
+                if (linkMetricsIssueType !== 'all' && issue.issue_type !== linkMetricsIssueType) return false;
+                if (linkMetricsPreset === 'high_tier_only' && eq.tier !== 'high') return false;
+                if (linkMetricsPreset === 'medium_or_high' && eq.tier !== 'high' && eq.tier !== 'medium') return false;
+                return true;
+            });
+        }
+        return out;
+    }, [mod, jsRenderPreset, segmentFilter, spellingGrammarPreset, customRuleKeyFilter, linkMetricsPreset, linkMetricsIssueType, linkMetricsMinRd, linkMetricsMinBl]);
+
+    const filteredModuleTables = useMemo(() => {
+        const tables = mod?.tables || [];
+        if (!mod) {
+            return tables;
+        }
+        return tables.map((table) => {
+            let rows = Array.isArray(table.rows) ? [...table.rows] : [];
+            if (segmentFilter !== 'all') {
+                rows = rows.filter((r) => (r.segment || 'other') === segmentFilter);
+            }
+            if (mod.module_key === 'custom_source_search' && customRuleKeyFilter !== 'all') {
+                if (table.key === 'custom_search_results' || table.key === 'custom_search_rule_summaries') {
+                    rows = rows.filter((r) => r.rule_key === customRuleKeyFilter);
+                }
+            }
+            if (mod.module_key === 'custom_extraction') {
+                if (customRuleKeyFilter !== 'all') {
+                    if (
+                        table.key === 'custom_extraction_per_url' ||
+                        table.key === 'custom_extraction_rules' ||
+                        table.key === 'custom_extraction_duplicates'
+                    ) {
+                        rows = rows.filter((r) => r.rule_key === customRuleKeyFilter);
+                    }
+                }
+                if (extractionPreset === 'missing_only' && table.key === 'custom_extraction_per_url') {
+                    rows = rows.filter((r) => r.missing);
+                }
+            }
+            if (mod.module_key === 'link_metrics') {
+                const minRd = Number(linkMetricsMinRd) || 0;
+                const minBl = Number(linkMetricsMinBl) || 0;
+                rows = rows.filter((r) => {
+                    const rd = Number(r.referring_domains ?? 0);
+                    const bl = Number(r.backlinks ?? 0);
+                    if (rd < minRd || bl < minBl) return false;
+                    if (linkMetricsPreset === 'high_tier_only' && r.equity_tier !== 'high') return false;
+                    if (linkMetricsPreset === 'medium_or_high' && r.equity_tier !== 'high' && r.equity_tier !== 'medium') {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            return { ...table, rows };
+        });
+    }, [mod, segmentFilter, customRuleKeyFilter, extractionPreset, linkMetricsPreset, linkMetricsMinRd, linkMetricsMinBl]);
+
+    return (
+        <div className="space-y-6 rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface-2)]/30 p-6">
+            <h3 className="text-lg font-semibold text-[var(--admin-text)]">{mod.module_title}</h3>
+
+            {mod.filters?.segments?.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-[var(--admin-text-muted)]">Segment:</span>
+                    <select
+                        value={segmentFilter}
+                        onChange={(e) => setSegmentFilter(e.target.value)}
+                        className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-sm text-[var(--admin-text)]"
+                    >
+                        <option value="all">All</option>
+                        {mod.filters.segments.map((segment) => (
+                            <option key={segment} value={segment}>
+                                {segment}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            ) : null}
+
+            {mod.module_key === 'js_rendering' && mod.filters?.presets?.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-[var(--admin-text-muted)]">Filter:</span>
+                    <button
+                        type="button"
+                        onClick={() => setJsRenderPreset('all')}
+                        className={`rounded-lg px-3 py-1.5 text-sm ${
+                            jsRenderPreset === 'all' ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                        }`}
+                    >
+                        All
+                    </button>
+                    {mod.filters.presets.map((preset) => (
+                        <button
+                            type="button"
+                            key={preset.key}
+                            onClick={() => setJsRenderPreset(preset.key)}
+                            className={`rounded-lg px-3 py-1.5 text-sm ${
+                                jsRenderPreset === preset.key ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                            }`}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+            {mod.module_key === 'spelling_grammar' && mod.filters?.presets?.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-[var(--admin-text-muted)]">Filter:</span>
+                    <button
+                        type="button"
+                        onClick={() => setSpellingGrammarPreset('all')}
+                        className={`rounded-lg px-3 py-1.5 text-sm ${
+                            spellingGrammarPreset === 'all' ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                        }`}
+                    >
+                        All
+                    </button>
+                    {mod.filters.presets.map((preset) => (
+                        <button
+                            type="button"
+                            key={preset.key}
+                            onClick={() => setSpellingGrammarPreset(preset.key)}
+                            className={`rounded-lg px-3 py-1.5 text-sm ${
+                                spellingGrammarPreset === preset.key ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                            }`}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+            {(mod.module_key === 'custom_source_search' || mod.module_key === 'custom_extraction') && mod.filters?.rule_keys?.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-[var(--admin-text-muted)]">Rule:</span>
+                    <select
+                        value={customRuleKeyFilter}
+                        onChange={(e) => setCustomRuleKeyFilter(e.target.value)}
+                        className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-sm text-[var(--admin-text)]"
+                    >
+                        <option value="all">All rules</option>
+                        {mod.filters.rule_keys.map((key) => (
+                            <option key={key} value={key}>
+                                {key}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            ) : null}
+            {mod.module_key === 'custom_extraction' && mod.filters?.presets?.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-[var(--admin-text-muted)]">Rows:</span>
+                    <button
+                        type="button"
+                        onClick={() => setExtractionPreset('all')}
+                        className={`rounded-lg px-3 py-1.5 text-sm ${
+                            extractionPreset === 'all' ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                        }`}
+                    >
+                        All
+                    </button>
+                    {mod.filters.presets.map((preset) => (
+                        <button
+                            type="button"
+                            key={preset.key}
+                            onClick={() => setExtractionPreset(preset.key)}
+                            className={`rounded-lg px-3 py-1.5 text-sm ${
+                                extractionPreset === preset.key ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                            }`}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+            {mod.module_key === 'link_metrics' ? (
+                <div className="flex flex-col gap-3 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-[var(--admin-text-muted)]">Equity:</span>
+                        {(mod.filters?.presets || []).map((preset) => (
+                            <button
+                                type="button"
+                                key={preset.key}
+                                onClick={() => setLinkMetricsPreset(preset.key)}
+                                className={`rounded-lg px-3 py-1.5 text-sm ${
+                                    linkMetricsPreset === preset.key ? 'bg-[#2F6BFF] text-white' : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
+                                }`}
+                            >
+                                {preset.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
+                            Min referring domains
+                            <input
+                                type="number"
+                                min={0}
+                                className="w-24 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
+                                value={linkMetricsMinRd}
+                                onChange={(e) => setLinkMetricsMinRd(e.target.value)}
+                            />
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
+                            Min backlinks
+                            <input
+                                type="number"
+                                min={0}
+                                className="w-24 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
+                                value={linkMetricsMinBl}
+                                onChange={(e) => setLinkMetricsMinBl(e.target.value)}
+                            />
+                        </label>
+                        {mod.filters?.issue_types?.length ? (
+                            <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
+                                Issue type
+                                <select
+                                    value={linkMetricsIssueType}
+                                    onChange={(e) => setLinkMetricsIssueType(e.target.value)}
+                                    className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
+                                >
+                                    <option value="all">All</option>
+                                    {mod.filters.issue_types.map((t) => (
+                                        <option key={t} value={t}>
+                                            {t}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        ) : null}
+                    </div>
+                </div>
+            ) : null}
+
+            {mod.module_key === 'spelling_grammar' ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <MetricCard label="Pages with issues" value={formatNumber(mod.card?.affected_urls)} />
+                    <MetricCard label="Total issues" value={formatNumber(mod.card?.overview_count)} />
+                    <MetricCard label="Highest-confidence issues" value={formatNumber(mod.card?.high_confidence_issues)} />
+                    <MetricCard label="Warning" value={formatNumber(mod.severity_counts?.warning)} />
+                    <MetricCard label="Info" value={formatNumber(mod.severity_counts?.info)} />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <MetricCard label="Overview Count" value={formatNumber(mod.card?.overview_count)} />
+                    <MetricCard label="Affected URLs" value={formatNumber(mod.card?.affected_urls)} />
+                    <MetricCard label="Critical" value={formatNumber(mod.severity_counts?.critical)} />
+                    <MetricCard label="Warning" value={formatNumber(mod.severity_counts?.warning)} />
+                    <MetricCard label="Info" value={formatNumber(mod.severity_counts?.info)} />
+                </div>
+            )}
+
+            <DataTable
+                title="Grouped Issues"
+                rows={filteredModuleIssues}
+                columns={
+                    mod.module_key === 'link_metrics'
+                        ? [
+                              { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
+                              {
+                                  key: 'details_json',
+                                  label: 'Equity',
+                                  render: (_v, row) => {
+                                      const eq = row.details_json?.link_equity || {};
+                                      return (
+                                          <span className="text-xs">
+                                              <span className="font-semibold uppercase text-[var(--admin-text-muted)]">{eq.tier || '—'}</span>
+                                              {' · RD '}
+                                              {formatNumber(eq.referring_domains ?? 0)}
+                                              {' · BL '}
+                                              {formatNumber(eq.backlinks ?? 0)}
+                                          </span>
+                                      );
+                                  },
+                              },
+                              { key: 'module_key', label: 'Module' },
+                              { key: 'issue_type', label: 'Issue type' },
+                              { key: 'url', label: 'URL' },
+                              { key: 'score_penalty', label: 'Penalty', render: (v) => formatNumber(v) },
+                              { key: 'message', label: 'Message' },
+                          ]
+                        : mod.module_key === 'js_rendering'
+                          ? [
+                                { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
+                                {
+                                    key: 'details_json',
+                                    label: 'Diff type',
+                                    render: (_v, row) => row.details_json?.diff_type || row.issue_type || '—',
+                                },
+                                { key: 'url', label: 'URL' },
+                                { key: 'message', label: 'Message' },
+                                {
+                                    key: 'details_json',
+                                    label: 'Raw vs rendered',
+                                    render: (_v, row) => {
+                                        const d = row.details_json || {};
+                                        return (
+                                            <span className="text-xs text-[var(--admin-text-muted)]">
+                                                {d.raw != null && d.rendered != null ? 'See CSV/JSON export for full payload' : '—'}
+                                            </span>
+                                        );
+                                    },
+                                },
+                            ]
+                          : mod.module_key === 'spelling_grammar'
+                            ? [
+                                  { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
+                                  {
+                                      key: 'details_json',
+                                      label: 'Kind',
+                                      render: (_v, row) => row.details_json?.issue_kind || row.issue_type || '—',
+                                  },
+                                  {
+                                      key: 'details_json',
+                                      label: 'Text / fix',
+                                      render: (_v, row) => {
+                                          const d = row.details_json || {};
+                                          const fix = d.suggested_correction;
+                                          return (
+                                              <span className="text-sm">
+                                                  <span className="font-medium">{d.issue_text || '—'}</span>
+                                                  {fix ? <span className="text-[var(--admin-text-muted)]"> → {fix}</span> : null}
+                                              </span>
+                                          );
+                                      },
+                                  },
+                                  {
+                                      key: 'details_json',
+                                      label: 'Confidence',
+                                      render: (_v, row) => (row.details_json?.confidence != null ? `${row.details_json.confidence}` : '—'),
+                                  },
+                                  {
+                                      key: 'details_json',
+                                      label: 'Context',
+                                      render: (_v, row) => (
+                                          <span className="text-xs text-[var(--admin-text-muted)]">{row.details_json?.context_snippet || '—'}</span>
+                                      ),
+                                  },
+                                  { key: 'url', label: 'URL' },
+                              ]
+                            : [
+                                  { key: 'severity', label: 'Severity', render: (value) => <IssueBadge severity={value || 'info'} /> },
+                                  { key: 'issue_type', label: 'Issue Type' },
+                                  { key: 'status', label: 'Status' },
+                                  { key: 'url', label: 'URL' },
+                                  { key: 'message', label: 'Message' },
+                              ]
+                }
+                emptyText="No issues detected for this module."
+            />
+
+            {filteredModuleTables.map((table) => (
+                <DataTable
+                    key={table.key}
+                    title={table.title || 'Table'}
+                    rows={Array.isArray(table.rows) ? table.rows : []}
+                    columns={
+                        Array.isArray(table.rows) && table.rows.length
+                            ? Object.keys(table.rows[0]).slice(0, 4).map((key) => ({ key, label: key.replaceAll('_', ' ') }))
+                            : [{ key: 'value', label: 'Value' }]
+                    }
+                />
+            ))}
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {(mod.charts || []).map((chart) => (
+                    <ModuleChartCard key={chart.key || chart.title} chart={chart} />
+                ))}
+            </div>
+
+            <Card variant="elevated">
+                <h3 className="text-lg font-semibold text-[var(--admin-text)]">Recommended Actions</h3>
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--admin-text)]">
+                    {(mod.card?.recommended_actions || []).map((item, idx) => (
+                        <li key={`${mod.module_key}-rec-${idx}`}>{item}</li>
+                    ))}
+                </ul>
+            </Card>
+
+            <div className="flex flex-wrap gap-2">
+                <a
+                    href={`/audit/${audit.id}/export/modules.csv?module_key=${encodeURIComponent(mod.module_key)}`}
+                    className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]"
+                >
+                    Export module CSV
+                </a>
+                <a
+                    href={`/audit/${audit.id}/export/modules.json?module_key=${encodeURIComponent(mod.module_key)}`}
+                    className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]"
+                >
+                    Export module JSON
+                </a>
+            </div>
+        </div>
+    );
+}
+
 export default function AuditReportView({ audit }) {
     const [activeTab, setActiveTab] = useState('overview');
     const [exportingPdf, exportPdf] = useExportPdf(audit?.id);
@@ -185,120 +824,17 @@ export default function AuditReportView({ audit }) {
             .map((key) => reportModules.find((module) => module.module_key === key))
             .filter(Boolean)
         : reportModules;
-    const [activeModuleKey, setActiveModuleKey] = useState(orderedModules[0]?.module_key || null);
-    const activeModule = orderedModules.find((module) => module.module_key === activeModuleKey) || orderedModules[0] || null;
-    const [jsRenderPreset, setJsRenderPreset] = useState('all');
-    const [segmentFilter, setSegmentFilter] = useState('all');
-    const [spellingGrammarPreset, setSpellingGrammarPreset] = useState('all');
-    const [customRuleKeyFilter, setCustomRuleKeyFilter] = useState('all');
-    const [extractionPreset, setExtractionPreset] = useState('all');
-    const [linkMetricsPreset, setLinkMetricsPreset] = useState('all');
-    const [linkMetricsIssueType, setLinkMetricsIssueType] = useState('all');
-    const [linkMetricsMinRd, setLinkMetricsMinRd] = useState(0);
-    const [linkMetricsMinBl, setLinkMetricsMinBl] = useState(0);
-
-    useEffect(() => {
-        setJsRenderPreset('all');
-        setSegmentFilter('all');
-        setSpellingGrammarPreset('all');
-        setCustomRuleKeyFilter('all');
-        setExtractionPreset('all');
-        setLinkMetricsPreset('all');
-        setLinkMetricsIssueType('all');
-        setLinkMetricsMinRd(0);
-        setLinkMetricsMinBl(0);
-    }, [activeModuleKey]);
-
-    const filteredModuleIssues = useMemo(() => {
-        const list = activeModule?.issues || [];
-        let out = list;
-        if (segmentFilter !== 'all') {
-            out = out.filter((issue) => {
-                const issueSegment = issue.segment || issue.details_json?.segment || 'other';
-                return issueSegment === segmentFilter;
-            });
-        }
-        if (activeModule?.module_key === 'spelling_grammar' && spellingGrammarPreset !== 'all') {
-            out = out.filter((issue) => {
-                if (spellingGrammarPreset === 'high_confidence') {
-                    return (issue.details_json?.filter_tags || []).includes('high_confidence');
-                }
-                return issue.details_json?.issue_kind === spellingGrammarPreset;
-            });
-        }
-        if (activeModule?.module_key === 'js_rendering' && jsRenderPreset !== 'all') {
-            out = out.filter((issue) => {
-                const tags = issue.details_json?.filter_tags || [];
-                return tags.includes(jsRenderPreset);
-            });
-        }
-        if (activeModule?.module_key === 'custom_source_search' && customRuleKeyFilter !== 'all') {
-            out = out.filter((issue) => (issue.details_json?.rule_key || '') === customRuleKeyFilter);
-        }
-        if (activeModule?.module_key === 'link_metrics') {
-            const minRd = Number(linkMetricsMinRd) || 0;
-            const minBl = Number(linkMetricsMinBl) || 0;
-            out = out.filter((issue) => {
-                const eq = issue.details_json?.link_equity;
-                if (!eq) return false;
-                const rd = Number(eq.referring_domains ?? 0);
-                const bl = Number(eq.backlinks ?? 0);
-                if (rd < minRd || bl < minBl) return false;
-                if (linkMetricsIssueType !== 'all' && issue.issue_type !== linkMetricsIssueType) return false;
-                if (linkMetricsPreset === 'high_tier_only' && eq.tier !== 'high') return false;
-                if (linkMetricsPreset === 'medium_or_high' && eq.tier !== 'high' && eq.tier !== 'medium') return false;
-                return true;
-            });
-        }
-        return out;
-    }, [activeModule, jsRenderPreset, segmentFilter, spellingGrammarPreset, customRuleKeyFilter, linkMetricsPreset, linkMetricsIssueType, linkMetricsMinRd, linkMetricsMinBl]);
-
-    const filteredModuleTables = useMemo(() => {
-        const tables = activeModule?.tables || [];
-        if (!activeModule) {
-            return tables;
-        }
-        return tables.map((table) => {
-            let rows = Array.isArray(table.rows) ? [...table.rows] : [];
-            if (segmentFilter !== 'all') {
-                rows = rows.filter((r) => (r.segment || 'other') === segmentFilter);
+    const extendedModulesByTab = useMemo(() => {
+        const buckets = { overview: [], onpage: [], technical: [], performance: [], integrations: [] };
+        const extended = orderedModules.filter((m) => !CORE_MODULE_KEYS_DUPLICATING_TABS.has(m.module_key));
+        for (const m of extended) {
+            const tabId = EXTENDED_MODULE_TAB[m.module_key] || 'technical';
+            if (buckets[tabId]) {
+                buckets[tabId].push(m);
             }
-            if (activeModule.module_key === 'custom_source_search' && customRuleKeyFilter !== 'all') {
-                if (table.key === 'custom_search_results' || table.key === 'custom_search_rule_summaries') {
-                    rows = rows.filter((r) => r.rule_key === customRuleKeyFilter);
-                }
-            }
-            if (activeModule.module_key === 'custom_extraction') {
-                if (customRuleKeyFilter !== 'all') {
-                    if (
-                        table.key === 'custom_extraction_per_url' ||
-                        table.key === 'custom_extraction_rules' ||
-                        table.key === 'custom_extraction_duplicates'
-                    ) {
-                        rows = rows.filter((r) => r.rule_key === customRuleKeyFilter);
-                    }
-                }
-                if (extractionPreset === 'missing_only' && table.key === 'custom_extraction_per_url') {
-                    rows = rows.filter((r) => r.missing);
-                }
-            }
-            if (activeModule.module_key === 'link_metrics') {
-                const minRd = Number(linkMetricsMinRd) || 0;
-                const minBl = Number(linkMetricsMinBl) || 0;
-                rows = rows.filter((r) => {
-                    const rd = Number(r.referring_domains ?? 0);
-                    const bl = Number(r.backlinks ?? 0);
-                    if (rd < minRd || bl < minBl) return false;
-                    if (linkMetricsPreset === 'high_tier_only' && r.equity_tier !== 'high') return false;
-                    if (linkMetricsPreset === 'medium_or_high' && r.equity_tier !== 'high' && r.equity_tier !== 'medium') {
-                        return false;
-                    }
-                    return true;
-                });
-            }
-            return { ...table, rows };
-        });
-    }, [activeModule, segmentFilter, customRuleKeyFilter, extractionPreset, linkMetricsPreset, linkMetricsMinRd, linkMetricsMinBl]);
+        }
+        return buckets;
+    }, [orderedModules]);
 
     const duplicateTitles = asArray(onPage.duplicate_titles_table);
     const missingMeta = asArray(onPage.missing_meta_table);
@@ -455,6 +991,7 @@ export default function AuditReportView({ audit }) {
                                     ]}
                                     emptyText="No issues were stored for this audit."
                                 />
+                                <ExtendedModulesInTab audit={audit} modules={extendedModulesByTab.overview} />
                             </>
                         ) : null}
 
@@ -499,6 +1036,7 @@ export default function AuditReportView({ audit }) {
                                     <DataTable title="Missing Meta Descriptions" rows={missingMeta} columns={[{ key: 'url', label: 'URL' }]} />
                                     <DataTable title="Pages Missing H1" rows={missingH1} columns={[{ key: 'url', label: 'URL' }]} />
                                 </div>
+                                <ExtendedModulesInTab audit={audit} modules={extendedModulesByTab.onpage} />
                             </>
                         ) : null}
 
@@ -551,6 +1089,7 @@ export default function AuditReportView({ audit }) {
                                     ]}
                                     emptyText="Security header coverage was not stored for this audit."
                                 />
+                                <ExtendedModulesInTab audit={audit} modules={extendedModulesByTab.technical} />
                             </>
                         ) : null}
 
@@ -613,6 +1152,7 @@ export default function AuditReportView({ audit }) {
                                         ]}
                                     />
                                 </div>
+                                <ExtendedModulesInTab audit={audit} modules={extendedModulesByTab.performance} />
                             </>
                         ) : null}
 
@@ -699,411 +1239,10 @@ export default function AuditReportView({ audit }) {
                                         </div>
                                     </Card>
                                 </div>
+                                <ExtendedModulesInTab audit={audit} modules={extendedModulesByTab.integrations} />
                             </div>
                         ) : null}
 
-                        {activeTab === 'modules' ? (
-                            <div className="space-y-6">
-                                {orderedModules.length ? (
-                                    <>
-                                        <div className="flex flex-wrap gap-2">
-                                            {orderedModules.map((module) => (
-                                                <button
-                                                    key={module.module_key}
-                                                    onClick={() => setActiveModuleKey(module.module_key)}
-                                                    className={`rounded-lg px-3 py-2 text-sm ${
-                                                        activeModule?.module_key === module.module_key
-                                                            ? 'bg-[#2F6BFF] text-white'
-                                                            : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                    }`}
-                                                >
-                                                    {module.module_title}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {activeModule ? (
-                                            <>
-                                                {activeModule.filters?.segments?.length ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm text-[var(--admin-text-muted)]">Segment:</span>
-                                                        <select
-                                                            value={segmentFilter}
-                                                            onChange={(e) => setSegmentFilter(e.target.value)}
-                                                            className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-sm text-[var(--admin-text)]"
-                                                        >
-                                                            <option value="all">All</option>
-                                                            {activeModule.filters.segments.map((segment) => (
-                                                                <option key={segment} value={segment}>
-                                                                    {segment}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                ) : null}
-
-                                                {activeModule.module_key === 'js_rendering' &&
-                                                (activeModule.filters?.presets?.length ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm text-[var(--admin-text-muted)]">Filter:</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setJsRenderPreset('all')}
-                                                            className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                jsRenderPreset === 'all'
-                                                                    ? 'bg-[#2F6BFF] text-white'
-                                                                    : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                            }`}
-                                                        >
-                                                            All
-                                                        </button>
-                                                        {activeModule.filters.presets.map((preset) => (
-                                                            <button
-                                                                type="button"
-                                                                key={preset.key}
-                                                                onClick={() => setJsRenderPreset(preset.key)}
-                                                                className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                    jsRenderPreset === preset.key
-                                                                        ? 'bg-[#2F6BFF] text-white'
-                                                                        : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                                }`}
-                                                            >
-                                                                {preset.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ) : null)}
-                                                {activeModule.module_key === 'spelling_grammar' &&
-                                                (activeModule.filters?.presets?.length ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm text-[var(--admin-text-muted)]">Filter:</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setSpellingGrammarPreset('all')}
-                                                            className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                spellingGrammarPreset === 'all'
-                                                                    ? 'bg-[#2F6BFF] text-white'
-                                                                    : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                            }`}
-                                                        >
-                                                            All
-                                                        </button>
-                                                        {activeModule.filters.presets.map((preset) => (
-                                                            <button
-                                                                type="button"
-                                                                key={preset.key}
-                                                                onClick={() => setSpellingGrammarPreset(preset.key)}
-                                                                className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                    spellingGrammarPreset === preset.key
-                                                                        ? 'bg-[#2F6BFF] text-white'
-                                                                        : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                                }`}
-                                                            >
-                                                                {preset.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ) : null)}
-                                                {(activeModule.module_key === 'custom_source_search' ||
-                                                    activeModule.module_key === 'custom_extraction') &&
-                                                (activeModule.filters?.rule_keys?.length ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm text-[var(--admin-text-muted)]">Rule:</span>
-                                                        <select
-                                                            value={customRuleKeyFilter}
-                                                            onChange={(e) => setCustomRuleKeyFilter(e.target.value)}
-                                                            className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-1.5 text-sm text-[var(--admin-text)]"
-                                                        >
-                                                            <option value="all">All rules</option>
-                                                            {activeModule.filters.rule_keys.map((key) => (
-                                                                <option key={key} value={key}>
-                                                                    {key}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                ) : null)}
-                                                {activeModule.module_key === 'custom_extraction' &&
-                                                (activeModule.filters?.presets?.length ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm text-[var(--admin-text-muted)]">Rows:</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setExtractionPreset('all')}
-                                                            className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                extractionPreset === 'all'
-                                                                    ? 'bg-[#2F6BFF] text-white'
-                                                                    : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                            }`}
-                                                        >
-                                                            All
-                                                        </button>
-                                                        {activeModule.filters.presets.map((preset) => (
-                                                            <button
-                                                                type="button"
-                                                                key={preset.key}
-                                                                onClick={() => setExtractionPreset(preset.key)}
-                                                                className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                    extractionPreset === preset.key
-                                                                        ? 'bg-[#2F6BFF] text-white'
-                                                                        : 'bg-[var(--admin-surface-2)] text-[var(--admin-text-muted)]'
-                                                                }`}
-                                                            >
-                                                                {preset.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ) : null)}
-                                                {activeModule.module_key === 'link_metrics' ? (
-                                                    <div className="flex flex-col gap-3 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-2)] p-4">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="text-sm text-[var(--admin-text-muted)]">Equity:</span>
-                                                            {(activeModule.filters?.presets || []).map((preset) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={preset.key}
-                                                                    onClick={() => setLinkMetricsPreset(preset.key)}
-                                                                    className={`rounded-lg px-3 py-1.5 text-sm ${
-                                                                        linkMetricsPreset === preset.key
-                                                                            ? 'bg-[#2F6BFF] text-white'
-                                                                            : 'bg-[var(--admin-surface)] text-[var(--admin-text-muted)]'
-                                                                    }`}
-                                                                >
-                                                                    {preset.label}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
-                                                                Min referring domains
-                                                                <input
-                                                                    type="number"
-                                                                    min={0}
-                                                                    className="w-24 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
-                                                                    value={linkMetricsMinRd}
-                                                                    onChange={(e) => setLinkMetricsMinRd(e.target.value)}
-                                                                />
-                                                            </label>
-                                                            <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
-                                                                Min backlinks
-                                                                <input
-                                                                    type="number"
-                                                                    min={0}
-                                                                    className="w-24 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
-                                                                    value={linkMetricsMinBl}
-                                                                    onChange={(e) => setLinkMetricsMinBl(e.target.value)}
-                                                                />
-                                                            </label>
-                                                            {activeModule.filters?.issue_types?.length ? (
-                                                                <label className="flex items-center gap-2 text-sm text-[var(--admin-text-muted)]">
-                                                                    Issue type
-                                                                    <select
-                                                                        value={linkMetricsIssueType}
-                                                                        onChange={(e) => setLinkMetricsIssueType(e.target.value)}
-                                                                        className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2 py-1 text-[var(--admin-text)]"
-                                                                    >
-                                                                        <option value="all">All</option>
-                                                                        {activeModule.filters.issue_types.map((t) => (
-                                                                            <option key={t} value={t}>
-                                                                                {t}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
-                                                                </label>
-                                                            ) : null}
-                                                        </div>
-                                                    </div>
-                                                ) : null}
-
-                                                {activeModule.module_key === 'spelling_grammar' ? (
-                                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                                                        <MetricCard label="Pages with issues" value={formatNumber(activeModule.card?.affected_urls)} />
-                                                        <MetricCard label="Total issues" value={formatNumber(activeModule.card?.overview_count)} />
-                                                        <MetricCard
-                                                            label="Highest-confidence issues"
-                                                            value={formatNumber(activeModule.card?.high_confidence_issues)}
-                                                        />
-                                                        <MetricCard label="Warning" value={formatNumber(activeModule.severity_counts?.warning)} />
-                                                        <MetricCard label="Info" value={formatNumber(activeModule.severity_counts?.info)} />
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-                                                        <MetricCard label="Overview Count" value={formatNumber(activeModule.card?.overview_count)} />
-                                                        <MetricCard label="Affected URLs" value={formatNumber(activeModule.card?.affected_urls)} />
-                                                        <MetricCard label="Critical" value={formatNumber(activeModule.severity_counts?.critical)} />
-                                                        <MetricCard label="Warning" value={formatNumber(activeModule.severity_counts?.warning)} />
-                                                        <MetricCard label="Info" value={formatNumber(activeModule.severity_counts?.info)} />
-                                                    </div>
-                                                )}
-
-                                                <DataTable
-                                                    title="Grouped Issues"
-                                                    rows={filteredModuleIssues}
-                                                    columns={
-                                                        activeModule.module_key === 'link_metrics'
-                                                            ? [
-                                                                  { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
-                                                                  {
-                                                                      key: 'details_json',
-                                                                      label: 'Equity',
-                                                                      render: (_v, row) => {
-                                                                          const eq = row.details_json?.link_equity || {};
-                                                                          return (
-                                                                              <span className="text-xs">
-                                                                                  <span className="font-semibold uppercase text-[var(--admin-text-muted)]">{eq.tier || '—'}</span>
-                                                                                  {' · RD '}
-                                                                                  {formatNumber(eq.referring_domains ?? 0)}
-                                                                                  {' · BL '}
-                                                                                  {formatNumber(eq.backlinks ?? 0)}
-                                                                              </span>
-                                                                          );
-                                                                      },
-                                                                  },
-                                                                  { key: 'module_key', label: 'Module' },
-                                                                  { key: 'issue_type', label: 'Issue type' },
-                                                                  { key: 'url', label: 'URL' },
-                                                                  { key: 'score_penalty', label: 'Penalty', render: (v) => formatNumber(v) },
-                                                                  { key: 'message', label: 'Message' },
-                                                              ]
-                                                            : activeModule.module_key === 'js_rendering'
-                                                            ? [
-                                                                  { key: 'severity', label: 'Severity', render: (v) => <IssueBadge severity={v || 'info'} /> },
-                                                                  {
-                                                                      key: 'details_json',
-                                                                      label: 'Diff type',
-                                                                      render: (_v, row) => row.details_json?.diff_type || row.issue_type || '—',
-                                                                  },
-                                                                  { key: 'url', label: 'URL' },
-                                                                  { key: 'message', label: 'Message' },
-                                                                  {
-                                                                      key: 'details_json',
-                                                                      label: 'Raw vs rendered',
-                                                                      render: (_v, row) => {
-                                                                          const d = row.details_json || {};
-                                                                          return (
-                                                                              <span className="text-xs text-[var(--admin-text-muted)]">
-                                                                                  {d.raw != null && d.rendered != null
-                                                                                      ? 'See CSV/JSON export for full payload'
-                                                                                      : '—'}
-                                                                              </span>
-                                                                          );
-                                                                      },
-                                                                  },
-                                                              ]
-                                                            : activeModule.module_key === 'spelling_grammar'
-                                                              ? [
-                                                                    {
-                                                                        key: 'severity',
-                                                                        label: 'Severity',
-                                                                        render: (v) => <IssueBadge severity={v || 'info'} />,
-                                                                    },
-                                                                    {
-                                                                        key: 'details_json',
-                                                                        label: 'Kind',
-                                                                        render: (_v, row) => row.details_json?.issue_kind || row.issue_type || '—',
-                                                                    },
-                                                                    {
-                                                                        key: 'details_json',
-                                                                        label: 'Text / fix',
-                                                                        render: (_v, row) => {
-                                                                            const d = row.details_json || {};
-                                                                            const fix = d.suggested_correction;
-                                                                            return (
-                                                                                <span className="text-sm">
-                                                                                    <span className="font-medium">{d.issue_text || '—'}</span>
-                                                                                    {fix ? (
-                                                                                        <span className="text-[var(--admin-text-muted)]">
-                                                                                            {' '}
-                                                                                            → {fix}
-                                                                                        </span>
-                                                                                    ) : null}
-                                                                                </span>
-                                                                            );
-                                                                        },
-                                                                    },
-                                                                    {
-                                                                        key: 'details_json',
-                                                                        label: 'Confidence',
-                                                                        render: (_v, row) =>
-                                                                            row.details_json?.confidence != null
-                                                                                ? `${row.details_json.confidence}`
-                                                                                : '—',
-                                                                    },
-                                                                    {
-                                                                        key: 'details_json',
-                                                                        label: 'Context',
-                                                                        render: (_v, row) => (
-                                                                            <span className="text-xs text-[var(--admin-text-muted)]">
-                                                                                {row.details_json?.context_snippet || '—'}
-                                                                            </span>
-                                                                        ),
-                                                                    },
-                                                                    { key: 'url', label: 'URL' },
-                                                                ]
-                                                              : [
-                                                                    { key: 'severity', label: 'Severity', render: (value) => <IssueBadge severity={value || 'info'} /> },
-                                                                    { key: 'issue_type', label: 'Issue Type' },
-                                                                    { key: 'status', label: 'Status' },
-                                                                    { key: 'url', label: 'URL' },
-                                                                    { key: 'message', label: 'Message' },
-                                                                ]
-                                                    }
-                                                    emptyText="No issues detected for this module."
-                                                />
-
-                                                {filteredModuleTables.map((table) => (
-                                                    <DataTable
-                                                        key={table.key}
-                                                        title={table.title || 'Table'}
-                                                        rows={Array.isArray(table.rows) ? table.rows : []}
-                                                        columns={Array.isArray(table.rows) && table.rows.length
-                                                            ? Object.keys(table.rows[0]).slice(0, 4).map((key) => ({ key, label: key.replaceAll('_', ' ') }))
-                                                            : [{ key: 'value', label: 'Value' }]}
-                                                    />
-                                                ))}
-
-                                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                                                    {(activeModule.charts || []).map((chart) => (
-                                                        <Card key={chart.key} variant="elevated">
-                                                            <h3 className="text-lg font-semibold text-[var(--admin-text)]">{chart.title || 'Chart Dataset'}</h3>
-                                                            <pre className="mt-3 overflow-auto rounded-lg bg-[var(--admin-surface-2)] p-3 text-xs text-[var(--admin-text-muted)]">
-                                                                {JSON.stringify(chart.dataset || {}, null, 2)}
-                                                            </pre>
-                                                        </Card>
-                                                    ))}
-                                                </div>
-
-                                                <Card variant="elevated">
-                                                    <h3 className="text-lg font-semibold text-[var(--admin-text)]">Recommended Actions</h3>
-                                                    <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--admin-text)]">
-                                                        {(activeModule.card?.recommended_actions || []).map((item, idx) => (
-                                                            <li key={`${activeModule.module_key}-rec-${idx}`}>{item}</li>
-                                                        ))}
-                                                    </ul>
-                                                </Card>
-
-                                                <div className="flex flex-wrap gap-2">
-                                                    <a
-                                                        href={`/audit/${audit.id}/export/modules.csv?module_key=${encodeURIComponent(activeModule.module_key)}`}
-                                                        className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]"
-                                                    >
-                                                        Export Module CSV
-                                                    </a>
-                                                    <a
-                                                        href={`/audit/${audit.id}/export/modules.json?module_key=${encodeURIComponent(activeModule.module_key)}`}
-                                                        className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]"
-                                                    >
-                                                        Export Module JSON
-                                                    </a>
-                                                </div>
-                                            </>
-                                        ) : null}
-                                    </>
-                                ) : (
-                                    <SectionMessage>No module report data found for this audit.</SectionMessage>
-                                )}
-                            </div>
-                        ) : null}
                     </div>
                 </Card>
 

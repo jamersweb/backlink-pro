@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SEO Intelligence Ledger - Professional Audit Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#782232",
+                        "outline": "#737c7f",
+                        "tertiary-container": "#8df5e4",
+                        "on-tertiary-fixed": "#004840",
+                        "on-surface": "#2b3437",
+                        "secondary-container": "#d1e4ff",
+                        "on-tertiary": "#e2fff8",
+                        "tertiary-fixed": "#8df5e4",
+                        "on-secondary-fixed": "#27415d",
+                        "on-background": "#2b3437",
+                        "background": "#f8f9fa",
+                        "primary": "#525f71",
+                        "surface-container": "#eaeff1",
+                        "secondary-fixed-dim": "#bdd7f9",
+                        "primary-dim": "#465365",
+                        "inverse-primary": "#d8e6fc",
+                        "surface-container-high": "#e3e9ec",
+                        "outline-variant": "#abb3b7",
+                        "error-dim": "#4f0116",
+                        "tertiary": "#006b60",
+                        "surface-container-low": "#f1f4f6",
+                        "surface-bright": "#f8f9fa",
+                        "on-error": "#fff7f7",
+                        "on-tertiary-fixed-variant": "#00675c",
+                        "on-secondary-fixed-variant": "#445d7b",
+                        "inverse-surface": "#0c0f10",
+                        "surface-container-highest": "#dbe4e7",
+                        "on-primary-fixed": "#334051",
+                        "surface-dim": "#d1dce0",
+                        "on-tertiary-container": "#005c53",
+                        "surface-tint": "#525f71",
+                        "on-secondary-container": "#3a5470",
+                        "on-primary-fixed-variant": "#4f5d6e",
+                        "surface-variant": "#dbe4e7",
+                        "secondary-fixed": "#d1e4ff",
+                        "primary-container": "#d6e4f9",
+                        "on-secondary": "#f7f9ff",
+                        "error-container": "#ff8b9a",
+                        "surface": "#f8f9fa",
+                        "secondary-dim": "#3c5572",
+                        "on-primary-container": "#455364",
+                        "secondary": "#48617e",
+                        "on-primary": "#f5f8ff",
+                        "error": "#9e3f4e",
+                        "primary-fixed-dim": "#c8d5ea",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#586064",
+                        "inverse-on-surface": "#9b9d9e",
+                        "tertiary-fixed-dim": "#7fe6d5",
+                        "primary-fixed": "#d6e4f9",
+                        "tertiary-dim": "#005e54"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+        h1, h2, h3, .headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .donut-ring { stroke: #eaeff1; stroke-width: 4; fill: transparent; }
+        .donut-segment { stroke: #006b60; stroke-width: 4; stroke-dasharray: 93 7; stroke-linecap: round; fill: transparent; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Top Navigation Bar -->
+<nav class="bg-[#f8f9fa] dark:bg-slate-900 border-b border-surface-container flex justify-between items-center px-12 py-6 w-full max-w-[1440px] mx-auto sticky top-0 z-50">
+<div class="text-xl font-bold tracking-tight text-[#1A237E] dark:text-white font-headline">
+            SEO Intelligence Ledger
+        </div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-manrope text-sm tracking-tight text-[#1A237E] font-bold border-b-2 border-[#1A237E] pb-1 transition-all duration-300 ease-in-out" href="#">Overview</a>
+<a class="font-manrope text-sm tracking-tight text-[#586064] hover:text-[#2b3437] hover:bg-[#f1f4f6] dark:hover:bg-slate-800 rounded-md px-3 py-1 transition-all duration-300 ease-in-out" href="#">Technical</a>
+<a class="font-manrope text-sm tracking-tight text-[#586064] hover:text-[#2b3437] hover:bg-[#f1f4f6] dark:hover:bg-slate-800 rounded-md px-3 py-1 transition-all duration-300 ease-in-out" href="#">Content</a>
+<a class="font-manrope text-sm tracking-tight text-[#586064] hover:text-[#2b3437] hover:bg-[#f1f4f6] dark:hover:bg-slate-800 rounded-md px-3 py-1 transition-all duration-300 ease-in-out" href="#">Authority</a>
+</div>
+<div class="w-24"></div> <!-- Spacer for balance -->
+</nav>
+<main class="max-w-[1200px] mx-auto px-8 py-12 space-y-12">
+<!-- Section 1: Header with Domain Analysis & Score -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+<div class="lg:col-span-7 space-y-4">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-primary-container text-on-primary-container rounded-full text-xs font-semibold tracking-wider uppercase">
+                    Architectural Audit Report
+                </div>
+<h1 class="text-5xl font-extrabold tracking-tight text-on-surface leading-tight">
+                    digital-nexus.com
+                </h1>
+<p class="text-on-surface-variant text-lg max-w-xl">
+                    Comprehensive performance analysis and architectural integrity review conducted on May 24, 2024.
+                </p>
+<div class="flex gap-6 pt-4">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Protocol</span>
+<span class="text-sm font-medium">HTTPS Secure</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Indexing</span>
+<span class="text-sm font-medium">Global Indexed</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Load Time</span>
+<span class="text-sm font-medium">1.2s (Optimal)</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-5 flex justify-center lg:justify-end">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+<path class="donut-segment" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-6xl font-black text-tertiary">93</span>
+<span class="text-sm font-bold text-on-surface-variant uppercase tracking-widest">Grade A</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Status Boxes -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<span class="p-2 bg-error-container/20 rounded-lg">
+<span class="material-symbols-outlined text-error">report</span>
+</span>
+<span class="text-3xl font-bold text-on-surface">04</span>
+</div>
+<h3 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Critical Errors</h3>
+<p class="text-xs text-on-surface-variant/80 mt-2">Requires immediate architectural intervention.</p>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<span class="p-2 bg-secondary-container/20 rounded-lg">
+<span class="material-symbols-outlined text-secondary">warning</span>
+</span>
+<span class="text-3xl font-bold text-on-surface">12</span>
+</div>
+<h3 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Potential Warnings</h3>
+<p class="text-xs text-on-surface-variant/80 mt-2">Issues impacting user retention and discoverability.</p>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-4">
+<span class="p-2 bg-tertiary-container/20 rounded-lg">
+<span class="material-symbols-outlined text-tertiary">check_circle</span>
+</span>
+<span class="text-3xl font-bold text-on-surface">86</span>
+</div>
+<h3 class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Passed Verifications</h3>
+<p class="text-xs text-on-surface-variant/80 mt-2">Infrastructure components performing at peak levels.</p>
+</div>
+</section>
+<!-- Section 3: Performance Core Scores -->
+<section class="bg-surface-container-low p-10 rounded-2xl">
+<div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+<div>
+<h2 class="text-2xl font-bold text-on-surface">Performance Core Scores</h2>
+<p class="text-on-surface-variant">Lighthouse V10 engine real-time analysis results.</p>
+</div>
+<div class="text-xs font-mono bg-surface-container-highest px-3 py-1 rounded">DEVICE: MOBILE-MOTO-G-POWER</div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+<div class="flex flex-col items-center p-4 bg-surface-container-lowest rounded-xl">
+<div class="text-4xl font-bold text-tertiary mb-1">98</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Performance</div>
+<div class="w-full h-1 bg-tertiary-container mt-3 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[98%]"></div>
+</div>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface-container-lowest rounded-xl">
+<div class="text-4xl font-bold text-tertiary mb-1">92</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Accessibility</div>
+<div class="w-full h-1 bg-tertiary-container mt-3 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[92%]"></div>
+</div>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface-container-lowest rounded-xl">
+<div class="text-4xl font-bold text-tertiary mb-1">100</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Best Practices</div>
+<div class="w-full h-1 bg-tertiary-container mt-3 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[100%]"></div>
+</div>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface-container-lowest rounded-xl">
+<div class="text-4xl font-bold text-tertiary mb-1">89</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">SEO Strategy</div>
+<div class="w-full h-1 bg-tertiary-container mt-3 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[89%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Technical Integrity & Content Narrative -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+<div class="space-y-6">
+<h2 class="text-xl font-bold border-l-4 border-primary pl-4">Technical Integrity</h2>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">schema</span>
+<span class="text-sm font-medium">Structured Data Markup</span>
+</div>
+<span class="text-xs font-bold text-tertiary bg-tertiary-container/30 px-2 py-1 rounded">OPTIMIZED</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">compress</span>
+<span class="text-sm font-medium">Brotli Compression</span>
+</div>
+<span class="text-xs font-bold text-secondary bg-secondary-container/30 px-2 py-1 rounded">ACTIVE</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error">dns</span>
+<span class="text-sm font-medium">TTFB (Server Response)</span>
+</div>
+<span class="text-xs font-bold text-error bg-error-container/30 px-2 py-1 rounded">SLOW (0.8s)</span>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<h2 class="text-xl font-bold border-l-4 border-primary pl-4">Content Narrative</h2>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-5">
+<span class="material-symbols-outlined text-6xl">format_quote</span>
+</div>
+<p class="text-on-surface-variant leading-relaxed italic">
+                        "The primary domain demonstrates high semantic density for core industry keywords. However, the architectural distribution of H1-H3 tags remains inconsistent across landing tiers. To achieve market leadership, focus on aligning secondary metadata with top-funnel search intent."
+                    </p>
+<div class="mt-4 flex items-center gap-3">
+<img alt="Professional portrait of a female SEO strategist in a minimalist studio setting" class="w-10 h-10 rounded-full grayscale" data-alt="Professional portrait of a female SEO strategist in a minimalist studio setting with soft lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvBLbxjC8syUgR2vmmNfnUpLbmpZLhXaoyHhxAUqhsS0NFYjd62_A8t9ZxmfPGBjPQGP8BrtDQ_7ZwLt7IpTwL9WTB_lUgqhj5dHR2cvzAuBq5m1WeutQ2f_Cs4IcjdeJUmEZluCE9eDUcttNo3JpsXpdgknXQlmtiHl8Lx0MFcTu3pOJFc0QXPk4PxAqhXZhm-ECKxzZ-MH87Cr5wzcbvYzm5Qienu6nbNcxWYxV3hCVGnP3Tmu3-5OppqBhUHMFMEXoo2vOWQemU"/>
+<div>
+<p class="text-sm font-bold">Elena Vance</p>
+<p class="text-[10px] uppercase text-on-surface-variant">Lead SEO Strategist</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 5: DA / Backlink Metrics -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="bg-primary text-on-primary p-6 rounded-xl shadow-lg shadow-primary/20 flex flex-col justify-center">
+<div class="text-3xl font-bold">58</div>
+<div class="text-xs font-bold uppercase tracking-widest opacity-80 mt-1">Domain Authority</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/20 flex flex-col justify-center">
+<div class="text-2xl font-bold text-on-surface">14.2K</div>
+<div class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mt-1">Total Backlinks</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/20 flex flex-col justify-center">
+<div class="text-2xl font-bold text-on-surface">2.4K</div>
+<div class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mt-1">Ref. Domains</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/20 flex flex-col justify-center">
+<div class="text-2xl font-bold text-on-surface">32%</div>
+<div class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mt-1">Toxic Links</div>
+</div>
+</section>
+<!-- Section 6: Top Issues Table -->
+<section class="space-y-6">
+<h2 class="text-2xl font-bold text-on-surface">Critical Structural Deficiencies</h2>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/10 overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-highest">
+<tr>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Issue Description</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Complexity</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4">
+<span class="bg-error-container text-on-error-container px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Critical</span>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm font-semibold">Missing H1 Tags on Product Pages</p>
+<p class="text-xs text-on-surface-variant">Affects 142 high-priority landing URLs.</p>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<div class="w-4 h-1 bg-primary rounded"></div>
+<div class="w-4 h-1 bg-surface-container rounded"></div>
+<div class="w-4 h-1 bg-surface-container rounded"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-xs font-bold text-primary underline">VIEW LIST</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4">
+<span class="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Warning</span>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm font-semibold">Duplicate Meta Descriptions</p>
+<p class="text-xs text-on-surface-variant">Detected across the /blog/ pagination architecture.</p>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<div class="w-4 h-1 bg-primary rounded"></div>
+<div class="w-4 h-1 bg-primary rounded"></div>
+<div class="w-4 h-1 bg-surface-container rounded"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-xs font-bold text-primary underline">FIX GUIDE</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4">
+<span class="bg-error-container text-on-error-container px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Critical</span>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm font-semibold">Render-Blocking JavaScript</p>
+<p class="text-xs text-on-surface-variant">Heavy 3rd-party scripts delaying LCP to 4.2s.</p>
+</td>
+<td class="px-6 py-4">
+<div class="flex gap-1">
+<div class="w-4 h-1 bg-primary rounded"></div>
+<div class="w-4 h-1 bg-primary rounded"></div>
+<div class="w-4 h-1 bg-primary rounded"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-xs font-bold text-primary underline">AUDIT SCRIPT</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Section 7: Projection Chart & CTA -->
+<section class="bg-inverse-surface text-background p-10 rounded-2xl relative overflow-hidden">
+<div class="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">
+<svg class="w-full h-full stroke-background fill-none" viewbox="0 0 400 200">
+<path d="M0,150 Q50,130 100,140 T200,80 T300,100 T400,20" stroke-width="2"></path>
+<path d="M0,160 Q50,140 100,150 T200,90 T300,110 T400,30" stroke-width="1"></path>
+</svg>
+</div>
+<div class="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+<div class="space-y-6">
+<h2 class="text-3xl font-bold leading-tight">Projected Visibility Growth</h2>
+<p class="text-inverse-on-surface max-w-md">
+                        Executing the critical technical recommendations is estimated to increase organic traffic by <span class="text-tertiary-fixed font-bold">42% within 90 days</span>.
+                    </p>
+<div class="flex gap-4">
+<button class="bg-tertiary text-on-tertiary px-6 py-3 rounded-lg font-bold text-sm tracking-wide transition hover:brightness-110">
+                            Download Action Roadmap
+                        </button>
+<button class="bg-surface-container-highest/10 text-background border border-background/20 px-6 py-3 rounded-lg font-bold text-sm tracking-wide transition hover:bg-surface-container-highest/20">
+                            Book Consultant Review
+                        </button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10">
+<div class="text-tertiary-fixed text-2xl font-bold">+18.4k</div>
+<div class="text-[10px] uppercase tracking-widest opacity-60">Estimated Sessions</div>
+</div>
+<div class="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10">
+<div class="text-tertiary-fixed text-2xl font-bold">+12%</div>
+<div class="text-[10px] uppercase tracking-widest opacity-60">Conversion Lift</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#f1f4f6] dark:bg-slate-950 flex flex-col md:flex-row justify-between items-center px-12 py-8 mt-auto w-full border-t border-surface-container">
+<p class="font-inter text-xs uppercase tracking-widest text-[#586064] dark:text-slate-400 opacity-80">
+            © 2024 SEO Intelligence Ledger. All rights reserved. Confidential Architectural Audit.
+        </p>
+<div class="flex gap-8 mt-4 md:mt-0">
+<a class="font-inter text-xs uppercase tracking-widest text-[#586064] hover:text-[#2b3437] underline underline-offset-4 transition-opacity" href="#">Privacy Policy</a>
+<a class="font-inter text-xs uppercase tracking-widest text-[#586064] hover:text-[#2b3437] underline underline-offset-4 transition-opacity" href="#">Terms of Service</a>
+<a class="font-inter text-xs uppercase tracking-widest text-[#586064] hover:text-[#2b3437] underline underline-offset-4 transition-opacity" href="#">Methodology</a>
+</div>
+</footer>
+</body></html>

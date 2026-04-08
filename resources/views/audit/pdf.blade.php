@@ -2,82 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEO Audit Report - {{ $audit->url }}</title>
+    <title>Audit Report — {{ parse_url($audit->url, PHP_URL_HOST) ?: $audit->url }}</title>
     <style>
-        @page { margin: 10mm 10mm 12mm 10mm; }
+        @page { margin: 9mm 11mm 11mm 11mm; }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: 10px; line-height: 1.42; color: #142235; background: #f3f5f9; }
-        h1, h2, h3, p { margin: 0; }
-        table { width: 100%; border-collapse: collapse; }
+        body {
+            margin: 0;
+            font-family: DejaVu Sans, Helvetica, Arial, sans-serif;
+            font-size: 8.5px;
+            line-height: 1.42;
+            color: #2b3437;
+            background: #f8f9fa;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        table { border-collapse: collapse; width: 100%; }
         .page-break { page-break-before: always; }
-        .card { background: #ffffff; border: 1px solid #dde5ef; border-radius: 14px; padding: 12px; margin-bottom: 10px; page-break-inside: auto; }
-        .hero { }
-        .brand { font-size: 18px; font-weight: 800; color: #1d4ed8; }
-        .domain { margin-top: 3px; font-size: 10px; color: #64748b; word-break: break-word; }
-        .hero-title { font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 8px; }
-        .hero-subtitle { margin-top: 4px; font-size: 10px; color: #64748b; }
-        .date-badge { display: inline-block; padding: 5px 10px; border: 1px solid #dbe7f3; border-radius: 999px; background: #f8fbff; font-size: 8px; font-weight: 700; color: #334155; }
-        .summary-box { margin-top: 8px; padding: 9px 10px; background: #f8fbff; border: 1px solid #dbe7f3; border-radius: 10px; color: #42556d; font-size: 9px; line-height: 1.55; }
-        .section-kicker { display: inline-block; margin-bottom: 5px; padding: 2px 8px; border-radius: 999px; background: #eef4ff; color: #2f6bff; font-size: 7px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-        .section-title { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 2px; }
-        .section-subtitle { font-size: 9px; color: #64748b; margin-bottom: 8px; }
-        .metric { background: #f8fbff; border: 1px solid #dbe7f3; border-radius: 10px; padding: 9px; }
-        .metric-label { font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
-        .metric-value { font-size: 18px; font-weight: 800; color: #102033; margin-top: 6px; }
-        .metric-note { margin-top: 2px; font-size: 8px; color: #64748b; }
-        .split td { vertical-align: top; }
-        .split .left { width: 32%; padding-right: 7px; }
-        .split .right { width: 68%; padding-left: 7px; }
-        .grid-4 td { width: 25%; padding-right: 6px; vertical-align: top; }
-        .grid-4 td:last-child { padding-right: 0; }
-        .grid-2 td { width: 50%; vertical-align: top; }
-        .grid-2 td:first-child { padding-right: 6px; }
-        .grid-2 td:last-child { padding-left: 6px; }
-        .grid-3 td { width: 33.333%; padding-right: 6px; vertical-align: top; }
-        .grid-3 td:last-child { padding-right: 0; }
-        .donut-wrap { text-align: center; }
-        .donut-title { font-size: 10px; font-weight: 700; color: #102033; margin-bottom: 4px; }
-        .donut-value { font-size: 30px; font-weight: 800; margin-top: -102px; }
-        .donut-grade { font-size: 15px; font-weight: 800; margin-top: 2px; }
-        .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 8px; font-weight: 700; }
-        .pill.good { background: #dcfce7; color: #166534; }
-        .pill.warn { background: #fff2d8; color: #b45309; }
-        .pill.bad { background: #fee2e2; color: #b91c1c; }
-        .bar-row { margin-bottom: 8px; }
-        .bar-head { font-size: 9px; color: #334155; margin-bottom: 4px; }
-        .bar-head .right { float: right; font-weight: 700; }
-        .bar-track { clear: both; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
-        .bar-fill { height: 8px; border-radius: 999px; }
-        .blue { background: #2f6bff; }
-        .green { background: #18a957; }
-        .orange { background: #f59e0b; }
-        .red { background: #ef4444; }
-        .stack { height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
-        .stack span { display: block; float: left; height: 12px; }
-        .legend { margin-top: 6px; font-size: 8px; color: #64748b; }
-        .legend span { display: inline-block; margin-right: 10px; }
-        .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
-        .table th, .table td { border-bottom: 1px solid #e4edf6; padding: 7px 8px; text-align: left; vertical-align: top; }
-        .table th { background: #f8fbff; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
-        .truncate { word-break: break-word; }
-        .badge { display: inline-block; padding: 3px 7px; border-radius: 999px; font-size: 8px; font-weight: 700; }
-        .badge-high { background: #fee2e2; color: #b91c1c; }
-        .badge-medium { background: #fef3c7; color: #92400e; }
-        .badge-low { background: #dbeafe; color: #1d4ed8; }
-        .chip { display: inline-block; margin: 0 4px 4px 0; padding: 4px 8px; border-radius: 999px; background: #e8f1ff; color: #1d4ed8; font-size: 8px; font-weight: 700; }
-        .status-row { margin-top: 6px; padding: 6px 8px; border-radius: 9px; font-size: 8px; }
-        .status-row.good { background: #ebf9f1; color: #17663b; }
-        .status-row.warn { background: #fff7e7; color: #9a6708; }
-        .status-row.bad { background: #fff0f1; color: #b42318; }
-        .section-note { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #f8fbff; border: 1px solid #dbe7f3; color: #51657c; font-size: 9px; }
-        .footer { text-align: center; margin-top: 4px; font-size: 8px; color: #94a3b8; }
-        .avoid-split { page-break-inside: avoid; }
+        .truncate { word-break: break-word; overflow-wrap: break-word; }
+
+        .brand-bar { padding: 10px 0 14px; border-bottom: 2px solid #1A237E; margin-bottom: 16px; }
+        .headline { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: #1A237E; }
+        .sub-brand { font-size: 6.5px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: #64748b; margin-top: 3px; }
+
+        .pill-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; background: #d6e4f9; color: #455364; }
+        .hero-domain { font-size: 21px; font-weight: 800; letter-spacing: -0.03em; color: #1e293b; line-height: 1.1; }
+        .hero-url { font-size: 8px; color: #006b60; word-break: break-all; margin-top: 4px; font-weight: 600; }
+        .hero-lead { font-size: 9px; color: #586064; margin-top: 8px; max-width: 540px; }
+        .meta-k { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; }
+        .meta-v { font-size: 8.5px; font-weight: 600; color: #2b3437; margin-top: 2px; }
+
+        .donut-wrap { text-align: center; width: 150px; margin: 0 auto; }
+        .donut-score { font-size: 34px; font-weight: 800; color: #006b60; line-height: 1; }
+        .donut-grade { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; color: #64748b; margin-top: 4px; }
+
+        .card-3 { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 12px; vertical-align: top; width: 33%; }
+        .card-3 .big { font-size: 20px; font-weight: 800; color: #1e293b; }
+        .card-3 h3 { font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin: 8px 0 0; }
+        .card-3 p { font-size: 7.5px; color: #64748b; margin: 5px 0 0; }
+        .icon-box { display: inline-block; padding: 5px; border-radius: 6px; font-size: 13px; }
+
+        .section-wrap { background: #eef2f6; border-radius: 10px; padding: 16px 14px; margin-top: 12px; border: 1px solid #e2e8f0; }
+        .section-title { font-size: 13px; font-weight: 800; color: #1e293b; }
+        .section-sub { font-size: 7.5px; color: #64748b; margin-top: 3px; }
+        .device-tag { font-size: 6.5px; font-family: DejaVu Sans Mono, monospace; background: #dbe4e7; padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+
+        .core-card { background: #ffffff; border-radius: 8px; padding: 10px 6px; text-align: center; vertical-align: top; width: 25%; border: 1px solid #e8edf2; }
+        .core-val { font-size: 18px; font-weight: 800; color: #006b60; }
+        .core-lbl { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-top: 3px; }
+        .bar-bg { height: 3px; background: #b8f0e8; border-radius: 99px; margin-top: 7px; overflow: hidden; }
+        .bar-fg { height: 3px; background: #006b60; border-radius: 99px; }
+
+        .col-title { font-size: 11px; font-weight: 800; border-left: 4px solid #1A237E; padding-left: 10px; margin-bottom: 10px; color: #1e293b; }
+        .row-tech { background: #ffffff; border: 1px solid #e8edf2; border-radius: 6px; padding: 9px 11px; margin-bottom: 7px; }
+        .quote-box { background: #ffffff; border: 1px solid #e8edf2; border-radius: 8px; padding: 14px; font-size: 8.5px; color: #475569; font-style: italic; line-height: 1.55; }
+
+        .metric-hero { background: linear-gradient(135deg,#4a5568,#525f71); color: #f5f8ff; border-radius: 8px; padding: 12px; text-align: center; vertical-align: middle; width: 25%; }
+        .metric-hero .v { font-size: 17px; font-weight: 800; }
+        .metric-hero .l { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; margin-top: 3px; }
+        .metric-plain { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; vertical-align: middle; width: 25%; }
+        .metric-plain .v { font-size: 15px; font-weight: 800; color: #1e293b; }
+        .metric-plain .l { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-top: 3px; }
+
+        .tbl { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 6px; }
+        .tbl th { background: #e8eef2; text-align: left; padding: 8px 10px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; }
+        .tbl td { padding: 8px 10px; border-top: 1px solid #eef2f4; vertical-align: top; font-size: 8px; }
+        .tag-crit { background: #fecaca; color: #991b1b; padding: 2px 7px; border-radius: 99px; font-size: 6.5px; font-weight: 800; }
+        .tag-warn { background: #bfdbfe; color: #1e40af; padding: 2px 7px; border-radius: 99px; font-size: 6.5px; font-weight: 800; }
+        .tag-info { background: #e0e7ff; color: #3730a3; padding: 2px 7px; border-radius: 99px; font-size: 6.5px; font-weight: 800; }
+        .complex-bar { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 2px; }
+        .bx-on { background: #525f71; }
+        .bx-off { background: #e5e7eb; }
+
+        .cta-dark { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 18px 16px; margin-top: 14px; border: 1px solid #1e293b; }
+        .cta-dark h2 { font-size: 14px; font-weight: 800; margin: 0 0 6px; color: #f1f5f9; }
+        .cta-dark p { font-size: 8.5px; color: #94a3b8; margin: 0; line-height: 1.5; }
+        .cta-accent { color: #5eead4; font-weight: 800; }
+        .cta-stat { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px; text-align: center; }
+        .cta-stat .v { color: #5eead4; font-size: 14px; font-weight: 800; }
+        .cta-stat .l { font-size: 6.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-top: 3px; }
+
+        .footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 6.5px; color: #64748b; letter-spacing: 0.06em; text-transform: uppercase; }
+        .badge-ok { font-size: 6.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; }
+        .b-opt { background: rgba(0, 107, 96, 0.15); color: #006b60; }
+        .b-act { background: rgba(72, 97, 126, 0.18); color: #48617e; }
+        .b-slow { background: rgba(158, 63, 78, 0.15); color: #9e3f4e; }
+
+        .sec-major { margin-top: 18px; padding-top: 12px; border-top: 1px solid #dce3e9; page-break-inside: avoid; }
+        .sec-h { font-size: 14px; font-weight: 800; color: #1A237E; letter-spacing: -0.02em; margin: 0 0 10px; }
+        .sec-h2 { font-size: 10px; font-weight: 800; color: #334155; margin: 12px 0 6px; }
+        .metric-grid td { width: 25%; vertical-align: top; padding: 5px; }
+        .metric-cell { background: #fff; border: 1px solid #e8edf2; border-radius: 8px; padding: 10px 8px; min-height: 44px; }
+        .metric-cell .l { font-size: 7px; color: #64748b; font-weight: 600; }
+        .metric-cell .v { font-size: 14px; font-weight: 800; color: #1e293b; margin-top: 3px; }
+
+        .data-table { width: 100%; border: 1px solid #e2e8f0; margin-top: 6px; font-size: 7.5px; }
+        .data-table th { background: #f1f5f9; padding: 6px 8px; text-align: left; font-size: 6.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+        .data-table td { padding: 6px 8px; border-top: 1px solid #eef2f4; vertical-align: top; }
+        .data-table tr:nth-child(even) td { background: #fafbfc; }
+
+        .mod-shell { margin-top: 14px; padding: 12px; border: 1px solid #dbe4e7; border-radius: 10px; background: #f8fafc; page-break-inside: avoid; }
+        .mod-title { font-size: 11px; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+        .kv-grid { width: 100%; font-size: 7.5px; margin-bottom: 8px; }
+        .kv-grid td { padding: 4px 8px; border: 1px solid #e8edf2; background: #fff; }
+        .tbl-caption { font-size: 7px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin: 10px 0 4px; }
+        .rec-list { margin: 4px 0 0 16px; padding: 0; font-size: 8px; color: #334155; }
+        .rec-list li { margin: 2px 0; }
+
+        .bg-error-soft { background: #fff1f2; }
+        .bg-warn-soft { background: #eff6ff; }
+        .bg-ok-soft { background: #e6fffa; }
     </style>
 </head>
 <body>
 @php
-    $kpis = $audit->audit_kpis ?? [];
+    $ui = is_array($auditUi ?? null) ? $auditUi : [];
+    $pageData = is_array($ui['page_data'] ?? null) ? $ui['page_data'] : [];
+    $kpis = is_array($ui['kpis'] ?? null) ? $ui['kpis'] : ($audit->audit_kpis ?? []);
     $overview = $kpis['overview'] ?? [];
     $onPage = $kpis['on_page_seo'] ?? [];
     $technical = $kpis['technical'] ?? [];
@@ -88,11 +128,13 @@
     $techEmail = $kpis['tech_email'] ?? [];
     $ga4 = $kpis['ga4'] ?? [];
     $gsc = $kpis['gsc'] ?? [];
-    $psi = $kpis['google']['pagespeed'] ?? null;
+    $psi = $ui['psi'] ?? data_get($kpis, 'google.pagespeed');
+    $categoryScoresUi = is_array($ui['category_scores'] ?? null) ? $ui['category_scores'] : ($audit->category_scores ?? []);
+    $categoryGradesUi = is_array($ui['category_grades'] ?? null) ? $ui['category_grades'] : ($audit->category_grades ?? []);
+
     $normalizePsi = function ($run, $fallback = []) {
         $metrics = (array) data_get($run, 'kpis', []);
         $fallback = (array) $fallback;
-
         return [
             'score' => data_get($metrics, 'score', data_get($metrics, 'categories.performance_score')),
             'lcp' => data_get($metrics, 'lcp', data_get($metrics, 'lcp_ms', data_get($metrics, 'lab_metrics.lcp_ms'))),
@@ -100,15 +142,19 @@
             'cls' => data_get($metrics, 'cls', data_get($metrics, 'lab_metrics.cls')),
             'tti' => data_get($metrics, 'tti', data_get($metrics, 'tti_ms', data_get($metrics, 'lab_metrics.tti_ms'))),
             'tbt' => data_get($metrics, 'tbt', data_get($metrics, 'tbt_ms', data_get($metrics, 'lab_metrics.tbt_ms'))),
-            'source' => !empty($metrics) ? 'psi' : (!empty($fallback) ? 'page' : null),
+            'error' => data_get($run, 'error'),
+            'status' => data_get($run, 'status'),
         ];
     };
-    $mobile = $normalizePsi(data_get($psi, 'mobile'), $page?->lighthouse_mobile);
-    $desktop = $normalizePsi(data_get($psi, 'desktop'), $page?->lighthouse_desktop);
+    $lmMobile = $pageData['lighthouse_mobile'] ?? $page?->lighthouse_mobile;
+    $lmDesktop = $pageData['lighthouse_desktop'] ?? $page?->lighthouse_desktop;
+    $mobile = $normalizePsi(data_get($psi, 'mobile'), $lmMobile);
+    $desktop = $normalizePsi(data_get($psi, 'desktop'), $lmDesktop);
     $host = parse_url($audit->url, PHP_URL_HOST) ?: $audit->url;
-    $summaryText = trim((string) ($audit->summary['overview'] ?? $audit->summary['summary'] ?? ''));
+    $summaryArr = is_array($audit->summary) ? $audit->summary : [];
+    $summaryText = trim((string) ($summaryArr['overview'] ?? $summaryArr['summary'] ?? ''));
     if ($summaryText === '') {
-        $summaryText = 'This report combines crawl findings, performance data, metadata checks, issue severity, and available Google integrations to surface the clearest SEO priorities.';
+        $summaryText = 'This report combines crawl findings, performance data, metadata checks, issue severity, and optional integrations to surface the clearest SEO priorities.';
     }
     $fmtNumber = function ($value) {
         if ($value === null || $value === '' || $value === false) return 'N/A';
@@ -122,384 +168,646 @@
         if ($valueMs === null || $valueMs === '') return 'N/A';
         return number_format(((float) $valueMs) / 1000, 2) . 's';
     };
-    $scoreTone = function ($score) {
-        if (!is_numeric($score)) return ['color' => '#2f6bff', 'pill' => 'warn', 'bar' => 'blue'];
-        if ($score >= 90) return ['color' => '#18a957', 'pill' => 'good', 'bar' => 'green'];
-        if ($score >= 70) return ['color' => '#f59e0b', 'pill' => 'warn', 'bar' => 'orange'];
-        return ['color' => '#ef4444', 'pill' => 'bad', 'bar' => 'red'];
-    };
-    $scoreArc = function ($score, $circ = 327) {
-        $safe = max(0, min(100, (float) $score));
-        return round(($safe / 100) * $circ);
+    $fmtMb = function ($value) {
+        if ($value === null || $value === '') return 'N/A';
+        return is_numeric($value) ? number_format((float) $value, 2) . ' MB' : $value;
     };
     $scoreWidth = function ($score) {
         if (!is_numeric($score)) return 4;
         return max(4, min(100, (float) $score));
     };
+    $gradeFromScore = function ($score) {
+        if ($score === null || $score === '' || ! is_numeric($score)) return null;
+        $s = (int) round((float) $score);
+        if ($s >= 95) return 'A+';
+        if ($s >= 90) return 'A';
+        if ($s >= 80) return 'B';
+        if ($s >= 70) return 'C';
+        if ($s >= 60) return 'D';
+        return 'F';
+    };
     $issuesHigh = $issues->where('impact', 'high')->count();
     $issuesMedium = $issues->where('impact', 'medium')->count();
     $issuesLow = $issues->where('impact', 'low')->count();
-    $issuesTotal = max(1, $issues->count());
+    $critUi = $issues->filter(fn ($i) => ($i->impact ?? '') === 'high')->count();
+    $warnUi = $issues->filter(fn ($i) => ($i->impact ?? '') === 'medium')->count();
+    $infoUi = max(0, $issues->count() - $critUi - $warnUi);
     $overallScore = (int) ($audit->overall_score ?? 0);
-    $overallGrade = $audit->overall_grade ?? 'N/A';
-    $overallTone = $scoreTone($overallScore);
-    $categoryCards = [
-        ['label' => 'On-Page', 'score' => data_get($audit->category_scores, 'onpage'), 'grade' => data_get($audit->category_grades, 'onpage')],
-        ['label' => 'Technical', 'score' => data_get($audit->category_scores, 'technical'), 'grade' => data_get($audit->category_grades, 'technical')],
-        ['label' => 'Performance', 'score' => data_get($audit->category_scores, 'performance'), 'grade' => data_get($audit->category_grades, 'performance')],
-        ['label' => 'Links', 'score' => data_get($audit->category_scores, 'links'), 'grade' => data_get($audit->category_grades, 'links')],
+    $overallScoreDisp = min(100, max(0, $overallScore));
+    $overallGrade = $audit->overall_grade ?? null;
+    if (($overallGrade === null || $overallGrade === '') && $overallScore > 0) $overallGrade = $gradeFromScore($overallScore);
+    if ($overallGrade === null || $overallGrade === '') $overallGrade = 'N/A';
+    $reportWhen = $audit->finished_at ?? $audit->created_at;
+    $protocolLabel = str_starts_with(strtolower((string) $audit->url), 'https') ? 'HTTPS Secure' : 'HTTP (review TLS)';
+    $robotsSnippet = strtolower((string) ($pageData['robots_meta'] ?? $page?->robots_meta ?? ''));
+    if (str_contains($robotsSnippet, 'noindex')) $indexingLabel = 'Noindex on page';
+    elseif (!empty($technical['blocked_by_robots'])) $indexingLabel = 'Crawl restricted';
+    else $indexingLabel = 'Indexable (baseline)';
+    $lcpMs = $mobile['lcp'] ?? data_get($lmMobile, 'lab_metrics.lcp_ms');
+    $loadTimeLabel = $fmtSeconds($lcpMs);
+    if (is_numeric($lcpMs) && (float) $lcpMs <= 2500) $loadTimeNote = 'On target';
+    elseif (is_numeric($lcpMs) && (float) $lcpMs <= 4000) $loadTimeNote = 'Needs work';
+    elseif (is_numeric($lcpMs)) $loadTimeNote = 'Slow LCP';
+    else $loadTimeNote = 'N/A';
+    $passedVerifications = (int) ($overview['passed_checks'] ?? 0);
+    if ($passedVerifications < 1) {
+        $checklist = [
+            str_starts_with(strtolower((string) $audit->url), 'https'),
+            (int) ($pageData['status_code'] ?? $page?->status_code ?? 0) === 200,
+            !empty($pageData['title'] ?? $page?->title),
+            !empty($pageData['meta_description'] ?? $page?->meta_description),
+            (int) ($pageData['h1_count'] ?? $page?->h1_count ?? 0) >= 1,
+            !empty($technical['robots_txt_present']),
+            !empty($technical['xml_sitemap_present']),
+            empty($technical['blocked_by_robots']),
+        ];
+        $passedVerifications = count(array_filter($checklist));
+    }
+    $lhCats = data_get($lmMobile, 'categories', []);
+    $lhPerf = $lhCats['performance_score'] ?? $mobile['score'] ?? null;
+    $lhA11y = $lhCats['accessibility_score'] ?? null;
+    $lhBp = $lhCats['best_practices_score'] ?? null;
+    $lhSeo = $lhCats['seo_score'] ?? null;
+    $pageLm = is_array($page?->link_metrics_json) ? $page->link_metrics_json : [];
+    $lmKpi = is_array($kpis['link_metrics'] ?? null) ? $kpis['link_metrics'] : [];
+    $authScoreRaw = $pageLm['authority_score'] ?? null;
+    $totalBl = (int) (data_get($lmKpi, 'overview.total_backlink_rows_tracked') ?? $pageLm['backlinks'] ?? 0);
+    $refDom = (int) ($pageLm['referring_domains'] ?? 0);
+    $fmtCompact = function ($n) {
+        if (!is_numeric($n) || (int) $n <= 0) return '—';
+        $n = (float) $n;
+        return $n >= 1000 ? number_format($n / 1000, 1) . 'K' : (string) (int) $n;
+    };
+    $authScoreDisp = is_numeric($authScoreRaw) ? (string) (int) round((float) $authScoreRaw) : '—';
+    $schemaList = $onPage['schema_types'] ?? ($pageData['schema_types'] ?? []);
+    if ($schemaList instanceof \Illuminate\Support\Collection) $schemaList = $schemaList->all();
+    $schemaCount = is_array($schemaList) ? count($schemaList) : 0;
+    $schemaBadge = $schemaCount > 0 ? 'OPTIMIZED' : 'REVIEW';
+    $schemaBadgeClass = $schemaCount > 0 ? 'b-opt' : 'b-slow';
+    $httpsOn = !empty($technical['https_enabled']) || str_starts_with(strtolower((string) $audit->url), 'https');
+    $secBadge = $httpsOn ? 'ACTIVE' : 'ATTENTION';
+    $secBadgeClass = $httpsOn ? 'b-act' : 'b-slow';
+    $lcpBadgeClass = is_numeric($lcpMs) && (float) $lcpMs > 4000 ? 'b-slow' : (is_numeric($lcpMs) && (float) $lcpMs > 2500 ? 'b-act' : 'b-opt');
+    $linkEquityNote = ($issuesMedium + $issuesHigh) > 0 ? (string) ($issuesMedium + $issuesHigh) . ' risk themes' : '—';
+    $gscClicks = data_get($gsc, 'summary.total_clicks');
+    $gaSess = data_get($ga4, 'summary.total_sessions');
+    $nums = array_values(array_filter($categoryScoresUi, 'is_numeric'));
+    $avgCat = $nums !== [] ? (int) round(array_sum($nums) / count($nums)) : null;
+
+    $complexityTier = function ($issue) {
+        $eff = strtolower((string) ($issue->effort ?? ''));
+        if (str_contains($eff, 'high') || $eff === 'h') return 3;
+        if (str_contains($eff, 'med') || str_contains($eff, 'mid') || $eff === 'm') return 2;
+        return match ($issue->impact ?? '') { 'high' => 3, 'medium' => 2, default => 1 };
+    };
+    $impactTag = function ($issue) {
+        $s = $issue->severity ?? match ($issue->impact ?? '') { 'high' => 'critical', 'medium' => 'warning', default => 'info' };
+        return match ($s) {
+            'critical' => ['label' => 'Critical', 'class' => 'tag-crit'],
+            'warning' => ['label' => 'Warning', 'class' => 'tag-warn'],
+            default => ['label' => 'Info', 'class' => 'tag-info'],
+        };
+    };
+
+    $extMap = [
+        'segmentation' => 'overview', 'near_duplicate_content' => 'onpage', 'spelling_grammar' => 'onpage',
+        'js_rendering' => 'technical', 'site_visualisations' => 'technical', 'custom_source_search' => 'technical',
+        'custom_extraction' => 'technical', 'forms_auth_summary' => 'technical', 'link_metrics' => 'integrations',
     ];
-    $homepageCards = [
-        ['label' => 'Title Length', 'value' => $onPage['title_length'] ?? $page?->title_len],
-        ['label' => 'Meta Length', 'value' => $onPage['meta_description_length'] ?? $page?->meta_len],
-        ['label' => 'Word Count', 'value' => $page?->word_count ?? $onPage['word_count']],
-        ['label' => 'Status Code', 'value' => $page?->status_code ?? null],
-    ];
-    $duplicateTitles = collect($onPage['duplicate_titles_table'] ?? [])->take(8);
-    $missingMeta = collect($onPage['missing_meta_table'] ?? [])->take(8);
-    $missingH1 = collect($onPage['missing_h1_table'] ?? [])->take(8);
-    $brokenLinks = collect($technical['broken_links_examples'] ?? [])->take(8);
-    $redirectChains = collect($technical['redirect_chains_examples'] ?? [])->take(8);
-    $heavyAssets = collect($performance['heavy_assets'] ?? [])->take(8);
-    $securityHeaders = collect($technical['security_headers_list'] ?? [])->take(8);
-    $topKeywords = collect($onPage['top_keywords'] ?? [])->take(10);
-    $schemaTypes = collect($onPage['schema_types'] ?? ($page?->schema_types ?? []))->take(8);
-    $gaTopPages = collect($ga4['top_pages'] ?? [])->take(8);
-    $gscQueries = collect($gsc['top_queries'] ?? [])->take(8);
-    $topIssues = $issues->take(12);
+    $coreKeys = ['overview', 'on_page_seo', 'technical', 'performance', 'integrations'];
+    $rm = $ui['report_modules'] ?? null;
+    $modulesRaw = is_array($rm) ? ($rm['modules'] ?? []) : [];
+    $moduleOrder = is_array($rm) ? ($rm['module_order'] ?? []) : [];
+    $orderedMods = [];
+    if (count($moduleOrder)) {
+        foreach ($moduleOrder as $key) {
+            foreach ($modulesRaw as $m) {
+                if (($m['module_key'] ?? '') === $key) { $orderedMods[] = $m; break; }
+            }
+        }
+        $seen = array_column($orderedMods, 'module_key');
+        foreach ($modulesRaw as $m) {
+            if (!in_array($m['module_key'] ?? '', $seen, true)) { $orderedMods[] = $m; $seen[] = $m['module_key'] ?? ''; }
+        }
+    } else {
+        $orderedMods = $modulesRaw;
+    }
+    $extendedMods = array_values(array_filter($orderedMods, fn ($m) => !in_array($m['module_key'] ?? '', $coreKeys, true)));
+    $buckets = ['overview' => [], 'onpage' => [], 'technical' => [], 'performance' => [], 'integrations' => []];
+    foreach ($extendedMods as $m) {
+        $tab = $extMap[$m['module_key'] ?? ''] ?? 'technical';
+        if (isset($buckets[$tab])) $buckets[$tab][] = $m;
+        else $buckets['technical'][] = $m;
+    }
+
+    $ogGrades = is_array($overview['category_grades'] ?? null) ? $overview['category_grades'] : [];
+    $duplicateTitles = collect($onPage['duplicate_titles_table'] ?? [])->take(100);
+    $missingMeta = collect($onPage['missing_meta_table'] ?? [])->take(100);
+    $missingH1 = collect($onPage['missing_h1_table'] ?? [])->take(100);
+    $brokenLinks = collect($technical['broken_links_examples'] ?? [])->take(100);
+    $redirectChains = collect($technical['redirect_chains_examples'] ?? [])->take(100);
+    $non200Pages = collect($technical['non_200_pages'] ?? [])->take(100);
+    $heavyAssets = collect($performance['heavy_assets'] ?? [])->take(80);
+    $securityHeaders = collect($technical['security_headers_list'] ?? [])->take(50);
+    $topKeywords = collect($onPage['top_keywords'] ?? [])->take(30);
+    $mobileOpp = collect($usability['mobile_opportunities'] ?? [])->take(40);
+    $desktopOpp = collect($usability['desktop_opportunities'] ?? [])->take(40);
+    $gaTopPages = collect($ga4['top_pages'] ?? [])->take(40);
+    $gscQueries = collect($gsc['top_queries'] ?? [])->take(40);
+    $statusDist = $technical['status_code_distribution'] ?? [];
+    $resBreak = $performance['resources_breakdown'] ?? [];
+
+    $fmtVal = function ($v) {
+        if ($v === null || $v === '') return '—';
+        if (! is_numeric($v)) return is_scalar($v) ? (string) $v : json_encode($v);
+        $f = (float) $v;
+        return ((int) $f == $f) ? (string) (int) $f : number_format($f, 2);
+    };
+    $strTrunc = fn ($s, $n = 160) => \Illuminate\Support\Str::limit(is_scalar($s) ? (string) $s : json_encode($s), $n);
+    $issueCap = 250;
 @endphp
 
-<div class="card hero">
-    <table>
-        <tr>
-            <td style="width:68%;vertical-align:top;">
-                <div class="brand">BacklinkPro Insights</div>
-                <div class="domain">{{ $audit->url }}</div>
-                <div class="hero-title">SEO Audit Report</div>
-                <div class="hero-subtitle">{{ $host }} - overview, on-page SEO, technical signals, performance, analytics, and issue priorities</div>
-            </td>
-            <td style="width:32%;vertical-align:top;">
-                <div style="text-align:right;">
-                    <span class="date-badge">{{ $audit->created_at?->format('M j, Y') ?? now()->format('M j, Y') }}</span>
-                </div>
-            </td>
-        </tr>
-    </table>
+{{-- Brand (no faux navigation) --}}
+<div class="brand-bar">
+    <div class="headline">Backlink Pro</div>
+    <div class="sub-brand">SEO Intelligence Ledger</div>
+</div>
+@if(($audit->status ?? '') === 'failed' && !empty($audit->error))
+    <div style="margin-bottom:12px;padding:10px 12px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;font-size:8px;color:#991b1b;">
+        <strong>Audit failed.</strong> {{ $strTrunc($audit->error, 500) }}
+    </div>
+@endif
 
-    <table class="split" style="margin-top:10px;">
-        <tr>
-            <td class="right" style="padding-left:0;padding-right:7px;width:68%;">
-                <div class="summary-box">{{ $summaryText }}</div>
-                <div class="section-note">Reference style matched with a soft neutral canvas, white report cards, blue accent headings, and orange or green score visuals while keeping the audit content real.</div>
-            </td>
-            <td class="left" style="padding-right:0;padding-left:7px;width:32%;">
-                <div class="metric donut-wrap" style="margin-top:0;">
-                    <div class="donut-title">Overall SEO Score</div>
-                    <svg width="132" height="132" viewBox="0 0 132 132">
-                        <circle cx="66" cy="66" r="52" fill="none" stroke="#e2e8f0" stroke-width="12"></circle>
-                        <circle cx="66" cy="66" r="52" fill="none" stroke="{{ $overallTone['color'] }}" stroke-width="12" stroke-linecap="round" transform="rotate(-90 66 66)" stroke-dasharray="{{ $scoreArc($overallScore) }} 327"></circle>
-                    </svg>
-                    <div class="donut-value" style="color:{{ $overallTone['color'] }};">{{ $fmtNumber($overallScore) }}</div>
-                    <div style="font-size:8px;color:#64748b;">Overall</div>
-                    <div class="donut-grade" style="color:{{ $overallTone['color'] }};">{{ $overallGrade }}</div>
-                    <div style="margin-top:5px;">
-                        <span class="pill {{ $overallTone['pill'] }}">{{ $overallScore >= 90 ? 'Strong' : ($overallScore >= 70 ? 'Needs improvement' : 'Needs attention') }}</span>
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    <table class="grid-4" style="margin-top:10px;">
-        <tr>
-            <td><div class="metric"><div class="metric-label">Pages Crawled</div><div class="metric-value">{{ $fmtNumber($overview['pages_crawled_count'] ?? $audit->pages_scanned) }}</div><div class="metric-note">{{ $fmtNumber($audit->pages_discovered) }} discovered</div></div></td>
-            <td><div class="metric"><div class="metric-label">Issues Found</div><div class="metric-value">{{ $fmtNumber($issues->count()) }}</div><div class="metric-note">{{ $fmtNumber($issuesHigh) }} critical impact</div></div></td>
-            <td><div class="metric"><div class="metric-label">Recommendations</div><div class="metric-value">{{ $fmtNumber($overview['recommendations_count'] ?? $audit->recommendations_count ?? $issues->count()) }}</div><div class="metric-note">actionable fixes</div></div></td>
-            <td><div class="metric"><div class="metric-label">Generated</div><div class="metric-value" style="font-size:15px;">{{ $audit->finished_at?->format('M j') ?? now()->format('M j') }}</div><div class="metric-note">{{ $audit->finished_at?->format('g:i A') ?? now()->format('g:i A') }}</div></div></td>
-        </tr>
-    </table>
-
-    <div class="card" style="margin:8px 0 0;padding:10px 12px;">
-        <div class="section-kicker">Overview</div>
-        <div class="section-title">Category Scores</div>
-        <div class="section-subtitle">High-level audit summary across the main SEO areas.</div>
-        @foreach($categoryCards as $card)
-            @php($tone = $scoreTone($card['score']))
-            <div class="bar-row">
-                <div class="bar-head">{{ $card['label'] }}<span class="right">{{ $fmtNumber($card['score']) }} / {{ $card['grade'] ?? 'N/A' }}</span></div>
-                <div class="bar-track" style="height:10px;"><div class="bar-fill {{ $tone['bar'] }}" style="width:{{ $scoreWidth($card['score']) }}%;height:10px;"></div></div>
+<table cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
+    <tr>
+        <td style="width:62%; vertical-align:top; padding-right:12px;">
+            <div class="pill-badge">Architectural Audit Report</div>
+            <div class="hero-domain" style="margin-top:10px;">{{ $host }}</div>
+            <div class="hero-url">{{ $audit->url }}</div>
+            <div class="hero-lead">
+                Executive summary — performance and crawl integrity review
+                @if($reportWhen) as of {{ $reportWhen->format('F j, Y') }}. @endif
             </div>
-        @endforeach
-    </div>
-</div>
-<div class="card">
-    <div class="section-kicker">Overview</div>
-    <div class="section-title">Issue Distribution</div>
-    <div class="section-subtitle">Severity split based on the stored issue register.</div>
-    <div class="stack">
-        <span style="width:{{ round(($issuesHigh / $issuesTotal) * 100, 2) }}%;background:#ef4444;"></span>
-        <span style="width:{{ round(($issuesMedium / $issuesTotal) * 100, 2) }}%;background:#f59e0b;"></span>
-        <span style="width:{{ round(($issuesLow / $issuesTotal) * 100, 2) }}%;background:#2f6bff;"></span>
-    </div>
-    <div class="legend">
-        <span><i class="dot" style="background:#ef4444;"></i>High: {{ $fmtNumber($issuesHigh) }}</span>
-        <span><i class="dot" style="background:#f59e0b;"></i>Medium: {{ $fmtNumber($issuesMedium) }}</span>
-        <span><i class="dot" style="background:#2f6bff;"></i>Low: {{ $fmtNumber($issuesLow) }}</span>
-    </div>
-    <table class="grid-4" style="margin-top:8px;">
+            <table cellpadding="0" cellspacing="0" style="margin-top:12px;">
+                <tr>
+                    <td style="padding-right:14px;">
+                        <div class="meta-k">Protocol</div>
+                        <div class="meta-v">{{ $protocolLabel }}</div>
+                    </td>
+                    <td style="border-left:1px solid #e2e8f0; padding:0 14px;">
+                        <div class="meta-k">Indexing</div>
+                        <div class="meta-v">{{ $indexingLabel }}</div>
+                    </td>
+                    <td style="border-left:1px solid #e2e8f0; padding-left:14px;">
+                        <div class="meta-k">Load (LCP)</div>
+                        <div class="meta-v">{{ $loadTimeLabel }} — {{ $loadTimeNote }}</div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td style="width:38%; vertical-align:middle;">
+            <div class="donut-wrap">
+                <svg width="130" height="130" viewBox="0 0 36 36" style="display:block;margin:0 auto;">
+                    <path fill="none" stroke="#eaeff1" stroke-width="3" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path fill="none" stroke="#006b60" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ $overallScoreDisp }} {{ 100 - $overallScoreDisp }}"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" transform="rotate(-90 18 18)"/>
+                </svg>
+                <div style="margin-top:-112px;">
+                    <div class="donut-score">{{ $overallScoreDisp }}</div>
+                    <div class="donut-grade">GRADE {{ strtoupper($overallGrade) }}</div>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table cellpadding="0" cellspacing="8" style="margin:0 -4px;">
+    <tr>
+        <td class="card-3">
+            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td><span class="icon-box bg-error-soft" style="color:#9e3f4e;">&#9888;</span></td>
+                <td class="big" style="text-align:right;">{{ str_pad((string) $issuesHigh, 2, '0', STR_PAD_LEFT) }}</td>
+            </tr></table>
+            <h3>Critical</h3>
+            <p>High-impact findings from this crawl.</p>
+        </td>
+        <td class="card-3">
+            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td><span class="icon-box bg-warn-soft" style="color:#48617e;">&#9888;</span></td>
+                <td class="big" style="text-align:right;">{{ str_pad((string) $issuesMedium, 2, '0', STR_PAD_LEFT) }}</td>
+            </tr></table>
+            <h3>Warnings</h3>
+            <p>Medium-impact issues to schedule.</p>
+        </td>
+        <td class="card-3">
+            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td><span class="icon-box bg-ok-soft" style="color:#006b60;">&#10003;</span></td>
+                <td class="big" style="text-align:right;">{{ str_pad((string) min(99, max(0, $passedVerifications)), 2, '0', STR_PAD_LEFT) }}</td>
+            </tr></table>
+            <h3>Passed checks</h3>
+            <p>Baseline checks satisfied.</p>
+        </td>
+    </tr>
+</table>
+
+<div class="section-wrap">
+    <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td><div class="metric"><div class="metric-label">Warnings</div><div class="metric-value">{{ $fmtNumber($overview['warnings_count'] ?? $issuesMedium) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">Passed Checks</div><div class="metric-value">{{ $fmtNumber($overview['passed_checks'] ?? null) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">Status</div><div class="metric-value" style="font-size:15px;">{{ ucfirst($audit->status ?? 'n/a') }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">Mode</div><div class="metric-value" style="font-size:15px;">{{ strtoupper($audit->mode ?? 'n/a') }}</div></div></td>
+            <td><div class="section-title">Performance core (mobile lab)</div><div class="section-sub">Lighthouse categories when available.</div></td>
+            <td style="text-align:right;"><span class="device-tag">MOBILE · LAB</span></td>
         </tr>
     </table>
-    <div class="status-row {{ $issuesHigh > 0 ? 'bad' : 'good' }}">High-impact findings should be addressed first because they carry the greatest SEO risk.</div>
-    <div class="status-row {{ $issuesMedium > 0 ? 'warn' : 'good' }}">Medium issues often affect consistency, coverage, or metadata quality.</div>
-</div>
-
-<div class="page-break"></div>
-<div class="card avoid-split">
-    <div class="section-kicker">Overview</div>
-    <div class="section-title">Homepage Snapshot</div>
-    <div class="section-subtitle">Primary metadata and content signals for the audited page.</div>
-    <table class="grid-4">
+    <table cellpadding="0" cellspacing="6" style="margin-top:8px;">
         <tr>
-            @foreach($homepageCards as $item)
-                <td><div class="metric"><div class="metric-label">{{ $item['label'] }}</div><div class="metric-value" style="font-size:16px;">{{ $fmtNumber($item['value']) }}</div></div></td>
+            @foreach([['Performance',$lhPerf],['Accessibility',$lhA11y],['Best practices',$lhBp],['SEO',$lhSeo]] as $core)
+                <td class="core-card">
+                    <div class="core-val">{{ $fmtNumber($core[1]) }}</div>
+                    <div class="core-lbl">{{ $core[0] }}</div>
+                    <div class="bar-bg"><div class="bar-fg" style="width:{{ $scoreWidth($core[1]) }}%;"></div></div>
+                </td>
             @endforeach
         </tr>
     </table>
-    <table class="table" style="margin-top:8px;">
-        <tr><th style="width:22%;">Field</th><th>Value</th></tr>
-        <tr><td>Title</td><td class="truncate">{{ $page?->title ?: 'Missing' }}</td></tr>
-        <tr><td>Meta Description</td><td class="truncate">{{ $page?->meta_description ?: 'Missing' }}</td></tr>
-        <tr><td>Canonical URL</td><td class="truncate">{{ $page?->canonical_url ?: ($onPage['canonical_url'] ?? 'Missing') }}</td></tr>
-        <tr><td>Robots Meta</td><td class="truncate">{{ $page?->robots_meta ?: 'N/A' }}</td></tr>
-    </table>
 </div>
 
-<div class="card">
-    <div class="section-kicker">On-Page SEO</div>
-    <div class="section-title">On-Page SEO</div>
-    <div class="section-subtitle">Metadata, content structure, keyword signals, and page-level content quality.</div>
-    <table class="grid-4">
-        <tr>
-            <td><div class="metric"><div class="metric-label">H1 Present</div><div class="metric-value" style="font-size:16px;">{{ $fmtBool($onPage['h1_present'] ?? ($page?->h1_count > 0 ? true : null)) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">H1 Count</div><div class="metric-value" style="font-size:16px;">{{ $fmtNumber($page?->h1_count) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">Images</div><div class="metric-value" style="font-size:16px;">{{ $fmtNumber($page?->images_total) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">Missing Alt</div><div class="metric-value" style="font-size:16px;">{{ $fmtNumber($page?->images_missing_alt) }}</div></div></td>
-        </tr>
-    </table>
-    <table class="grid-2" style="margin-top:8px;">
-        <tr>
-            <td>
-                <table class="table">
-                    <tr><th style="width:38%;">Signal</th><th>Value</th></tr>
-                    <tr><td>Language</td><td>{{ $onPage['lang_declared'] ?? 'N/A' }}</td></tr>
-                    <tr><td>Analytics Tool</td><td>{{ $onPage['analytics_tool_name'] ?? 'Not detected' }}</td></tr>
-                    <tr><td>Internal Links</td><td>{{ $fmtNumber($page?->internal_links_count) }}</td></tr>
-                    <tr><td>External Links</td><td>{{ $fmtNumber($page?->external_links_count) }}</td></tr>
-                </table>
-            </td>
-            <td>
-                <div class="metric">
-                    <div class="metric-label">Top Keywords</div>
-                    <div style="margin-top:8px;">
-                        @forelse($topKeywords as $item)
-                            <span class="chip">{{ $item['keyword'] ?? 'keyword' }}{{ isset($item['count']) ? ' (' . $item['count'] . ')' : '' }}</span>
-                        @empty
-                            <span style="font-size:9px;color:#64748b;">No keyword extraction data stored.</span>
-                        @endforelse
-                    </div>
-                    <div class="metric-label" style="margin-top:10px;">Schema Types</div>
-                    <div style="margin-top:8px;">
-                        @forelse($schemaTypes as $type)
-                            <span class="chip">{{ is_array($type) ? ($type['type'] ?? 'Schema') : $type }}</span>
-                        @empty
-                            <span style="font-size:9px;color:#64748b;">No schema types captured.</span>
-                        @endforelse
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </table>
-    <table class="grid-3" style="margin-top:8px;">
-        <tr>
-            <td><table class="table"><tr><th>Duplicate Titles</th></tr>@forelse($duplicateTitles as $row)<tr><td class="truncate">{{ $row['url'] ?? 'N/A' }}</td></tr>@empty<tr><td>No duplicate-title examples stored.</td></tr>@endforelse</table></td>
-            <td><table class="table"><tr><th>Missing Meta</th></tr>@forelse($missingMeta as $row)<tr><td class="truncate">{{ $row['url'] ?? 'N/A' }}</td></tr>@empty<tr><td>No missing-meta examples stored.</td></tr>@endforelse</table></td>
-            <td><table class="table"><tr><th>Missing H1</th></tr>@forelse($missingH1 as $row)<tr><td class="truncate">{{ $row['url'] ?? 'N/A' }}</td></tr>@empty<tr><td>No missing-H1 examples stored.</td></tr>@endforelse</table></td>
-        </tr>
-    </table>
-</div>
-<div class="card">
-    <div class="section-kicker">Technical</div>
-    <div class="section-title">Technical</div>
-    <div class="section-subtitle">Crawlability, discovery, security coverage, redirects, and broken-link signals.</div>
-    <table class="grid-4">
-        <tr>
-            <td><div class="metric"><div class="metric-label">HTTPS Enabled</div><div class="metric-value" style="font-size:16px;">{{ $fmtBool($technical['https_enabled'] ?? null) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">HTTPS Redirect</div><div class="metric-value" style="font-size:16px;">{{ $fmtBool($technical['https_redirect_ok'] ?? null) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">robots.txt</div><div class="metric-value" style="font-size:16px;">{{ $fmtBool($technical['robots_txt_present'] ?? null) }}</div></div></td>
-            <td><div class="metric"><div class="metric-label">XML Sitemap</div><div class="metric-value" style="font-size:16px;">{{ $fmtBool($technical['xml_sitemap_present'] ?? null) }}</div></div></td>
-        </tr>
-    </table>
-    <table class="grid-2" style="margin-top:8px;">
-        <tr>
-            <td><table class="table"><tr><th style="width:38%;">Discovery</th><th>Value</th></tr><tr><td>robots.txt URL</td><td class="truncate">{{ $technical['robots_txt_url'] ?? 'Not found' }}</td></tr><tr><td>Sitemap URL</td><td class="truncate">{{ $technical['sitemap_url'] ?? 'Not found' }}</td></tr><tr><td>Blocked by Robots</td><td>{{ $fmtBool($technical['blocked_by_robots'] ?? null) }}</td></tr></table></td>
-            <td><table class="table"><tr><th>Header</th><th style="width:18%;">Present</th><th style="width:18%;">Total</th></tr>@forelse($securityHeaders as $row)<tr><td class="truncate">{{ $row['header'] ?? 'N/A' }}</td><td>{{ $fmtNumber($row['pages_with_header'] ?? null) }}</td><td>{{ $fmtNumber($row['total_pages'] ?? null) }}</td></tr>@empty<tr><td colspan="3">Security header coverage was not captured.</td></tr>@endforelse</table></td>
-        </tr>
-    </table>
-    <table class="grid-2" style="margin-top:8px;">
-        <tr>
-            <td><table class="table"><tr><th>Broken Links</th><th style="width:14%;">Code</th></tr>@forelse($brokenLinks as $row)<tr><td class="truncate">{{ $row['to_url'] ?? 'N/A' }}</td><td>{{ $fmtNumber($row['status_code'] ?? null) }}</td></tr>@empty<tr><td colspan="2">No broken-link examples stored.</td></tr>@endforelse</table></td>
-            <td><table class="table"><tr><th>Redirect Chains</th><th style="width:14%;">Hops</th></tr>@forelse($redirectChains as $row)<tr><td class="truncate">{{ $row['to_url'] ?? 'N/A' }}</td><td>{{ $fmtNumber($row['redirect_hops'] ?? null) }}</td></tr>@empty<tr><td colspan="2">No redirect-chain examples stored.</td></tr>@endforelse</table></td>
-        </tr>
-    </table>
-</div>
+<table cellpadding="0" cellspacing="0" style="margin-top:12px;">
+    <tr>
+        <td style="width:50%; vertical-align:top; padding-right:8px;">
+            <div class="col-title">Technical integrity</div>
+            <div class="row-tech"><table width="100%"><tr><td style="font-weight:700;">Structured data</td><td style="text-align:right;"><span class="badge-ok {{ $schemaBadgeClass }}">{{ $schemaBadge }}</span></td></tr></table></div>
+            <div class="row-tech"><table width="100%"><tr><td style="font-weight:700;">HTTPS & crawl</td><td style="text-align:right;"><span class="badge-ok {{ $secBadgeClass }}">{{ $secBadge }}</span></td></tr></table></div>
+            <div class="row-tech"><table width="100%"><tr><td style="font-weight:700;">LCP</td><td style="text-align:right;"><span class="badge-ok {{ $lcpBadgeClass }}">{{ $loadTimeLabel }}</span></td></tr></table></div>
+        </td>
+        <td style="width:50%; vertical-align:top; padding-left:8px;">
+            <div class="col-title">Content narrative</div>
+            <div class="quote-box">"{{ $summaryText }}"</div>
+        </td>
+    </tr>
+</table>
 
-<div class="card">
-    <div class="section-kicker">Performance</div>
-    <div class="section-title">Performance</div>
-    <div class="section-subtitle">PageSpeed scores, core metrics, and heaviest assets affecting page load.</div>
-    <table class="grid-2">
-        <tr>
-            <td>
-                @php($mobileTone = $scoreTone($mobile['score'] ?? null))
-                <div class="metric">
-                    <div class="donut-wrap">
-                        <div class="donut-title">Mobile PageSpeed</div>
-                        <svg width="120" height="120" viewBox="0 0 120 120">
-                            <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="10"></circle>
-                            <circle cx="60" cy="60" r="46" fill="none" stroke="{{ $mobileTone['color'] }}" stroke-width="10" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="{{ $scoreArc($mobile['score'] ?? 0, 289) }} 289"></circle>
-                        </svg>
-                        <div class="donut-value" style="margin-top:-92px;font-size:24px;color:{{ $mobileTone['color'] }};">{{ $fmtNumber($mobile['score'] ?? null) }}</div>
-                        <div style="margin-top:20px;"><span class="pill {{ $mobileTone['pill'] }}">{{ $mobile['score'] !== null ? 'PSI score' : 'Not captured' }}</span></div>
-                    </div>
-                    <div style="margin-top:8px;">
-                        <div class="bar-row"><div class="bar-head">LCP <span class="right">{{ $fmtSeconds($mobile['lcp'] ?? null) }}</span></div><div class="bar-track"><div class="bar-fill green" style="width:{{ $scoreWidth(100 - min(100, (($mobile['lcp'] ?? 0) / 50))) }}%;"></div></div></div>
-                        <div class="bar-row"><div class="bar-head">FCP <span class="right">{{ $fmtSeconds($mobile['fcp'] ?? null) }}</span></div><div class="bar-track"><div class="bar-fill orange" style="width:{{ $scoreWidth(100 - min(100, (($mobile['fcp'] ?? 0) / 40))) }}%;"></div></div></div>
-                        <div class="bar-row"><div class="bar-head">CLS <span class="right">{{ $fmtNumber($mobile['cls'] ?? null) }}</span></div><div class="bar-track"><div class="bar-fill blue" style="width:{{ $scoreWidth(100 - min(100, (($mobile['cls'] ?? 0) * 300))) }}%;"></div></div></div>
-                    </div>
-                </div>
-            </td>
-            <td>
-                @php($desktopTone = $scoreTone($desktop['score'] ?? null))
-                <div class="metric">
-                    <div class="donut-wrap">
-                        <div class="donut-title">Desktop PageSpeed</div>
-                        <svg width="120" height="120" viewBox="0 0 120 120">
-                            <circle cx="60" cy="60" r="46" fill="none" stroke="#e2e8f0" stroke-width="10"></circle>
-                            <circle cx="60" cy="60" r="46" fill="none" stroke="{{ $desktopTone['color'] }}" stroke-width="10" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="{{ $scoreArc($desktop['score'] ?? 0, 289) }} 289"></circle>
-                        </svg>
-                        <div class="donut-value" style="margin-top:-92px;font-size:24px;color:{{ $desktopTone['color'] }};">{{ $fmtNumber($desktop['score'] ?? null) }}</div>
-                        <div style="margin-top:20px;"><span class="pill {{ $desktopTone['pill'] }}">{{ $desktop['score'] !== null ? 'PSI score' : 'Not captured' }}</span></div>
-                    </div>
-                    <div style="margin-top:8px;">
-                        <div class="bar-row"><div class="bar-head">LCP <span class="right">{{ $fmtSeconds($desktop['lcp'] ?? null) }}</span></div><div class="bar-track"><div class="bar-fill green" style="width:{{ $scoreWidth(100 - min(100, (($desktop['lcp'] ?? 0) / 50))) }}%;"></div></div></div>
-                        <div class="bar-row"><div class="bar-head">FCP <span class="right">{{ $fmtSeconds($desktop['fcp'] ?? null) }}</span></div><div class="bar-track"><div class="bar-fill orange" style="width:{{ $scoreWidth(100 - min(100, (($desktop['fcp'] ?? 0) / 40))) }}%;"></div></div></div>
-                        <div class="bar-row"><div class="bar-head">TTI <span class="right">{{ $fmtSeconds($desktop['tti'] ?? null) }}</span></div><div class="bar-track"><div class="bar-fill blue" style="width:{{ $scoreWidth(100 - min(100, (($desktop['tti'] ?? 0) / 80))) }}%;"></div></div></div>
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </table>
-    <table class="table" style="margin-top:8px;">
-        <tr><th>Asset</th><th style="width:18%;">Type</th><th style="width:14%;">KB</th></tr>
-        @forelse($heavyAssets as $row)
-            <tr><td class="truncate">{{ $row['asset_url'] ?? 'N/A' }}</td><td>{{ strtoupper($row['type'] ?? 'n/a') }}</td><td>{{ $fmtNumber($row['size_kb'] ?? null) }}</td></tr>
-        @empty
-            <tr><td colspan="3">Heavy asset data was not stored for this audit.</td></tr>
-        @endforelse
-    </table>
-</div>
-<div class="card">
-    <div class="section-kicker">Analytics</div>
-    <div class="section-title">Analytics And Search</div>
-    <div class="section-subtitle">Google Analytics and Search Console summaries where connected data is available.</div>
-    <table class="grid-2">
-        <tr>
-            <td>
-                <div class="metric">
-                    <div class="metric-label">GA4 Summary</div>
-                    <table class="table" style="margin-top:8px;">
-                        <tr><th>Metric</th><th>Value</th></tr>
-                        <tr><td>Sessions</td><td>{{ $fmtNumber(data_get($ga4, 'summary.total_sessions')) }}</td></tr>
-                        <tr><td>Users</td><td>{{ $fmtNumber(data_get($ga4, 'summary.total_users')) }}</td></tr>
-                        <tr><td>Engagement Rate</td><td>{{ data_get($ga4, 'summary.avg_engagement_rate') !== null ? $fmtNumber(data_get($ga4, 'summary.avg_engagement_rate')) . '%' : 'N/A' }}</td></tr>
-                        <tr><td>Period</td><td>{{ $ga4['period'] ?? 'N/A' }}</td></tr>
-                    </table>
-                </div>
-            </td>
-            <td>
-                <div class="metric">
-                    <div class="metric-label">GSC Summary</div>
-                    <table class="table" style="margin-top:8px;">
-                        <tr><th>Metric</th><th>Value</th></tr>
-                        <tr><td>Clicks</td><td>{{ $fmtNumber(data_get($gsc, 'summary.total_clicks')) }}</td></tr>
-                        <tr><td>Impressions</td><td>{{ $fmtNumber(data_get($gsc, 'summary.total_impressions')) }}</td></tr>
-                        <tr><td>CTR</td><td>{{ data_get($gsc, 'summary.avg_ctr') !== null ? $fmtNumber(data_get($gsc, 'summary.avg_ctr')) . '%' : 'N/A' }}</td></tr>
-                        <tr><td>Avg Position</td><td>{{ $fmtNumber(data_get($gsc, 'summary.avg_position')) }}</td></tr>
-                    </table>
-                </div>
-            </td>
-        </tr>
-    </table>
-    <table class="grid-2" style="margin-top:8px;">
-        <tr>
-            <td><table class="table"><tr><th>Top GA4 Pages</th><th style="width:18%;">Sessions</th></tr>@forelse($gaTopPages as $row)<tr><td class="truncate">{{ $row['page_path'] ?? 'N/A' }}</td><td>{{ $fmtNumber($row['sessions'] ?? $row['views'] ?? null) }}</td></tr>@empty<tr><td colspan="2">GA4 top-page data was not stored.</td></tr>@endforelse</table></td>
-            <td><table class="table"><tr><th>Top GSC Queries</th><th style="width:16%;">Clicks</th><th style="width:20%;">Impressions</th></tr>@forelse($gscQueries as $row)<tr><td class="truncate">{{ $row['query'] ?? 'N/A' }}</td><td>{{ $fmtNumber($row['clicks'] ?? null) }}</td><td>{{ $fmtNumber($row['impressions'] ?? null) }}</td></tr>@empty<tr><td colspan="3">Top query data was not captured for this audit.</td></tr>@endforelse</table></td>
-        </tr>
-    </table>
-</div>
+<table cellpadding="0" cellspacing="8" style="margin:12px -4px 0;">
+    <tr>
+        <td class="metric-hero"><div class="v">{{ $authScoreDisp }}</div><div class="l">Authority</div></td>
+        <td class="metric-plain"><div class="v">{{ $fmtCompact($totalBl > 0 ? $totalBl : null) }}</div><div class="l">Backlinks</div></td>
+        <td class="metric-plain"><div class="v">{{ $refDom > 0 ? $fmtNumber($refDom) : '—' }}</div><div class="l">Ref. domains</div></td>
+        <td class="metric-plain"><div class="v">{{ $linkEquityNote }}</div><div class="l">Equity notes</div></td>
+    </tr>
+</table>
 
-<div class="card">
-    <div class="section-kicker">Issues</div>
-    <div class="section-title">Priority Issues</div>
-    <div class="section-subtitle">Highest-impact issues, recommendations, and practical next actions.</div>
-    <table class="table">
-        <tr><th style="width:11%;">Impact</th><th style="width:28%;">Issue</th><th style="width:10%;">Affected</th><th style="width:10%;">Penalty</th><th>Recommendation</th></tr>
-        @forelse($topIssues as $issue)
+<div style="margin-top:14px;">
+    <div class="section-title" style="margin-bottom:6px;">Priority issues (sample)</div>
+    <table class="tbl" cellspacing="0">
+        <thead><tr><th style="width:12%;">Status</th><th style="width:44%;">Issue</th><th style="width:14%;">Complex</th><th style="width:30%;">Summary</th></tr></thead>
+        <tbody>
+        @foreach($issues->take(18) as $issue)
+            @php
+                $tag = $impactTag($issue);
+                $cx = $complexityTier($issue);
+            @endphp
             <tr>
-                <td><span class="badge badge-{{ $issue->impact === 'high' ? 'high' : ($issue->impact === 'medium' ? 'medium' : 'low') }}">{{ strtoupper($issue->impact ?? 'n/a') }}</span></td>
+                <td><span class="{{ $tag['class'] }}">{{ $tag['label'] }}</span></td>
+                <td class="truncate"><strong>{{ $issue->title ?? $issue->message ?? $issue->code }}</strong></td>
+                <td>@for($i=1;$i<=3;$i++)<span class="complex-bar {{ $i <= $cx ? 'bx-on' : 'bx-off' }}"></span>@endfor</td>
+                <td class="truncate">{{ $strTrunc(strip_tags((string) ($issue->recommendation ?: $issue->description ?: '')), 200) }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>
+
+<div class="cta-dark">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width:56%; vertical-align:top; padding-right:10px;">
+                <h2>Impact profile</h2>
+                <p><span class="cta-accent">{{ $critUi }} critical</span>, <span class="cta-accent">{{ $warnUi }} warnings</span>, <span class="cta-accent">{{ $infoUi }} info</span>.
+                    @if($avgCat !== null) Avg scored pillar: <span class="cta-accent">{{ $avgCat }}/100</span>.@endif</p>
+            </td>
+            <td style="width:44%;">
+                <table width="100%" cellpadding="0" cellspacing="6"><tr>
+                    <td class="cta-stat" width="50%"><div class="v">{{ $fmtNumber($gscClicks) }}</div><div class="l">GSC clicks</div></td>
+                    <td class="cta-stat" width="50%"><div class="v">{{ $fmtNumber($gaSess) }}</div><div class="l">GA4 sessions</div></td>
+                </tr></table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="footer">
+    <table width="100%"><tr>
+        <td>&copy; {{ now()->format('Y') }} Backlink Pro — confidential</td>
+        <td style="text-align:right;">{{ now()->format('M j, Y g:i A') }}</td>
+    </tr></table>
+</div>
+
+{{-- ===== Full report (matches app tabs) ===== --}}
+<div class="page-break"></div>
+<div class="sec-major">
+    <h1 class="sec-h">Overview</h1>
+    <table class="metric-grid" cellspacing="6"><tr>
+        @foreach([
+            ['Pages crawled', $fmtNumber($overview['pages_crawled_count'] ?? $audit->pages_scanned ?? $audit->pages->count())],
+            ['Recommendations', $fmtNumber($overview['recommendations_count'] ?? $issues->count())],
+            ['Warnings', $fmtNumber($overview['warnings_count'] ?? $issuesMedium)],
+            ['Passed checks', $fmtNumber($overview['passed_checks'] ?? $passedVerifications)],
+        ] as $mc)
+            <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+        @endforeach
+    </tr></table>
+    <table class="metric-grid" cellspacing="6" style="margin-top:4px;"><tr>
+        @foreach([
+            ['Critical (UI)', $fmtNumber($critUi)], ['Warnings (UI)', $fmtNumber($warnUi)], ['Info / opportunities', $fmtNumber($infoUi)], ['Status', strtoupper($audit->status ?? '—')],
+        ] as $mc)
+            <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+        @endforeach
+    </tr></table>
+
+    @if(count($ogGrades))
+        <h2 class="sec-h2">Category grades (KPI)</h2>
+        <table class="data-table" cellspacing="0">
+            <thead><tr><th>Pillar</th><th>Grade</th></tr></thead>
+            <tbody>
+            @foreach($ogGrades as $gk => $gv)
+                <tr><td>{{ str_replace('_', ' ', $gk) }}</td><td>{{ $gv ?? '—' }}</td></tr>
+            @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    <h2 class="sec-h2">Category scores & grades (audit)</h2>
+    <table class="data-table" cellspacing="0">
+        <thead><tr><th>Key</th><th>Score</th><th>Grade</th></tr></thead>
+        <tbody>
+        @foreach($categoryScoresUi as $ck => $cv)
+            <tr>
+                <td>{{ str_replace('_', ' ', $ck) }}</td>
+                <td>{{ $fmtNumber($cv) }}</td>
+                <td>{{ $categoryGradesUi[$ck] ?? ($gradeFromScore($cv) ?? '—') }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+
+    <h2 class="sec-h2">Homepage snapshot</h2>
+    <table class="data-table" cellspacing="0">
+        <tbody>
+            <tr><th>Title</th><td>{{ $strTrunc($pageData['title'] ?? $page?->title ?? '—', 400) }}</td></tr>
+            <tr><th>Meta</th><td>{{ $strTrunc($pageData['meta_description'] ?? $page?->meta_description ?? '—', 400) }}</td></tr>
+            <tr><th>Status</th><td>{{ $fmtNumber($pageData['status_code'] ?? $page?->status_code) }}</td></tr>
+            <tr><th>Words</th><td>{{ $fmtNumber($pageData['word_count'] ?? $page?->word_count) }}</td></tr>
+        </tbody>
+    </table>
+
+    <h2 class="sec-h2">All issues ({{ $issues->count() }}, showing {{ min($issueCap, $issues->count()) }})</h2>
+    <table class="data-table" cellspacing="0">
+        <thead><tr><th>Sev</th><th>Issue</th><th>Affected</th><th>Recommendation</th></tr></thead>
+        <tbody>
+        @foreach($issues->take($issueCap) as $issue)
+            @php
+                $tag = $impactTag($issue);
+            @endphp
+            <tr>
+                <td><span class="{{ $tag['class'] }}">{{ $tag['label'] }}</span></td>
                 <td class="truncate">{{ $issue->title ?? $issue->code }}</td>
                 <td>{{ $fmtNumber($issue->affected_count) }}</td>
-                <td>{{ $fmtNumber($issue->score_penalty) }}</td>
-                <td class="truncate">{{ $issue->recommendation ?: ($issue->description ?: 'No recommendation stored.') }}</td>
+                <td class="truncate">{{ $strTrunc($issue->recommendation ?: $issue->description, 220) }}</td>
             </tr>
-        @empty
-            <tr><td colspan="5">No issues were stored for this audit.</td></tr>
-        @endforelse
+        @endforeach
+        </tbody>
     </table>
-    <table class="grid-2" style="margin-top:8px;">
-        <tr>
-            <td>
-                <div class="metric">
-                    <div class="metric-label">Social Signals</div>
-                    <table class="table" style="margin-top:8px;">
-                        <tr><th>Signal</th><th>Value</th></tr>
-                        <tr><td>Open Graph</td><td>{{ $fmtBool($social['open_graph_tags_present'] ?? $page?->og_present) }}</td></tr>
-                        <tr><td>X Cards</td><td>{{ $fmtBool($social['x_cards_present'] ?? $page?->twitter_cards_present) }}</td></tr>
-                        <tr><td>Facebook</td><td>{{ $fmtBool($social['facebook_page_linked'] ?? null) }}</td></tr>
-                        <tr><td>LinkedIn</td><td>{{ $fmtBool($social['linkedin_linked'] ?? null) }}</td></tr>
-                    </table>
-                </div>
-            </td>
-            <td>
-                <div class="metric">
-                    <div class="metric-label">Local And Email Signals</div>
-                    <table class="table" style="margin-top:8px;">
-                        <tr><th>Signal</th><th>Value</th></tr>
-                        <tr><td>Address Found</td><td>{{ $fmtBool($localSeo['address_found'] ?? null) }}</td></tr>
-                        <tr><td>Phone Found</td><td>{{ $fmtBool($localSeo['phone_found'] ?? null) }}</td></tr>
-                        <tr><td>SPF</td><td>{{ $fmtBool($techEmail['spf_present'] ?? null) }}</td></tr>
-                        <tr><td>DMARC</td><td>{{ $fmtBool($techEmail['dmarc_present'] ?? null) }}</td></tr>
-                    </table>
-                </div>
-            </td>
-        </tr>
-    </table>
-    <div class="footer">BacklinkPro SEO Audit Report - Generated {{ now()->format('M j, Y g:i A') }}</div>
+
+    @if(count($buckets['overview']))
+        <h2 class="sec-h2">Advanced modules — overview</h2>
+        @include('audit.pdf-modules', ['modules' => $buckets['overview'], 'fmtVal' => $fmtVal, 'strTrunc' => $strTrunc])
+    @endif
 </div>
+
+<div class="sec-major page-break"></div>
+<h1 class="sec-h">On-Page SEO</h1>
+@php $onPageMetrics = [
+    ['Title len', $fmtNumber($onPage['title_length'] ?? $pageData['title_len'] ?? null)],
+    ['Meta len', $fmtNumber($onPage['meta_description_length'] ?? $pageData['meta_len'] ?? null)],
+    ['H1 present', $fmtBool($onPage['h1_present'] ?? null)],
+    ['Missing alt', $fmtNumber($onPage['images_missing_alt_total'] ?? $pageData['images_missing_alt'] ?? null)],
+    ['Thin pages', $fmtNumber($onPage['thin_pages_count'] ?? null)],
+    ['Title dups', $fmtNumber($onPage['title_duplicate_count'] ?? null)],
+    ['Meta dups', $fmtNumber($onPage['meta_duplicate_count'] ?? null)],
+    ['Keyword consistency', $fmtBool($onPage['keyword_consistency_flag'] ?? null)],
+]; @endphp
+@foreach(array_chunk($onPageMetrics, 4) as $chunk)
+<table class="metric-grid" cellspacing="6" style="margin-top:4px;"><tr>
+    @foreach($chunk as $mc)
+        <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+    @endforeach
+</tr></table>
+@endforeach
+<h2 class="sec-h2">Content signals</h2>
+<table class="data-table" cellspacing="0">
+    <tbody>
+        <tr><th>Canonical</th><td class="truncate">{{ $strTrunc($onPage['canonical_url'] ?? $pageData['canonical_url'] ?? '—', 300) }}</td></tr>
+        <tr><th>Language</th><td>{{ $onPage['lang_declared'] ?? 'N/A' }}</td></tr>
+        <tr><th>Analytics</th><td>{{ $onPage['analytics_tool_name'] ?? 'Not detected' }}</td></tr>
+        <tr><th>Schema types</th><td>{{ is_array($schemaList) && count($schemaList) ? collect($schemaList)->flatten()->filter()->take(20)->implode(', ') : 'Not detected' }}</td></tr>
+    </tbody>
+</table>
+<h2 class="sec-h2">Top keywords</h2>
+<p style="font-size:8px;color:#475569;">{{ $topKeywords->map(fn($i) => ($i['keyword'] ?? '') . (isset($i['count']) ? ' ('.$i['count'].')' : ''))->filter()->take(40)->implode(' · ') ?: '—' }}</p>
+
+<h2 class="sec-h2">Duplicate titles</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>URL</th><th>Title</th></tr></thead><tbody>
+@forelse($duplicateTitles as $row)
+    <tr><td class="truncate">{{ $strTrunc($row['url'] ?? '', 120) }}</td><td class="truncate">{{ $strTrunc($row['title'] ?? '', 120) }}</td></tr>
+@empty <tr><td colspan="2">—</td></tr> @endforelse
+</tbody></table>
+<h2 class="sec-h2">Missing meta</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>URL</th></tr></thead><tbody>
+@forelse($missingMeta as $row) <tr><td class="truncate">{{ $strTrunc($row['url'] ?? '', 200) }}</td></tr> @empty <tr><td>—</td></tr> @endforelse
+</tbody></table>
+<h2 class="sec-h2">Missing H1</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>URL</th></tr></thead><tbody>
+@forelse($missingH1 as $row) <tr><td class="truncate">{{ $strTrunc($row['url'] ?? '', 200) }}</td></tr> @empty <tr><td>—</td></tr> @endforelse
+</tbody></table>
+@if(count($buckets['onpage']))
+    <h2 class="sec-h2">Advanced modules — on-page</h2>
+    @include('audit.pdf-modules', ['modules' => $buckets['onpage'], 'fmtVal' => $fmtVal, 'strTrunc' => $strTrunc])
+@endif
+
+<div class="sec-major page-break"></div>
+<h1 class="sec-h">Technical</h1>
+@php $techMetrics = [
+    ['HTTPS', $fmtBool($technical['https_enabled'] ?? null)], ['HTTPS redirect', $fmtBool($technical['https_redirect_ok'] ?? null)],
+    ['robots.txt', $fmtBool($technical['robots_txt_present'] ?? null)], ['XML sitemap', $fmtBool($technical['xml_sitemap_present'] ?? null)],
+    ['Broken links', $fmtNumber($technical['broken_links_count'] ?? null)], ['Redirect chains', $fmtNumber($technical['redirect_chains_count'] ?? null)],
+    ['Indexability', $fmtNumber($technical['indexability_issues_count'] ?? null)], ['Canonical present', $fmtNumber($technical['canonical_present_count'] ?? null)],
+]; @endphp
+@foreach(array_chunk($techMetrics, 4) as $chunk)
+<table class="metric-grid" cellspacing="6" style="margin-top:4px;"><tr>
+    @foreach($chunk as $mc)
+        <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+    @endforeach
+</tr></table>
+@endforeach
+<h2 class="sec-h2">Discovery</h2>
+<table class="data-table" cellspacing="0">
+    <tbody>
+        <tr><th>robots.txt URL</th><td class="truncate">{{ $strTrunc($technical['robots_txt_url'] ?? 'Not found', 250) }}</td></tr>
+        <tr><th>Sitemap URL</th><td class="truncate">{{ $strTrunc($technical['sitemap_url'] ?? 'Not found', 250) }}</td></tr>
+        <tr><th>Blocked</th><td>{{ $fmtBool($technical['blocked_by_robots'] ?? null) }}</td></tr>
+    </tbody>
+</table>
+<h2 class="sec-h2">Status distribution</h2>
+<table class="metric-grid" cellspacing="6"><tr>
+    @foreach(['2xx','3xx','4xx','5xx'] as $sx)
+        <td><div class="metric-cell"><div class="l">{{ $sx }}</div><div class="v">{{ $fmtNumber($statusDist[$sx] ?? null) }}</div></div></td>
+    @endforeach
+</tr></table>
+
+<h2 class="sec-h2">Broken links, redirects, non-200</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>From</th><th>To</th><th>Code</th></tr></thead><tbody>
+@forelse($brokenLinks as $row) <tr><td class="truncate">{{ $strTrunc($row['from_url'] ?? $row['from'] ?? '', 100) }}</td><td class="truncate">{{ $strTrunc($row['to_url'] ?? '', 100) }}</td><td>{{ $fmtNumber($row['status_code'] ?? null) }}</td></tr> @empty <tr><td colspan="3">—</td></tr> @endforelse
+</tbody></table>
+<table class="data-table" cellspacing="0" style="margin-top:8px;"><thead><tr><th>From</th><th>To</th><th>Hops</th></tr></thead><tbody>
+@forelse($redirectChains as $row) <tr><td class="truncate">{{ $strTrunc($row['from_url'] ?? '', 100) }}</td><td class="truncate">{{ $strTrunc($row['to_url'] ?? '', 100) }}</td><td>{{ $fmtNumber($row['redirect_hops'] ?? null) }}</td></tr> @empty <tr><td colspan="3">—</td></tr> @endforelse
+</tbody></table>
+<table class="data-table" cellspacing="0" style="margin-top:8px;"><thead><tr><th>URL</th><th>Status</th></tr></thead><tbody>
+@forelse($non200Pages as $row) <tr><td class="truncate">{{ $strTrunc($row['url'] ?? '', 200) }}</td><td>{{ $fmtNumber($row['status_code'] ?? null) }}</td></tr> @empty <tr><td colspan="2">—</td></tr> @endforelse
+</tbody></table>
+
+<h2 class="sec-h2">Security headers</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>Header</th><th>With</th><th>Total</th></tr></thead><tbody>
+@forelse($securityHeaders as $row)
+    <tr><td>{{ $row['header'] ?? '—' }}</td><td>{{ $fmtNumber($row['pages_with_header'] ?? null) }}</td><td>{{ $fmtNumber($row['total_pages'] ?? null) }}</td></tr>
+@empty <tr><td colspan="3">—</td></tr> @endforelse
+</tbody></table>
+@if(count($buckets['technical']))
+    <h2 class="sec-h2">Advanced modules — technical</h2>
+    @include('audit.pdf-modules', ['modules' => $buckets['technical'], 'fmtVal' => $fmtVal, 'strTrunc' => $strTrunc])
+@endif
+
+<div class="sec-major page-break"></div>
+<h1 class="sec-h">Performance</h1>
+@if($psi)
+    @foreach(['mobile' => 'Mobile', 'desktop' => 'Desktop'] as $modeKey => $modeLabel)
+        @php
+            $run = data_get($psi, $modeKey);
+            $fb = $modeKey === 'mobile' ? $lmMobile : $lmDesktop;
+            $met = $normalizePsi($run, $fb);
+        @endphp
+        <h2 class="sec-h2">{{ $modeLabel }} PageSpeed</h2>
+        @if(is_array($run) && ($run['status'] ?? '') === 'failed' && $met['score'] === null)
+            <p style="font-size:8px;color:#9e3f4e;">{{ $run['error'] ?? 'Run failed.' }}</p>
+        @else
+            <table class="metric-grid" cellspacing="6"><tr>
+                @foreach([['Score',$met['score']], ['LCP (s)', is_numeric($met['lcp'] ?? null) ? number_format((float)$met['lcp']/1000,2) : 'N/A'], ['FCP (s)', is_numeric($met['fcp'] ?? null) ? number_format((float)$met['fcp']/1000,2) : 'N/A'], ['CLS',$met['cls'] ?? 'N/A']] as $mc)
+                    <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ is_numeric($mc[1] ?? null) ? $fmtNumber($mc[1]) : $mc[1] }}</div></div></td>
+                @endforeach
+            </tr></table>
+            <table class="metric-grid" cellspacing="6"><tr>
+                @foreach([['TBT (s)', is_numeric($met['tbt'] ?? null) ? number_format((float)$met['tbt']/1000,2) : 'N/A'], ['TTI (s)', is_numeric($met['tti'] ?? null) ? number_format((float)$met['tti']/1000,2) : 'N/A']] as $mc)
+                    <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+                @endforeach
+            </tr></table>
+        @endif
+    @endforeach
+@else
+    <p style="font-size:8px;color:#64748b;">No aggregated PageSpeed payload on audit KPIs (per-page lighthouse may still exist below).</p>
+@endif
+
+<table class="metric-grid" cellspacing="6"><tr>
+    @foreach([
+        ['Download size', $fmtMb($performance['total_download_size_mb'] ?? null)],
+        ['Total objects', $fmtNumber($resBreak['total_objects'] ?? null)],
+        ['JS resources', $fmtNumber($resBreak['js_resources_count'] ?? null)],
+        ['Images', $fmtNumber($resBreak['images_count'] ?? null)],
+    ] as $mc)
+        <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+    @endforeach
+</tr></table>
+<h2 class="sec-h2">Heavy assets</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>Asset</th><th>Type</th><th>KB</th></tr></thead><tbody>
+@forelse($heavyAssets as $row) <tr><td class="truncate">{{ $strTrunc($row['asset_url'] ?? '', 200) }}</td><td>{{ $row['type'] ?? '—' }}</td><td>{{ $fmtNumber($row['size_kb'] ?? null) }}</td></tr> @empty <tr><td colspan="3">—</td></tr> @endforelse
+</tbody></table>
+<h2 class="sec-h2">Optimization opportunities (mobile + desktop usability)</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>Opportunity</th><th>Est. savings (s)</th></tr></thead><tbody>
+@php $oppRows = $mobileOpp->concat($desktopOpp); @endphp
+@forelse($oppRows as $row)
+    <tr><td class="truncate">{{ $strTrunc($row['name'] ?? $row['title'] ?? '', 200) }}</td><td>{{ isset($row['estimated_savings_sec']) ? number_format((float) $row['estimated_savings_sec'], 2) : '—' }}</td></tr>
+@empty <tr><td colspan="2">—</td></tr> @endforelse
+</tbody></table>
+@if(count($buckets['performance']))
+    <h2 class="sec-h2">Advanced modules — performance</h2>
+    @include('audit.pdf-modules', ['modules' => $buckets['performance'], 'fmtVal' => $fmtVal, 'strTrunc' => $strTrunc])
+@endif
+
+<div class="sec-major page-break"></div>
+<h1 class="sec-h">Integrations</h1>
+<h2 class="sec-h2">Google Analytics 4</h2>
+@if(is_array($ga4) && ($ga4['connected'] ?? true) === false)
+    <p style="font-size:8px;">{{ $ga4['message'] ?? 'Not connected.' }}</p>
+@elseif(!empty($ga4['summary']))
+    <table class="metric-grid" cellspacing="6"><tr>
+        @foreach([['Sessions', data_get($ga4,'summary.total_sessions')], ['Users', data_get($ga4,'summary.total_users')], ['Engagement %', data_get($ga4,'summary.avg_engagement_rate')], ['Period', $ga4['period'] ?? 'N/A']] as $mc)
+            <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ is_numeric($mc[1] ?? null) ? $fmtNumber($mc[1]) : ($mc[1] ?? '—') }}</div></div></td>
+        @endforeach
+    </tr></table>
+@else
+    <p style="font-size:8px;color:#64748b;">GA4 summary not captured.</p>
+@endif
+
+<h2 class="sec-h2">Google Search Console</h2>
+@if(is_array($gsc) && ($gsc['connected'] ?? true) === false)
+    <p style="font-size:8px;">{{ $gsc['message'] ?? 'Not connected.' }}</p>
+@elseif(!empty($gsc['summary']))
+    <table class="metric-grid" cellspacing="6"><tr>
+        @foreach([
+            ['Clicks', data_get($gsc,'summary.total_clicks')], ['Impressions', data_get($gsc,'summary.total_impressions')],
+            ['CTR %', data_get($gsc,'summary.avg_ctr')], ['Avg pos', data_get($gsc,'summary.avg_position')],
+        ] as $mc)
+            <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] !== null && $mc[1] !== '' ? (is_numeric($mc[1]) ? $fmtNumber($mc[1]) : $mc[1]) : '—' }}</div></div></td>
+        @endforeach
+    </tr></table>
+@else
+    <p style="font-size:8px;color:#64748b;">GSC summary not captured.</p>
+@endif
+
+<h2 class="sec-h2">Top GA4 pages</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>Page</th><th>Sessions</th><th>Users</th></tr></thead><tbody>
+@forelse($gaTopPages as $row) <tr><td class="truncate">{{ $strTrunc($row['page_path'] ?? '', 200) }}</td><td>{{ $fmtNumber($row['sessions'] ?? $row['views'] ?? null) }}</td><td>{{ $fmtNumber($row['total_users'] ?? $row['active_users'] ?? null) }}</td></tr> @empty <tr><td colspan="3">—</td></tr> @endforelse
+</tbody></table>
+<h2 class="sec-h2">Top GSC queries</h2>
+<table class="data-table" cellspacing="0"><thead><tr><th>Query</th><th>Clicks</th><th>Impr.</th><th>Pos</th></tr></thead><tbody>
+@forelse($gscQueries as $row) <tr><td class="truncate">{{ $strTrunc($row['query'] ?? '', 160) }}</td><td>{{ $fmtNumber($row['clicks'] ?? null) }}</td><td>{{ $fmtNumber($row['impressions'] ?? null) }}</td><td>{{ $fmtNumber($row['position'] ?? null) }}</td></tr> @empty <tr><td colspan="4">—</td></tr> @endforelse
+</tbody></table>
+
+<h2 class="sec-h2">Social signals</h2>
+@php $socialMetrics = [
+    ['Open Graph', $fmtBool($social['open_graph_tags_present'] ?? $pageData['og_present'] ?? null)], ['X cards', $fmtBool($social['x_cards_present'] ?? $pageData['twitter_cards_present'] ?? null)],
+    ['Facebook', $fmtBool($social['facebook_page_linked'] ?? null)], ['Instagram', $fmtBool($social['instagram_linked'] ?? null)],
+    ['LinkedIn', $fmtBool($social['linkedin_linked'] ?? null)], ['YouTube', $fmtBool($social['youtube_channel_linked'] ?? null)],
+]; @endphp
+@foreach(array_chunk($socialMetrics, 4) as $chunk)
+<table class="metric-grid" cellspacing="6" style="margin-top:4px;"><tr>
+    @foreach($chunk as $mc)
+        <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+    @endforeach
+</tr></table>
+@endforeach
+<h2 class="sec-h2">Local & email</h2>
+@php $localMetrics = [
+    ['Address', $fmtBool($localSeo['address_found'] ?? null)], ['Phone', $fmtBool($localSeo['phone_found'] ?? null)], ['Local schema', $fmtBool($localSeo['local_business_schema_present'] ?? null)],
+    ['SPF', $fmtBool($techEmail['spf_present'] ?? null)], ['DMARC', $fmtBool($techEmail['dmarc_present'] ?? null)], ['Server', $techEmail['web_server'] ?? 'N/A'],
+]; @endphp
+@foreach(array_chunk($localMetrics, 4) as $chunk)
+<table class="metric-grid" cellspacing="6" style="margin-top:4px;"><tr>
+    @foreach($chunk as $mc)
+        <td><div class="metric-cell"><div class="l">{{ $mc[0] }}</div><div class="v">{{ $mc[1] }}</div></div></td>
+    @endforeach
+</tr></table>
+@endforeach
+@if(count($buckets['integrations']))
+    <h2 class="sec-h2">Advanced modules — integrations</h2>
+    @include('audit.pdf-modules', ['modules' => $buckets['integrations'], 'fmtVal' => $fmtVal, 'strTrunc' => $strTrunc])
+@endif
+
 </body>
 </html>

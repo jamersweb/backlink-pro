@@ -241,7 +241,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::get('/', [AuditReportController::class, 'index'])->name('index');
         Route::post('/', [AuditReportController::class, 'create'])->name('create');
         Route::get('/{id}/status', [AuditReportController::class, 'status'])->name('status');
-        Route::post('/{id}/export-pdf', [AuditReportController::class, 'exportPdf'])->name('export-pdf');
+        Route::match(['get', 'post'], '/{id}/export-pdf', [AuditReportController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}', [AuditReportController::class, 'show'])->name('show');
     });
 
