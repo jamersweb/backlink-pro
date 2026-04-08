@@ -27,6 +27,7 @@ class SeoAlertRule extends Model
     const TYPE_GSC_CLICKS_DROP = 'gsc_clicks_drop';
     const TYPE_GA4_SESSIONS_DROP = 'ga4_sessions_drop';
     const TYPE_CONVERSION_DROP = 'conversion_drop';
+    const TYPE_PAGE_CONTENT_DECAY = 'page_content_decay';
 
     /**
      * Get the organization

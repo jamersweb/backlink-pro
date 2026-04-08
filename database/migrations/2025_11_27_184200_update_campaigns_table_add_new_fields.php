@@ -47,9 +47,7 @@ return new class extends Migration
                 $table->integer('total_limit')->nullable()->after('daily_limit');
             }
             
-            // Update status enum - use raw SQL to avoid issues
-            // Only update if the enum doesn't already include 'paused'
-            if (Schema::hasColumn('campaigns', 'status')) {
+            if (Schema::hasColumn('campaigns', 'status') && \Illuminate\Support\Facades\DB::getDriverName() === 'mysql') {
                 try {
                     \Illuminate\Support\Facades\DB::statement(
                         "ALTER TABLE campaigns MODIFY COLUMN status ENUM('active', 'inactive', 'paused', 'completed', 'error') DEFAULT 'inactive'"

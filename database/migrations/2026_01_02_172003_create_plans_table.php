@@ -12,25 +12,34 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check if table already exists (from older migration)
+        $isSqlite = DB::getDriverName() === 'sqlite';
+
         if (Schema::hasTable('plans')) {
-            // Table exists, check if it already has the new schema columns
             if (Schema::hasColumn('plans', 'code') && Schema::hasColumn('plans', 'limits_json')) {
-                // New schema already exists, skip migration
                 return;
             }
-            
-            // Table exists with old schema, add new columns if they don't exist
-            // Use raw SQL to avoid Blueprint closure issues with immediate data updates
-            
-            // Add code column if it doesn't exist
+
+            if ($isSqlite) {
+                if (!Schema::hasColumn('plans', 'code')) {
+                    Schema::table('plans', fn (Blueprint $t) => $t->string('code')->unique()->nullable());
+                }
+                if (!Schema::hasColumn('plans', 'price_monthly')) {
+                    Schema::table('plans', fn (Blueprint $t) => $t->unsignedInteger('price_monthly')->nullable());
+                }
+                if (!Schema::hasColumn('plans', 'limits_json')) {
+                    Schema::table('plans', fn (Blueprint $t) => $t->json('limits_json')->nullable());
+                }
+                if (!Schema::hasColumn('plans', 'features_json')) {
+                    Schema::table('plans', fn (Blueprint $t) => $t->json('features_json')->nullable());
+                }
+                return;
+            }
+
             if (!Schema::hasColumn('plans', 'code')) {
                 if (Schema::hasColumn('plans', 'slug')) {
-                    // Add code column, copy from slug, then make it unique and not null
                     DB::statement('ALTER TABLE plans ADD COLUMN code VARCHAR(255) NULL AFTER name');
                     DB::statement('UPDATE plans SET code = slug');
                     DB::statement('ALTER TABLE plans MODIFY COLUMN code VARCHAR(255) NOT NULL');
-                    // Check if unique key already exists before adding
                     $indexes = DB::select("SHOW INDEXES FROM plans WHERE Key_name = 'plans_code_unique'");
                     if (empty($indexes)) {
                         DB::statement('ALTER TABLE plans ADD UNIQUE KEY plans_code_unique (code)');
@@ -41,8 +50,6 @@ return new class extends Migration
                     });
                 }
             }
-            
-            // Add price_monthly column if it doesn't exist
             if (!Schema::hasColumn('plans', 'price_monthly')) {
                 if (Schema::hasColumn('plans', 'price')) {
                     DB::statement('ALTER TABLE plans ADD COLUMN price_monthly INT UNSIGNED NULL AFTER code');
@@ -53,11 +60,8 @@ return new class extends Migration
                     });
                 }
             }
-            
-            // Add limits_json column if it doesn't exist
             if (!Schema::hasColumn('plans', 'limits_json')) {
                 DB::statement('ALTER TABLE plans ADD COLUMN limits_json JSON NULL AFTER price_monthly');
-                // Migrate old limit columns to JSON if they exist
                 if (Schema::hasColumn('plans', 'max_domains') || Schema::hasColumn('plans', 'daily_backlink_limit')) {
                     DB::statement("UPDATE plans SET limits_json = JSON_OBJECT(
                         'max_domains', COALESCE(max_domains, 1),
@@ -67,11 +71,8 @@ return new class extends Migration
                 } else {
                     DB::statement("UPDATE plans SET limits_json = '{}' WHERE limits_json IS NULL");
                 }
-                // Make it not null after data migration
                 DB::statement('ALTER TABLE plans MODIFY COLUMN limits_json JSON NOT NULL');
             }
-            
-            // Add features_json column if it doesn't exist
             if (!Schema::hasColumn('plans', 'features_json')) {
                 if (Schema::hasColumn('plans', 'features')) {
                     DB::statement('ALTER TABLE plans ADD COLUMN features_json JSON NULL AFTER limits_json');

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Audit;
 use App\Models\ConnectedAccount;
 use App\Services\Google\Ga4Service;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -95,7 +96,7 @@ class EnrichGa4Job implements ShouldQueue
         }
         $audit->refresh();
         $kpis = array_merge($audit->audit_kpis ?? [], $newKpis);
-        $audit->audit_kpis = $kpis;
+        $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpis);
         $audit->save();
     }
 

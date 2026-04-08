@@ -13,11 +13,13 @@ class CompetitorRun extends Model
         'audit_id',
         'keywords',
         'country',
+        'competitor_urls',
         'status',
     ];
 
     protected $casts = [
         'keywords' => 'array',
+        'competitor_urls' => 'array',
     ];
 
     const STATUS_QUEUED = 'queued';

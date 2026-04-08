@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page about-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -13,9 +13,7 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
-        <DisclosuresBar :disclosures="disclosures" />
 
         <main id="main-content">
             <AboutHero />
@@ -38,7 +36,6 @@
 import { onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { useReveal } from '../../Composables/useReveal.js';
-import AnnouncementBar from '../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../Components/Marketing/Footer.vue';
 import FinalCTA from '../../Components/Marketing/FinalCTA.vue';
@@ -51,7 +48,7 @@ import ValuesBlock from '../../Components/Marketing/About/ValuesBlock.vue';
 import TimelineRoadmap from '../../Components/Marketing/About/TimelineRoadmap.vue';
 import TrustCallout from '../../Components/Marketing/About/TrustCallout.vue';
 import AboutFAQ from '../../Components/Marketing/About/AboutFAQ.vue';
-import DisclosuresBar from '../../Components/Marketing/About/DisclosuresBar.vue';
+import './shared-linked-page-theme.css';
 
 const props = defineProps({
     meta: {

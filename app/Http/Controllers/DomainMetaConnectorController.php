@@ -21,14 +21,22 @@ class DomainMetaConnectorController extends Controller
             abort(403);
         }
 
-        $validated = $request->validate([
-            'type' => 'required|in:wordpress,shopify,custom_js',
+        $types = ['wordpress', 'shopify', 'custom_js'];
+        if (\App\Support\Feature::enabled('edge_proxy')) {
+            $types[] = 'edge_proxy';
+        }
+        $rules = [
+            'type' => 'required|in:' . implode(',', $types),
             'base_url' => 'required_if:type,wordpress|nullable|url',
             'api_token' => 'required_if:type,wordpress|nullable|string',
             'shop_domain' => 'required_if:type,shopify|nullable|string',
             'admin_access_token' => 'required_if:type,shopify|nullable|string',
             'api_version' => 'nullable|string',
-        ]);
+        ];
+        if (\App\Support\Feature::enabled('edge_proxy')) {
+            $rules['cache_ttl'] = 'nullable|integer|min:0|max:86400';
+        }
+        $validated = $request->validate($rules);
 
         $type = $validated['type'];
         $authJson = [];
@@ -44,12 +52,18 @@ class DomainMetaConnectorController extends Controller
                 'api_version' => $validated['api_version'] ?? '2024-01',
             ];
         } elseif ($type === 'custom_js') {
-            // Generate snippet key if not exists
             if (!$domain->meta_snippet_key) {
                 $domain->update([
                     'meta_snippet_key' => Str::random(40),
                 ]);
             }
+        } elseif ($type === 'edge_proxy') {
+            $existing = DomainMetaConnector::where('domain_id', $domain->id)->where('type', 'edge_proxy')->first();
+            $authJson = $existing && !empty($existing->auth_json['edge_token'] ?? null)
+                ? $existing->auth_json
+                : ['edge_token' => Str::random(64)];
+            $authJson['cache_ttl'] = (int) ($validated['cache_ttl'] ?? 300);
+            $authJson['cache_ttl'] = max(0, min(86400, $authJson['cache_ttl']));
         }
 
         $connector = DomainMetaConnector::updateOrCreate(
@@ -131,5 +145,30 @@ class DomainMetaConnectorController extends Controller
         }
 
         return back()->with('success', 'Connector disconnected');
+    }
+
+    /**
+     * Rotate edge_proxy token (behind FEATURE_EDGE_PROXY)
+     */
+    public function rotateEdgeProxyToken(Domain $domain)
+    {
+        if ($domain->user_id !== Auth::id()) {
+            abort(403);
+        }
+        if (!\App\Support\Feature::enabled('edge_proxy')) {
+            abort(404);
+        }
+
+        $connector = DomainMetaConnector::where('domain_id', $domain->id)->where('type', 'edge_proxy')->first();
+        if (!$connector) {
+            return back()->with('error', 'Edge connector not configured');
+        }
+
+        $authJson = $connector->auth_json ?? [];
+        $authJson['edge_token'] = Str::random(64);
+        $authJson['cache_ttl'] = (int) ($authJson['cache_ttl'] ?? 300);
+        $connector->update(['auth_json' => $authJson]);
+
+        return back()->with('success', 'Edge token rotated. Update your Worker script with the new token.');
     }
 }

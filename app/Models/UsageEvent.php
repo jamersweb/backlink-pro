@@ -8,6 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UsageEvent extends Model
 {
     protected $fillable = [
+        // Legacy/user-based usage schema
+        'user_id',
+        'domain_id',
+        'metric_key',
+        'amount',
+        'context_json',
+
+        // Organization-based usage schema
         'organization_id',
         'audit_id',
         'event_type',
@@ -17,6 +25,7 @@ class UsageEvent extends Model
     ];
 
     protected $casts = [
+        'context_json' => 'array',
         'metadata' => 'array',
         'occurred_at' => 'datetime',
     ];

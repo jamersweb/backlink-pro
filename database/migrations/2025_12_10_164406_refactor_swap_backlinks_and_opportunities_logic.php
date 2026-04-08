@@ -16,6 +16,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return; // MySQL-only: CREATE TABLE LIKE, information_schema; skip for SQLite (e.g. tests)
+        }
         // Step 1: Create temporary tables to store data
         $this->createTempTables();
         

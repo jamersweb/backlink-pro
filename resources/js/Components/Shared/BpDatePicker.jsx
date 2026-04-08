@@ -51,31 +51,66 @@ export default function BpDatePicker({
     const [month, setMonth] = useState(() => parseDate(value) || new Date());
     const containerRef = useRef(null);
     const triggerRef = useRef(null);
+    const popoverRef = useRef(null);
     const [popoverStyle, setPopoverStyle] = useState({});
 
     const selectedDate = parseDate(value);
 
     useLayoutEffect(() => {
         if (!isOpen || !triggerRef.current) return;
+
         const updatePosition = () => {
-            if (triggerRef.current) {
-                const rect = triggerRef.current.getBoundingClientRect();
-                setPopoverStyle({
-                    position: 'fixed',
-                    top: rect.bottom + 8,
-                    left: rect.left,
-                    zIndex: 99999,
-                });
+            if (!triggerRef.current) return;
+
+            const rect = triggerRef.current.getBoundingClientRect();
+            const popoverWidth = Math.min(popoverRef.current?.offsetWidth || 304, 304);
+            const popoverHeight = Math.min(popoverRef.current?.offsetHeight || 332, 332);
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const gap = 8;
+            const edgePadding = 12;
+
+            let left = rect.left;
+            let top = rect.bottom + gap;
+
+            if (left + popoverWidth > viewportWidth - edgePadding) {
+                left = Math.max(edgePadding, viewportWidth - popoverWidth - edgePadding);
             }
+
+            if (left < edgePadding) {
+                left = edgePadding;
+            }
+
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            if (spaceBelow < popoverHeight + gap && spaceAbove > popoverHeight + gap) {
+                top = Math.max(edgePadding, rect.top - popoverHeight - gap);
+            } else if (top + popoverHeight > viewportHeight - edgePadding) {
+                top = Math.max(edgePadding, viewportHeight - popoverHeight - edgePadding);
+            }
+
+            setPopoverStyle({
+                position: 'fixed',
+                top,
+                left,
+                zIndex: 99999,
+                width: Math.min(popoverWidth, viewportWidth - edgePadding * 2),
+                maxWidth: `calc(100vw - ${edgePadding * 2}px)`,
+            });
         };
+
         updatePosition();
+        const rafId = window.requestAnimationFrame(updatePosition);
         window.addEventListener('scroll', updatePosition, true);
         window.addEventListener('resize', updatePosition);
+
         return () => {
+            window.cancelAnimationFrame(rafId);
             window.removeEventListener('scroll', updatePosition, true);
             window.removeEventListener('resize', updatePosition);
         };
-    }, [isOpen]);
+    }, [isOpen, month]);
 
     useEffect(() => {
         const parsed = parseDate(value);
@@ -132,7 +167,7 @@ export default function BpDatePicker({
     return (
         <div className={`bp-date-picker ${className}`} ref={containerRef}>
             {label && (
-                <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-[var(--admin-text)]">
                     {label}
                 </label>
             )}
@@ -149,7 +184,7 @@ export default function BpDatePicker({
                     className={`bp-date-picker-trigger w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border transition-all duration-200 text-left ${
                         error
                             ? 'border-[#F04438] focus:border-[#F04438]'
-                            : 'border-[var(--admin-border)] focus:border-[#2F6BFF] focus:ring-2 focus:ring-[#2F6BFF]/20'
+                            : 'border-[var(--admin-border)] focus:border-[var(--admin-primary)] focus:ring-2 focus:ring-[var(--admin-primary)]/20'
                     } bg-[var(--admin-bg)] text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                     <span className={selectedDate ? '' : 'text-[var(--admin-text-dim)]'}>
@@ -160,7 +195,8 @@ export default function BpDatePicker({
 
                 {isOpen && createPortal(
                     <div
-                        className="bp-date-picker-popover rounded-[14px] border border-white/10 bg-[#0B1220] shadow-xl p-4"
+                        ref={popoverRef}
+                        className="bp-date-picker-popover rounded-[14px] border border-[rgba(242,140,56,0.18)] bg-[#121014] shadow-xl p-3"
                         style={popoverStyle}
                         role="dialog"
                         aria-modal="true"

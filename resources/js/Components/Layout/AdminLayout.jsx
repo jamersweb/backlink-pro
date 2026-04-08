@@ -168,12 +168,14 @@ export default function AdminLayout({ children, header }) {
             active: currentUrl.startsWith('/admin/proxies') ||
                     currentUrl.startsWith('/admin/captcha') ||
                     currentUrl.startsWith('/admin/system-health') ||
+                    currentUrl.startsWith('/admin/feature-flags') ||
                     currentUrl.startsWith('/admin/blocked-sites') ||
                     currentUrl.startsWith('/admin/ml-training'),
             children: [
                 { name: 'Proxies', href: '/admin/proxies', icon: 'bi-router' },
                 { name: 'Captcha Logs', href: '/admin/captcha-logs', icon: 'bi-shield-check' },
                 { name: 'System Health', href: '/admin/system-health', icon: 'bi-heart-pulse' },
+                { name: 'Feature Flags', href: '/admin/feature-flags', icon: 'bi-flag' },
                 { name: 'System Config', href: '/admin/system-config', icon: 'bi-gear-wide-connected' },
                 { name: 'Blocked Sites', href: '/admin/blocked-sites', icon: 'bi-ban' },
                 { name: 'ML Training', href: '/admin/ml-training', icon: 'bi-cpu' },

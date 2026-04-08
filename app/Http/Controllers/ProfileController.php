@@ -24,7 +24,8 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        $user = Auth::user()->load(['plan', 'campaigns', 'domains', 'connectedAccounts']);
+        $user = Auth::user()->load(['campaigns', 'domains', 'connectedAccounts']);
+        $currentPlan = $user->currentPlan();
         
         $subscription = null;
         $paymentMethod = null;
@@ -87,8 +88,8 @@ class ProfileController extends Controller
         
         // Get available upgrade plans based on current plan
         $upgradePlans = [];
-        if ($user->plan) {
-            $currentPlanCode = $user->plan->code;
+        if ($currentPlan) {
+            $currentPlanCode = $currentPlan->code;
             $planOrder = ['free' => 1, 'starter' => 2, 'pro' => 3, 'agency' => 4];
             $currentOrder = $planOrder[$currentPlanCode] ?? 0;
             
@@ -143,17 +144,17 @@ class ProfileController extends Controller
                 'domains_count' => $user->domains->count(),
                 'connected_accounts_count' => $user->connectedAccounts->count(),
             ],
-            'plan' => $user->plan ? [
-                'id' => $user->plan->id,
-                'name' => $user->plan->name,
-                'code' => $user->plan->code,
-                'price' => $user->plan->price_monthly ? ($user->plan->price_monthly / 100) : 0,
+            'plan' => $currentPlan ? [
+                'id' => $currentPlan->id,
+                'name' => $currentPlan->name,
+                'code' => $currentPlan->code,
+                'price' => $currentPlan->price_monthly ? ($currentPlan->price_monthly / 100) : 0,
                 'billing_interval' => 'monthly',
                 'description' => '',
-                'features' => $user->plan->features_json ?? [],
-                'max_domains' => $user->plan->getLimit('max_domains'),
-                'max_campaigns' => $user->plan->getLimit('max_campaigns'),
-                'daily_backlink_limit' => $user->plan->getLimit('daily_backlink_limit'),
+                'features' => $currentPlan->features_json ?? [],
+                'max_domains' => $currentPlan->getLimit('domains.max_active'),
+                'max_campaigns' => null,
+                'daily_backlink_limit' => null,
             ] : null,
             'subscription' => $subscription,
             'subscription_status' => $user->subscription_status,

@@ -922,7 +922,7 @@ const cruxDistributions = computed(() => {
 const ga4Integration = computed(() => props.ga4Integration || {});
 const ga4Connected = computed(() => ga4Integration.value.connected);
 const ga4CanConnect = computed(() => ga4Integration.value.can_connect);
-const ga4ConnectUrl = computed(() => `/auth/google/redirect?return_url=/audit/${props.audit.id}`);
+const ga4ConnectUrl = computed(() => `/auth/google-ga4/redirect?return_url=/audit/${props.audit.id}`);
 
 const ga4Summary = ref(null);
 const ga4Properties = ref([]);
@@ -1665,7 +1665,7 @@ const refreshGa4Summary = async () => {
 
 const disconnectGa4 = async () => {
     try {
-        await axios.post('/auth/google/disconnect');
+        await axios.post('/auth/google-ga4/disconnect');
         ga4Summary.value = null;
         ga4Properties.value = [];
         ga4SelectedPropertyId.value = '';
@@ -2239,3 +2239,4 @@ onUnmounted(() => {
     }
 }
 </style>
+

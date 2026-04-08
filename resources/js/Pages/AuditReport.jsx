@@ -147,10 +147,10 @@ export default function AuditReport({
                 </div>
 
                 {isLoading && (
-                    <div className="bp-card rounded-2xl p-5 border border-[#7C3AED]/30">
+                    <div className="bp-card rounded-2xl p-5 border border-[rgba(242,140,56,0.30)] bg-[rgba(242,140,56,0.06)]">
                         <div className="flex items-center gap-3">
-                            <i className="bi bi-arrow-repeat animate-spin text-[#A78BFA] text-lg"></i>
-                            <span className="font-medium text-[#A78BFA]">
+                            <i className="bi bi-arrow-repeat animate-spin text-[var(--admin-primary-light)] text-lg"></i>
+                            <span className="font-medium text-[var(--admin-primary-light)]">
                                 Running audit… This may take up to a minute. Do not close this page.
                             </span>
                         </div>
@@ -225,7 +225,7 @@ export default function AuditReport({
                                         id="send-email"
                                         checked={formData.send_to_email}
                                         onChange={(e) => handleCheckboxChange(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded border-[var(--admin-border)] bg-[var(--admin-bg)] focus:ring-[#7C3AED] focus:ring-offset-0 cursor-pointer"
+                                        className="mt-0.5 w-4 h-4 rounded border-[var(--admin-border)] bg-[var(--admin-bg)] focus:ring-[var(--admin-primary)] focus:ring-offset-0 cursor-pointer"
                                     />
                                     <label htmlFor="send-email" className="flex-1 text-sm text-[var(--admin-text)] cursor-pointer">
                                         <span className="font-medium">Send report to email</span>
@@ -323,15 +323,15 @@ export default function AuditReport({
                         <div className="bp-what-you-get-card h-full overflow-hidden rounded-2xl p-6">
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/15 flex items-center justify-center">
-                                        <i className="bi bi-lightbulb text-xl text-[#A78BFA]"></i>
+                                    <div className="w-10 h-10 rounded-lg bg-[rgba(242,140,56,0.15)] flex items-center justify-center">
+                                        <i className="bi bi-lightbulb text-xl text-[var(--admin-primary-light)]"></i>
                                     </div>
                                     <h3 className="text-lg font-semibold text-[var(--admin-text)]">What you'll get</h3>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="bp-what-you-get-item flex items-start gap-3 group">
-                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[rgba(242,140,56,0.20)] flex items-center justify-center flex-shrink-0 group-hover:bg-[rgba(242,140,56,0.30)] transition-colors">
+                                            <i className="bi bi-check2 text-[var(--admin-primary-light)] text-xs"></i>
                                         </div>
                                         <div>
                                             <p className="bp-item-title text-sm">On-page checks</p>
@@ -339,8 +339,8 @@ export default function AuditReport({
                                         </div>
                                     </div>
                                     <div className="bp-what-you-get-item flex items-start gap-3 group">
-                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[rgba(242,140,56,0.20)] flex items-center justify-center flex-shrink-0 group-hover:bg-[rgba(242,140,56,0.30)] transition-colors">
+                                            <i className="bi bi-check2 text-[var(--admin-primary-light)] text-xs"></i>
                                         </div>
                                         <div>
                                             <p className="bp-item-title text-sm">Technical SEO</p>
@@ -348,8 +348,8 @@ export default function AuditReport({
                                         </div>
                                     </div>
                                     <div className="bp-what-you-get-item flex items-start gap-3 group">
-                                        <div className="mt-1 w-6 h-6 rounded-full bg-[#7C3AED]/20 flex items-center justify-center flex-shrink-0 group-hover:bg-[#7C3AED]/30 transition-colors">
-                                            <i className="bi bi-check2 text-[#A78BFA] text-xs"></i>
+                                        <div className="mt-1 w-6 h-6 rounded-full bg-[rgba(242,140,56,0.20)] flex items-center justify-center flex-shrink-0 group-hover:bg-[rgba(242,140,56,0.30)] transition-colors">
+                                            <i className="bi bi-check2 text-[var(--admin-primary-light)] text-xs"></i>
                                         </div>
                                         <div>
                                             <p className="bp-item-title text-sm">Performance summary</p>
@@ -382,7 +382,7 @@ export default function AuditReport({
                                                     <li key={a.id}>
                                                         <a
                                                             href={`/audit-report/${a.id}`}
-                                                            className="text-sm text-[#7C3AED] hover:underline truncate block"
+                                                            className="text-sm text-[var(--admin-primary)] hover:underline truncate block"
                                                             title={a.url}
                                                         >
                                                             {a.url}

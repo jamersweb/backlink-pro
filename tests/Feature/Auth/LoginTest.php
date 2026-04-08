@@ -20,7 +20,7 @@ class LoginTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => bcrypt('password'),
+            'password' => 'password',
         ]);
 
         $response = $this->post('/login', [
@@ -29,14 +29,15 @@ class LoginTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect('/dashboard');
+        $response->assertRedirect();
+        $this->assertStringContainsString('/dashboard', $response->headers->get('Location'));
     }
 
     public function test_user_cannot_login_with_invalid_credentials()
     {
-        $user = User::factory()->create([
+        User::factory()->create([
             'email' => 'test@example.com',
-            'password' => bcrypt('password'),
+            'password' => 'password',
         ]);
 
         $response = $this->post('/login', [
@@ -45,6 +46,10 @@ class LoginTest extends TestCase
         ]);
 
         $this->assertGuest();
+        $response->assertSessionHasErrors('email');
+        $response->assertSessionHas('errors', function ($errors) {
+            return str_contains($errors->first('email'), 'Invalid credentials');
+        });
     }
 
     public function test_user_can_logout()

@@ -99,9 +99,9 @@
 
 **Required Environment Variables:**
 ```env
-STRIPE_KEY=pk_test_...
-STRIPE_SECRET=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_KEY=pk_test_your_publishable_key
+STRIPE_SECRET=sk_test_your_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret
 ```
 
 **To Test:**

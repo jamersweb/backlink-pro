@@ -42,17 +42,6 @@ class DomainAuditController extends Controller
             abort(403);
         }
 
-        // Check quota limits
-        $user = Auth::user();
-        try {
-            $quotaService = app(\App\Services\Usage\QuotaService::class);
-            $quotaService->assertCan($user, 'audits.runs_per_month', 1);
-        } catch (\App\Exceptions\QuotaExceededException $e) {
-            return back()->withErrors([
-                'quota' => $e->getMessage()
-            ]);
-        }
-
         // Rate limiting: max 5 audits per hour per domain
         $recentAudits = DomainAudit::where('domain_id', $domain->id)
             ->where('created_at', '>=', now()->subHour())
@@ -70,6 +59,18 @@ class DomainAuditController extends Controller
             'include_sitemap' => 'boolean',
             'include_cwv' => 'boolean',
         ]);
+
+        // Check quota limits (runs and pages per month)
+        $user = Auth::user();
+        try {
+            $quotaService = app(\App\Services\Usage\QuotaService::class);
+            $quotaService->assertCan($user, 'audits.runs_per_month', 1);
+            $quotaService->assertCan($user, 'audits.pages_per_month', $validated['crawl_limit']);
+        } catch (\App\Exceptions\QuotaExceededException $e) {
+            return back()->withErrors([
+                'quota' => $e->getMessage()
+            ]);
+        }
 
         // Create audit
         $audit = DomainAudit::create([

@@ -25,7 +25,7 @@
                     </form>
                 </template>
                 <template v-else>
-                    <a href="/login" class="btn-ghost hidden sm:inline-block" @click.prevent="navigateTo('/login')">Log In</a>
+                    <a href="/login" class="btn-ghost hidden sm:inline-block" @click.prevent="navigateTo('/login')">Sign In</a>
                     <a href="/register" class="btn-primary" @click.prevent="navigateTo('/register')">Get Started</a>
                 </template>
                 <button
@@ -98,7 +98,7 @@
                             class="block px-4 py-2 text-muted hover:text-text hover:bg-surface transition-colors rounded"
                             @click.prevent="navigateTo('/login')"
                         >
-                            Log In
+                            Sign In
                         </a>
                         <a
                             href="/register"

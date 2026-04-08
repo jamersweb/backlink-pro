@@ -44,15 +44,13 @@ return new class extends Migration
         
         Schema::create('notification_endpoints', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->index();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('name');
             $table->text('url');
             $table->string('secret')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
-        
-        DB::statement('ALTER TABLE notification_endpoints ADD CONSTRAINT notification_endpoints_user_id_foreign FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE');
     }
 
     /**

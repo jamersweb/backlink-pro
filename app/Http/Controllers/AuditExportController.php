@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Audit;
+use App\Models\AuditCustomExtractionResult;
+use App\Models\AuditCustomSearchResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\SeoAudit\ReportModuleBuilder;
 
 class AuditExportController extends Controller
 {
@@ -24,7 +27,7 @@ class AuditExportController extends Controller
         // Load relations
         $page = $audit->pages()->first();
         $issues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->get();
 
@@ -175,7 +178,7 @@ class AuditExportController extends Controller
         }
 
         $issues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->get();
 
@@ -554,7 +557,7 @@ class AuditExportController extends Controller
         // Load relations
         $pages = $audit->pages()->get();
         $issues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->get();
         
@@ -614,5 +617,341 @@ class AuditExportController extends Controller
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=utf-8',
         ]);
+    }
+
+    /**
+     * Export normalized module report as JSON.
+     */
+    public function modulesJson(Audit $audit, Request $request)
+    {
+        $token = $request->query('token');
+        if (!$audit->canBeViewedBy(auth()->user(), $token)) {
+            abort(403, 'You do not have permission to export this audit.');
+        }
+
+        $modules = $audit->report_modules ?: app(ReportModuleBuilder::class)->build($audit);
+        $moduleKey = $request->query('module_key');
+        if ($moduleKey) {
+            $modules['modules'] = collect($modules['modules'] ?? [])
+                ->filter(fn ($module) => ($module['module_key'] ?? null) === $moduleKey)
+                ->values()
+                ->toArray();
+        }
+
+        $filename = 'audit-' . $audit->id . '-modules-' . date('Y-m-d') . '.json';
+        return response()->json($modules, 200, [
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Export normalized module report as CSV.
+     */
+    public function modulesCsv(Audit $audit, Request $request)
+    {
+        $token = $request->query('token');
+        if (!$audit->canBeViewedBy(auth()->user(), $token)) {
+            abort(403, 'You do not have permission to export this audit.');
+        }
+
+        $modules = $audit->report_modules ?: app(ReportModuleBuilder::class)->build($audit);
+        $moduleKey = $request->query('module_key');
+        $rows = collect($modules['modules'] ?? []);
+        if ($moduleKey) {
+            $rows = $rows->filter(fn ($module) => ($module['module_key'] ?? null) === $moduleKey);
+        }
+
+        $filename = 'audit-' . $audit->id . '-modules-' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        if ($moduleKey === 'js_rendering' && $rows->count() === 1) {
+            $module = $rows->first();
+            $issues = $module['issues'] ?? [];
+
+            $callback = function () use ($issues) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, [
+                    'URL',
+                    'Diff Type',
+                    'Severity',
+                    'Impact',
+                    'Issue Code',
+                    'Raw (JSON)',
+                    'Rendered (JSON)',
+                    'Recommendation',
+                ]);
+
+                foreach ($issues as $issue) {
+                    $details = $issue['details_json'] ?? [];
+                    fputcsv($file, [
+                        $issue['url'] ?? '',
+                        $details['diff_type'] ?? '',
+                        $issue['severity'] ?? ($details['severity'] ?? ''),
+                        $issue['impact'] ?? '',
+                        $issue['code'] ?? ($issue['issue_type'] ?? ''),
+                        json_encode($details['raw'] ?? [], JSON_UNESCAPED_UNICODE),
+                        json_encode($details['rendered'] ?? [], JSON_UNESCAPED_UNICODE),
+                        $issue['recommendation'] ?? '',
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+        }
+
+        if ($moduleKey === 'spelling_grammar' && $rows->count() === 1) {
+            $module = $rows->first();
+            $issues = $module['issues'] ?? [];
+
+            $callback = function () use ($issues) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, [
+                    'URL',
+                    'Issue Kind',
+                    'Issue Text',
+                    'Suggested Correction',
+                    'Confidence',
+                    'Context Snippet',
+                    'Severity',
+                    'Impact',
+                    'Recommendation',
+                ]);
+
+                foreach ($issues as $issue) {
+                    $details = $issue['details_json'] ?? [];
+                    fputcsv($file, [
+                        $issue['url'] ?? '',
+                        $details['issue_kind'] ?? '',
+                        $details['issue_text'] ?? '',
+                        $details['suggested_correction'] ?? '',
+                        $details['confidence'] ?? '',
+                        $details['context_snippet'] ?? '',
+                        $issue['severity'] ?? '',
+                        $issue['impact'] ?? '',
+                        $issue['recommendation'] ?? '',
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+        }
+
+        if ($moduleKey === 'forms_auth_summary' && $rows->count() === 1) {
+            $module = $rows->first();
+            $issues = $module['issues'] ?? [];
+
+            $callback = function () use ($issues) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, [
+                    'URL',
+                    'Issue Code',
+                    'Severity',
+                    'Message',
+                    'Impact',
+                    'Recommendation',
+                ]);
+                foreach ($issues as $issue) {
+                    fputcsv($file, [
+                        $issue['url'] ?? '',
+                        $issue['code'] ?? ($issue['issue_type'] ?? ''),
+                        $issue['severity'] ?? '',
+                        $issue['message'] ?? '',
+                        $issue['impact'] ?? '',
+                        $issue['recommendation'] ?? '',
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+        }
+
+        if ($moduleKey === 'custom_source_search' && $rows->count() === 1) {
+            $callback = function () use ($audit) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, [
+                    'URL',
+                    'Rule Key',
+                    'Rule Name',
+                    'Target Scope',
+                    'Match Type',
+                    'Expect Match',
+                    'Matched',
+                    'Match Count',
+                    'Sample Match',
+                    'Severity',
+                    'Error',
+                    'Segment',
+                ]);
+                foreach (
+                    AuditCustomSearchResult::query()
+                        ->where('audit_id', $audit->id)
+                        ->orderBy('rule_key')
+                        ->orderBy('url')
+                        ->cursor() as $r
+                ) {
+                    fputcsv($file, [
+                        $r->url,
+                        $r->rule_key,
+                        $r->rule_name,
+                        $r->target_scope,
+                        $r->match_type,
+                        $r->expect_match ? 'yes' : 'no',
+                        $r->matched ? 'yes' : 'no',
+                        $r->match_count,
+                        $r->sample_match,
+                        $r->severity,
+                        $r->error_message,
+                        $r->segment_key,
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+        }
+
+        if ($moduleKey === 'custom_extraction' && $rows->count() === 1) {
+            $callback = function () use ($audit) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, [
+                    'URL',
+                    'Rule Key',
+                    'Rule Name',
+                    'Target Scope',
+                    'Extraction Type',
+                    'Extractor',
+                    'Values JSON',
+                    'Missing',
+                    'Error',
+                    'Segment',
+                    'Fingerprint',
+                ]);
+                foreach (
+                    AuditCustomExtractionResult::query()
+                        ->where('audit_id', $audit->id)
+                        ->orderBy('rule_key')
+                        ->orderBy('url')
+                        ->cursor() as $r
+                ) {
+                    fputcsv($file, [
+                        $r->url,
+                        $r->rule_key,
+                        $r->rule_name,
+                        $r->target_scope,
+                        $r->extraction_type,
+                        $r->extractor,
+                        json_encode($r->values ?? [], JSON_UNESCAPED_UNICODE),
+                        $r->missing ? 'yes' : 'no',
+                        $r->error_message,
+                        $r->segment_key,
+                        $r->fingerprint,
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+        }
+
+        if ($moduleKey === 'link_metrics' && $rows->count() === 1) {
+            $module = $rows->first();
+            $issues = $module['issues'] ?? [];
+
+            $callback = function () use ($module, $issues) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, [
+                    'Row kind',
+                    'URL',
+                    'Issue type',
+                    'Source module',
+                    'Severity',
+                    'Ref domains',
+                    'Backlinks',
+                    'Authority',
+                    'Equity tier',
+                    'Score penalty',
+                    'Message',
+                ]);
+
+                foreach ($issues as $issue) {
+                    $eq = $issue['details_json']['link_equity'] ?? [];
+                    fputcsv($file, [
+                        'issue',
+                        $issue['url'] ?? '',
+                        $issue['issue_type'] ?? '',
+                        $issue['module_key'] ?? '',
+                        $issue['severity'] ?? '',
+                        $eq['referring_domains'] ?? '',
+                        $eq['backlinks'] ?? '',
+                        $eq['authority_score'] ?? '',
+                        $eq['tier'] ?? '',
+                        $issue['score_penalty'] ?? '',
+                        $issue['message'] ?? '',
+                    ]);
+                }
+
+                foreach ($module['tables'] ?? [] as $table) {
+                    $tableRows = $table['rows'] ?? [];
+                    if (! is_array($tableRows) || $tableRows === []) {
+                        continue;
+                    }
+                    fputcsv($file, []);
+                    fputcsv($file, ['table', $table['key'] ?? '', $table['title'] ?? '']);
+                    $first = $tableRows[0] ?? [];
+                    if (is_array($first)) {
+                        fputcsv($file, array_keys($first));
+                        foreach ($tableRows as $r) {
+                            if (is_array($r)) {
+                                fputcsv($file, array_values($r));
+                            }
+                        }
+                    }
+                }
+
+                fclose($file);
+            };
+
+            return Response::stream($callback, 200, $headers);
+        }
+
+        $callback = function () use ($rows) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'Module Key',
+                'Module Title',
+                'Overview Count',
+                'Affected URLs',
+                'Critical',
+                'Warning',
+                'Info',
+                'Top Recommendations',
+            ]);
+
+            foreach ($rows as $module) {
+                $severity = $module['severity_counts'] ?? [];
+                $card = $module['card'] ?? [];
+                fputcsv($file, [
+                    $module['module_key'] ?? '',
+                    $module['module_title'] ?? '',
+                    $card['overview_count'] ?? 0,
+                    $card['affected_urls'] ?? 0,
+                    $severity['critical'] ?? 0,
+                    $severity['warning'] ?? 0,
+                    $severity['info'] ?? 0,
+                    implode(' | ', array_slice($module['recommendations'] ?? [], 0, 3)),
+                ]);
+            }
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 }

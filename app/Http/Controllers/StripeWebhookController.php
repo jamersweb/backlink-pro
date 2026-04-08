@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
+use App\Models\User;
+use App\Models\UserSubscription;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
@@ -38,7 +41,27 @@ class StripeWebhookController extends Controller
         switch ($event->type) {
             case 'checkout.session.completed':
                 $session = $event->data->object;
-                $this->handleCheckoutSessionCompleted($session);
+
+                // User subscriptions (app-level billing)
+                if (isset($session->metadata->type) && $session->metadata->type === 'user_subscription') {
+                    $userId = $session->metadata->user_id ?? null;
+                    if ($userId && $session->subscription) {
+                        try {
+                            $subscription = \Stripe\Subscription::retrieve($session->subscription);
+                            $this->syncUserSubscriptionFromStripe($userId, $subscription);
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to sync user subscription from checkout.session.completed', [
+                                'user_id' => $userId,
+                                'session_id' => $session->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+                } else {
+                    // Organization billing (existing behavior)
+                    $this->handleCheckoutSessionCompleted($session);
+                }
+
                 // Also handle service request payments
                 if (isset($session->metadata->type) && $session->metadata->type === 'service_request') {
                     $this->handleServiceRequestPayment($session);
@@ -46,11 +69,43 @@ class StripeWebhookController extends Controller
                 break;
 
             case 'customer.subscription.updated':
-                $this->handleSubscriptionUpdated($event->data->object);
+                $subscription = $event->data->object;
+
+                // Sync user subscription if tied to a user
+                if (isset($subscription->metadata->user_id)) {
+                    try {
+                        $this->syncUserSubscriptionFromStripe($subscription->metadata->user_id, $subscription);
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to sync user subscription from customer.subscription.updated', [
+                            'user_id' => $subscription->metadata->user_id,
+                            'subscription_id' => $subscription->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                // Existing organization billing handling
+                $this->handleSubscriptionUpdated($subscription);
                 break;
 
             case 'customer.subscription.deleted':
-                $this->handleSubscriptionDeleted($event->data->object);
+                $subscription = $event->data->object;
+
+                // Mark user subscription canceled if tied to a user
+                if (isset($subscription->metadata->user_id)) {
+                    try {
+                        $this->syncUserSubscriptionFromStripe($subscription->metadata->user_id, $subscription);
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to sync user subscription from customer.subscription.deleted', [
+                            'user_id' => $subscription->metadata->user_id,
+                            'subscription_id' => $subscription->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                // Existing organization billing handling
+                $this->handleSubscriptionDeleted($subscription);
                 break;
 
             case 'invoice.payment_failed':
@@ -171,6 +226,61 @@ class StripeWebhookController extends Controller
         $organization->update([
             'plan_status' => 'past_due',
         ]);
+    }
+
+    /**
+     * Sync a user's subscription record and plan from a Stripe Subscription object
+     */
+    protected function syncUserSubscriptionFromStripe(int $userId, $subscription): void
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            Log::warning('User not found for subscription sync', [
+                'user_id' => $userId,
+                'subscription_id' => $subscription->id ?? null,
+            ]);
+            return;
+        }
+
+        // Determine plan from price ID
+        $priceId = $subscription->items->data[0]->price->id ?? null;
+        $plan = $priceId
+            ? Plan::where('stripe_price_id_monthly', $priceId)
+                ->orWhere('stripe_price_id_yearly', $priceId)
+                ->first()
+            : null;
+
+        // Map Stripe status to internal status
+        $status = in_array($subscription->status, ['trialing', 'active'])
+            ? UserSubscription::STATUS_ACTIVE
+            : UserSubscription::STATUS_CANCELED;
+
+        // Update user record for legacy UI
+        $user->plan_id = $plan?->id ?? $user->plan_id;
+        $user->stripe_customer_id = $subscription->customer;
+        $user->stripe_subscription_id = $subscription->id;
+        $user->subscription_status = $subscription->status;
+        $user->trial_ends_at = $subscription->trial_end
+            ? date('Y-m-d H:i:s', $subscription->trial_end)
+            : null;
+        $user->save();
+
+        // Upsert user_subscriptions row
+        $userSubscription = UserSubscription::firstOrNew(['user_id' => $userId]);
+        if (!$userSubscription->started_at) {
+            $userSubscription->started_at = now();
+        }
+        $userSubscription->plan_id = $plan?->id ?? $userSubscription->plan_id;
+        $userSubscription->status = $status;
+        $userSubscription->current_period_start = date('Y-m-d', $subscription->current_period_start);
+        $userSubscription->current_period_end = date('Y-m-d', $subscription->current_period_end);
+        $userSubscription->meta_json = [
+            'stripe_subscription_id' => $subscription->id,
+            'stripe_customer_id' => $subscription->customer,
+            'stripe_price_id' => $priceId,
+            'interval' => $subscription->items->data[0]->price->recurring->interval ?? null,
+        ];
+        $userSubscription->save();
     }
 
     /**

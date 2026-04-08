@@ -13,6 +13,7 @@ use App\Services\Usage\QuotaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class DomainSetupWizardController extends Controller
@@ -24,19 +25,29 @@ class DomainSetupWizardController extends Controller
     {
         Gate::authorize('domain.view', $domain);
 
-        // Get or create onboarding record
-        $onboarding = DomainOnboarding::firstOrCreate(
-            ['domain_id' => $domain->id],
-            [
+        if (!Schema::hasTable('domain_onboardings')) {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
+            $onboarding = new DomainOnboarding([
+                'domain_id' => $domain->id,
                 'user_id' => Auth::id(),
                 'status' => DomainOnboarding::STATUS_IN_PROGRESS,
                 'steps_json' => [],
-            ]
-        );
-
-        // Auto-sync steps from real data (source of truth)
-        $steps = $this->syncSteps($domain, $onboarding);
-        $onboarding->update(['steps_json' => $steps]);
+            ]);
+            $steps = $this->syncSteps($domain, $onboarding);
+        } else {
+            // Get or create onboarding record
+            $onboarding = DomainOnboarding::firstOrCreate(
+                ['domain_id' => $domain->id],
+                [
+                    'user_id' => Auth::id(),
+                    'status' => DomainOnboarding::STATUS_IN_PROGRESS,
+                    'steps_json' => [],
+                ]
+            );
+            // Auto-sync steps from real data (source of truth)
+            $steps = $this->syncSteps($domain, $onboarding);
+            $onboarding->update(['steps_json' => $steps]);
+        }
 
         // Check quotas
         $quotaService = app(QuotaService::class);
@@ -257,15 +268,17 @@ class DomainSetupWizardController extends Controller
         $auditController = new \App\Http\Controllers\DomainAuditController();
         $response = $auditController->store($request, $domain);
 
-        // Update onboarding
-        $onboarding = DomainOnboarding::firstOrCreate(
-            ['domain_id' => $domain->id],
-            ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
-        );
-
-        $latestAudit = DomainAudit::where('domain_id', $domain->id)->latest()->first();
-        if ($latestAudit) {
-            $onboarding->markStepDone(DomainOnboarding::STEP_AUDIT_STARTED, ['audit_id' => $latestAudit->id]);
+        if (Schema::hasTable('domain_onboardings')) {
+            $onboarding = DomainOnboarding::firstOrCreate(
+                ['domain_id' => $domain->id],
+                ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
+            );
+            $latestAudit = DomainAudit::where('domain_id', $domain->id)->latest()->first();
+            if ($latestAudit) {
+                $onboarding->markStepDone(DomainOnboarding::STEP_AUDIT_STARTED, ['audit_id' => $latestAudit->id]);
+            }
+        } else {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
         }
 
         return $response;
@@ -301,15 +314,17 @@ class DomainSetupWizardController extends Controller
         $integrationController = new \App\Http\Controllers\DomainGoogleIntegrationController();
         $response = $integrationController->saveSelection($request, $domain);
 
-        // Update onboarding
-        $onboarding = DomainOnboarding::firstOrCreate(
-            ['domain_id' => $domain->id],
-            ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
-        );
-
-        $googleIntegration = $domain->fresh()->googleIntegration;
-        if ($googleIntegration && ($googleIntegration->gsc_property || $googleIntegration->ga4_property_id)) {
-            $onboarding->markStepDone(DomainOnboarding::STEP_GOOGLE_SELECTED);
+        if (Schema::hasTable('domain_onboardings')) {
+            $onboarding = DomainOnboarding::firstOrCreate(
+                ['domain_id' => $domain->id],
+                ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
+            );
+            $googleIntegration = $domain->fresh()->googleIntegration;
+            if ($googleIntegration && ($googleIntegration->gsc_property || $googleIntegration->ga4_property_id)) {
+                $onboarding->markStepDone(DomainOnboarding::STEP_GOOGLE_SELECTED);
+            }
+        } else {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
         }
 
         $activityLogger = app(ActivityLogger::class);
@@ -336,15 +351,17 @@ class DomainSetupWizardController extends Controller
         $backlinksController = new \App\Http\Controllers\DomainBacklinksController();
         $response = $backlinksController->store($request, $domain);
 
-        // Update onboarding
-        $onboarding = DomainOnboarding::firstOrCreate(
-            ['domain_id' => $domain->id],
-            ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
-        );
-
-        $latestRun = DomainBacklinkRun::where('domain_id', $domain->id)->latest()->first();
-        if ($latestRun) {
-            $onboarding->markStepDone(DomainOnboarding::STEP_BACKLINKS_STARTED, ['run_id' => $latestRun->id]);
+        if (Schema::hasTable('domain_onboardings')) {
+            $onboarding = DomainOnboarding::firstOrCreate(
+                ['domain_id' => $domain->id],
+                ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
+            );
+            $latestRun = DomainBacklinkRun::where('domain_id', $domain->id)->latest()->first();
+            if ($latestRun) {
+                $onboarding->markStepDone(DomainOnboarding::STEP_BACKLINKS_STARTED, ['run_id' => $latestRun->id]);
+            }
+        } else {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
         }
 
         return $response;
@@ -366,15 +383,17 @@ class DomainSetupWizardController extends Controller
         $metaController = new \App\Http\Controllers\DomainMetaConnectorController();
         $response = $metaController->connectOrUpdate($request, $domain);
 
-        // Update onboarding
-        $onboarding = DomainOnboarding::firstOrCreate(
-            ['domain_id' => $domain->id],
-            ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
-        );
-
-        $metaConnector = $domain->fresh()->metaConnector;
-        if ($metaConnector && $metaConnector->status === 'connected') {
-            $onboarding->markStepDone(DomainOnboarding::STEP_META_CONNECTOR, ['type' => $metaConnector->type]);
+        if (Schema::hasTable('domain_onboardings')) {
+            $onboarding = DomainOnboarding::firstOrCreate(
+                ['domain_id' => $domain->id],
+                ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
+            );
+            $metaConnector = $domain->fresh()->metaConnector;
+            if ($metaConnector && $metaConnector->status === 'connected') {
+                $onboarding->markStepDone(DomainOnboarding::STEP_META_CONNECTOR, ['type' => $metaConnector->type]);
+            }
+        } else {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
         }
 
         $activityLogger = app(ActivityLogger::class);
@@ -431,15 +450,17 @@ class DomainSetupWizardController extends Controller
         $reportsController = new \App\Http\Controllers\DomainReportsController();
         $response = $reportsController->store($request->merge($reportData), $domain);
 
-        // Update onboarding
-        $onboarding = DomainOnboarding::firstOrCreate(
-            ['domain_id' => $domain->id],
-            ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
-        );
-
-        $latestReport = PublicReport::where('domain_id', $domain->id)->latest()->first();
-        if ($latestReport) {
-            $onboarding->markStepDone(DomainOnboarding::STEP_REPORT_CREATED, ['report_id' => $latestReport->id]);
+        if (Schema::hasTable('domain_onboardings')) {
+            $onboarding = DomainOnboarding::firstOrCreate(
+                ['domain_id' => $domain->id],
+                ['user_id' => Auth::id(), 'status' => DomainOnboarding::STATUS_IN_PROGRESS, 'steps_json' => []]
+            );
+            $latestReport = PublicReport::where('domain_id', $domain->id)->latest()->first();
+            if ($latestReport) {
+                $onboarding->markStepDone(DomainOnboarding::STEP_REPORT_CREATED, ['report_id' => $latestReport->id]);
+            }
+        } else {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
         }
 
         $activityLogger = app(ActivityLogger::class);
@@ -456,6 +477,12 @@ class DomainSetupWizardController extends Controller
     public function complete(Domain $domain)
     {
         Gate::authorize('domain.view', $domain);
+
+        if (!Schema::hasTable('domain_onboardings')) {
+            \Log::warning('domain_onboardings table missing - skipping onboarding write');
+            return redirect()->route('domains.show', $domain->id)
+                ->with('success', 'Domain setup completed!');
+        }
 
         $onboarding = DomainOnboarding::where('domain_id', $domain->id)->firstOrFail();
         $onboarding->update([

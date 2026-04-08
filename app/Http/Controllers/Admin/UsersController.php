@@ -8,7 +8,6 @@ use App\Models\Campaign;
 use App\Models\Backlink;
 use App\Models\Plan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
@@ -125,7 +124,7 @@ class UsersController extends Controller
         ]);
 
         $user->update([
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
         ]);
 
         return back()->with('success', 'Password reset successfully.');

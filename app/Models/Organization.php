@@ -24,6 +24,9 @@ class Organization extends Model
         'billing_email',
         'billing_name',
         'billing_address',
+        'spelling_allowlist',
+        'custom_source_search_rules',
+        'custom_extraction_rules',
         'pagespeed_api_key_encrypted',
         'pagespeed_byok_enabled',
         'pagespeed_last_key_verified_at',
@@ -35,6 +38,9 @@ class Organization extends Model
 
     protected $casts = [
         'billing_address' => 'array',
+        'spelling_allowlist' => 'array',
+        'custom_source_search_rules' => 'array',
+        'custom_extraction_rules' => 'array',
         'trial_ends_at' => 'datetime',
         'usage_period_started_at' => 'datetime',
         'usage_period_ends_at' => 'datetime',

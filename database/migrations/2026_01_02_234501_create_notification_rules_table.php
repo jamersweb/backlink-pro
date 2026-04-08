@@ -44,8 +44,8 @@ return new class extends Migration
         
         Schema::create('notification_rules', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->index();
-            $table->unsignedBigInteger('domain_id')->nullable()->index();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('domain_id')->nullable()->constrained('domains')->cascadeOnDelete();
             $table->string('type')->index();
             $table->boolean('is_enabled')->default(true);
             $table->enum('severity', ['info', 'warning', 'critical'])->default('warning');
@@ -56,9 +56,6 @@ return new class extends Migration
 
             $table->unique(['user_id', 'domain_id', 'type']);
         });
-        
-        DB::statement('ALTER TABLE notification_rules ADD CONSTRAINT notification_rules_user_id_foreign FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE');
-        DB::statement('ALTER TABLE notification_rules ADD CONSTRAINT notification_rules_domain_id_foreign FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE');
     }
 
     /**

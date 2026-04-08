@@ -26,7 +26,7 @@ class GmailService
     {
         $clientId = config('services.google.client_id');
         $clientSecret = config('services.google.client_secret');
-        $redirectUri = config('services.google.redirect_uri');
+        $redirectUri = config('services.google.redirect') ?: config('services.google.redirect_uri');
 
         if (empty($clientId) || empty($clientSecret)) {
             throw new \Exception('Google OAuth credentials are not configured. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your .env file.');
@@ -333,4 +333,5 @@ class GmailService
         }
     }
 }
+
 

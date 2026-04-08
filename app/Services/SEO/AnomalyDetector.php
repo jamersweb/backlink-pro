@@ -5,6 +5,7 @@ namespace App\Services\SEO;
 use App\Models\Organization;
 use App\Models\SeoAlertRule;
 use App\Models\SeoAlert;
+use App\Models\GscPageMetric;
 use Illuminate\Support\Facades\Log;
 
 class AnomalyDetector
@@ -21,8 +22,14 @@ class AnomalyDetector
 
         foreach ($rules as $rule) {
             $detected = $this->checkRule($rule, $organization, $date);
-            if ($detected) {
-                $alerts[] = $detected;
+            if ($detected !== null) {
+                if (isset($detected[0]) && is_array($detected[0]) && array_key_exists('rule_id', $detected[0])) {
+                    foreach ($detected as $a) {
+                        $alerts[] = $a;
+                    }
+                } else {
+                    $alerts[] = $detected;
+                }
             }
         }
 
@@ -50,9 +57,114 @@ class AnomalyDetector
             
             case 'conversion_drop':
                 return $this->checkConversionDrop($rule, $organization, $date, $lookbackDays, $threshold);
+
+            case 'page_content_decay':
+                return $this->checkPageContentDecay($rule, $organization, $date);
         }
 
         return null;
+    }
+
+    /**
+     * Check page-level content decay (GSC clicks/impressions/position drop per page_url).
+     * Compare recent lookback_days vs previous lookback_days; alert when drop > threshold
+     * and (impressions drop OR position worsens), with min_baseline_clicks.
+     */
+    protected function checkPageContentDecay(SeoAlertRule $rule, Organization $organization, string $date): ?array
+    {
+        if (!\App\Support\Feature::enabled('content_decay')) {
+            return null;
+        }
+
+        $config = $rule->config;
+        $lookbackDays = (int) ($config['lookback_days'] ?? 7);
+        $thresholdDropPct = (float) ($config['threshold_drop_pct'] ?? $config['threshold'] ?? 30);
+        $minBaselineClicks = (int) ($config['min_baseline_clicks'] ?? 5);
+
+        $dt = \Carbon\Carbon::parse($date);
+        $recentStart = $dt->copy()->subDays($lookbackDays - 1)->toDateString();
+        $recentEnd = $dt->toDateString();
+        $baselineEnd = $dt->copy()->subDays($lookbackDays)->toDateString();
+        $baselineStart = $dt->copy()->subDays(2 * $lookbackDays - 1)->toDateString();
+
+        $recentRows = GscPageMetric::where('organization_id', $organization->id)
+            ->whereBetween('date', [$recentStart, $recentEnd])
+            ->get();
+
+        $baselineRows = GscPageMetric::where('organization_id', $organization->id)
+            ->whereBetween('date', [$baselineStart, $baselineEnd])
+            ->get();
+
+        $recentByPage = $recentRows->groupBy('page_url')->map(function ($rows) {
+            return [
+                'clicks' => $rows->sum('clicks'),
+                'impressions' => $rows->sum('impressions'),
+                'position' => $rows->avg('position'),
+            ];
+        });
+
+        $baselineByPage = $baselineRows->groupBy('page_url')->map(function ($rows) {
+            return [
+                'clicks' => $rows->sum('clicks'),
+                'impressions' => $rows->sum('impressions'),
+                'position' => $rows->avg('position'),
+            ];
+        });
+
+        $alerts = [];
+        $pageUrls = $recentByPage->keys()->merge($baselineByPage->keys())->unique();
+
+        foreach ($pageUrls as $pageUrl) {
+            $recent = $recentByPage->get($pageUrl, ['clicks' => 0, 'impressions' => 0, 'position' => null]);
+            $baseline = $baselineByPage->get($pageUrl, ['clicks' => 0, 'impressions' => 0, 'position' => null]);
+
+            $baselineClicks = (int) $baseline['clicks'];
+            $recentClicks = (int) $recent['clicks'];
+
+            if ($baselineClicks < $minBaselineClicks || $baselineClicks <= 0) {
+                continue;
+            }
+
+            $dropPct = (($baselineClicks - $recentClicks) / $baselineClicks) * 100;
+            if ($dropPct < $thresholdDropPct) {
+                continue;
+            }
+
+            $impressionsDropped = (int) $recent['impressions'] < (int) $baseline['impressions'];
+            $recentPos = $recent['position'] !== null ? (float) $recent['position'] : null;
+            $baselinePos = $baseline['position'] !== null ? (float) $baseline['position'] : null;
+            $positionWorsened = $recentPos !== null && $baselinePos !== null && $recentPos > $baselinePos;
+
+            if (!$impressionsDropped && !$positionWorsened) {
+                continue;
+            }
+
+            $severity = $dropPct >= 50 ? SeoAlert::SEVERITY_CRITICAL : SeoAlert::SEVERITY_WARNING;
+            $alerts[] = [
+                'rule_id' => $rule->id,
+                'severity' => $severity,
+                'title' => 'Page content decay',
+                'message' => sprintf(
+                    'Page dropped %.1f%% clicks (baseline %d → recent %d). Consider updating content or meta.',
+                    $dropPct,
+                    $baselineClicks,
+                    $recentClicks
+                ),
+                'diff' => [
+                    'page_url' => $pageUrl,
+                    'recent_clicks' => $recentClicks,
+                    'baseline_clicks' => $baselineClicks,
+                    'drop_percent' => round($dropPct, 1),
+                    'recent_impressions' => (int) $recent['impressions'],
+                    'baseline_impressions' => (int) $baseline['impressions'],
+                    'recent_position' => $recentPos,
+                    'baseline_position' => $baselinePos,
+                ],
+                'related_date' => $date,
+            ];
+        }
+
+        return $alerts === [] ? null : $alerts;
     }
 
     /**

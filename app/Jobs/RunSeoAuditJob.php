@@ -8,6 +8,18 @@ use App\Models\ConnectedAccount;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\PageParser;
 use App\Services\SeoAudit\AuditKpiBuilder;
+use App\Services\SeoAudit\AuditKpiSanitizer;
+use App\Services\SeoAudit\ReportModuleBuilder;
+use App\Services\SeoAudit\JsRenderingService;
+use App\Services\SeoAudit\SegmentationService;
+use App\Services\SeoAudit\SpellingGrammarService;
+use App\Services\SeoAudit\VisibleTextExtractor;
+use App\Services\SeoAudit\CustomSourceSearchService;
+use App\Services\SeoAudit\AuthCrawlMetadataBuilder;
+use App\Services\SeoAudit\CustomExtractionService;
+use App\Services\SeoAudit\FormsAuthIssueService;
+use App\Services\SeoAudit\FormsAuthService;
+use App\Services\SeoAudit\SeoAuditHttp;
 use App\Services\Google\PageSpeedService;
 use App\Services\Google\SearchConsoleService;
 use App\Services\Google\Ga4Service;
@@ -17,7 +29,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class RunSeoAuditJob implements ShouldQueue
@@ -71,7 +82,7 @@ class RunSeoAuditJob implements ShouldQueue
             // Persist all KPIs
             $audit->refresh();
             $mergedKpis = array_merge($audit->audit_kpis ?? [], $kpis);
-            $audit->audit_kpis = $mergedKpis;
+            $audit->audit_kpis = $this->sanitizeKpis($mergedKpis);
             $audit->status = Audit::STATUS_COMPLETED;
             $audit->progress_percent = 100;
             $audit->progress_stage = 'completed';
@@ -98,12 +109,18 @@ class RunSeoAuditJob implements ShouldQueue
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = $e->getMessage();
-            $audit->progress_stage = 'failed';
-            $audit->finished_at = now();
-            $audit->save();
+
+            if (! empty($audit->crawl_module_flags['forms_auth_enabled'])) {
+                FormsAuthService::scrubSecrets($audit);
+                $audit->save();
+            }
+
+            Audit::whereKey($audit->id)->update([
+                'status' => Audit::STATUS_FAILED,
+                'error' => $e->getMessage(),
+                'progress_stage' => 'failed',
+                'finished_at' => now(),
+            ]);
             
             throw $e;
         }
@@ -119,11 +136,16 @@ class RunSeoAuditJob implements ShouldQueue
 
         $audit = Audit::find($this->auditId);
         if ($audit && $audit->status !== Audit::STATUS_COMPLETED) {
-            $audit->status = Audit::STATUS_FAILED;
-            $audit->error = 'Job failed: ' . $e->getMessage();
-            $audit->progress_stage = 'failed';
-            $audit->finished_at = now();
-            $audit->save();
+            if (! empty($audit->crawl_module_flags['forms_auth_enabled'])) {
+                FormsAuthService::scrubSecrets($audit);
+                $audit->save();
+            }
+            Audit::whereKey($audit->id)->update([
+                'status' => Audit::STATUS_FAILED,
+                'error' => 'Job failed: ' . $e->getMessage(),
+                'progress_stage' => 'failed',
+                'finished_at' => now(),
+            ]);
         }
     }
 
@@ -137,18 +159,15 @@ class RunSeoAuditJob implements ShouldQueue
 
     protected function handleSinglePage(Audit $audit): void
     {
-        $response = Http::timeout(25)
-            ->retry(2, 1000)
-            ->withUserAgent('BacklinkProBot/1.0')
-            ->withOptions([
-                'allow_redirects' => [
-                    'max' => 5,
-                    'strict' => true,
-                    'referer' => true,
-                    'protocols' => ['http', 'https'],
-                ],
-            ])
+        if (FormsAuthService::isEnabled($audit)) {
+            app(FormsAuthService::class)->establishWithRetries($audit);
+            $audit->refresh();
+        }
+
+        $response = SeoAuditHttp::browserLikeGet($audit, $audit->normalized_url)
             ->get($audit->normalized_url);
+
+        $this->assertFetchableResponse($response, $audit->normalized_url);
 
         $statusCode = $response->status();
         $finalUrl = $response->effectiveUri() ?? $audit->normalized_url;
@@ -163,19 +182,59 @@ class RunSeoAuditJob implements ShouldQueue
         ];
         $parsed = PageParser::parse($html, $finalUrl, $audit->normalized_url, $headers);
 
+        $flags = $audit->crawl_module_flags ?? [];
+        $headerStore = null;
+        if (!empty($flags['custom_source_search_enabled']) || !empty($flags['custom_extraction_enabled'])) {
+            $headerStore = [];
+            foreach ($response->headers() as $hKey => $hVals) {
+                $headerStore[strtolower((string) $hKey)] = is_array($hVals) ? implode(', ', $hVals) : (string) $hVals;
+            }
+        }
+
+        $visibleMain = null;
+        if (!empty($flags['spelling_grammar_enabled'])) {
+            $visibleMain = VisibleTextExtractor::extractFromHtml($html);
+            $maxStore = (int) config('seo_audit.spelling.max_chars_stored', 96000);
+            if (mb_strlen($visibleMain) > $maxStore) {
+                $visibleMain = mb_substr($visibleMain, 0, $maxStore);
+            }
+        }
+
+        $visForCustom = '';
+        if (!empty($flags['custom_source_search_enabled']) || !empty($flags['custom_extraction_enabled'])) {
+            $visForCustom = $visibleMain ?? VisibleTextExtractor::extractFromHtml($html);
+        }
+
+        $authMeta = null;
+        if (FormsAuthService::isEnabled($audit)) {
+            $audit->refresh();
+            $authMeta = AuthCrawlMetadataBuilder::build(
+                $audit,
+                $statusCode,
+                (string) $finalUrl,
+                $parsed['title'] ?? null,
+                isset($parsed['word_count']) ? (int) $parsed['word_count'] : null
+            );
+        }
+
         $page = AuditPage::create([
             'audit_id' => $audit->id,
             'url' => $finalUrl,
             'status_code' => $statusCode,
+            'auth_crawl_metadata' => $authMeta,
             'title' => $parsed['title'],
             'title_len' => $parsed['title_len'],
             'meta_description' => $parsed['meta_description'],
             'meta_len' => $parsed['meta_len'],
             'canonical_url' => $parsed['canonical_url'],
             'robots_meta' => $parsed['robots_meta'],
+            'x_robots_tag' => $parsed['x_robots_tag'] ?? null,
             'h1_count' => $parsed['h1_count'],
             'h2_count' => $parsed['h2_count'],
             'h3_count' => $parsed['h3_count'],
+            'content_excerpt' => $parsed['content_excerpt'] ?? null,
+            'visible_main_text' => $visibleMain,
+            'visible_text_length' => $parsed['visible_text_length'] ?? null,
             'word_count' => $parsed['word_count'],
             'images_total' => $parsed['images_total'],
             'images_missing_alt' => $parsed['images_missing_alt'],
@@ -185,20 +244,65 @@ class RunSeoAuditJob implements ShouldQueue
             'twitter_cards_present' => $parsed['twitter_cards_present'],
             'schema_types' => $parsed['schema_types'],
             'html_size_bytes' => $htmlSizeBytes,
+            'response_headers_json' => $headerStore,
         ]);
+
+        if (!empty($flags['custom_source_search_enabled'])) {
+            app(CustomSourceSearchService::class)->runCrawlScopes($audit, $page, $html, $headerStore ?? [], $visForCustom);
+        }
+        if (!empty($flags['custom_extraction_enabled'])) {
+            app(CustomExtractionService::class)->runCrawlScopes($audit, $page, $html, $headerStore ?? [], $visForCustom);
+        }
+
+        if (app(JsRenderingService::class)->shouldRun($audit)) {
+            app(JsRenderingService::class)->runForPages($audit, collect([$page]));
+            $page->refresh();
+        }
+        if (!empty(($audit->crawl_module_flags ?? [])['segmentation_enabled'])) {
+            app(SegmentationService::class)->run($audit);
+            $page->refresh();
+        }
+
+        if (!empty($flags['custom_source_search_enabled'])) {
+            app(CustomSourceSearchService::class)->syncSegments($audit);
+            app(CustomSourceSearchService::class)->runRenderedScope($audit);
+        }
+        if (!empty($flags['custom_extraction_enabled'])) {
+            app(CustomExtractionService::class)->syncSegments($audit);
+            app(CustomExtractionService::class)->runRenderedScope($audit);
+        }
 
         $rulesEngine = new RulesEngine();
         $evaluation = $rulesEngine->evaluate($audit, $page);
 
-        $categoryScores = $rulesEngine->calculateCategoryScores($evaluation['categoryPenalties']);
+        $categoryPenalties = $evaluation['categoryPenalties'];
+        $categoryPenalties['technical'] += (int) $audit->issues()
+            ->where('module_key', 'js_rendering')
+            ->sum('score_penalty');
+        if (!empty($flags['custom_source_search_enabled'])) {
+            $categoryPenalties['technical'] += app(CustomSourceSearchService::class)->createIssues($audit);
+        }
+        if (!empty($flags['spelling_grammar_enabled'])) {
+            $categoryPenalties['onpage'] += app(SpellingGrammarService::class)->run($audit);
+        }
+        if (! empty($flags['forms_auth_enabled'])) {
+            $f = app(FormsAuthIssueService::class);
+            $f->refreshStateFromPages($audit);
+            $audit->refresh();
+            $categoryPenalties['technical'] += $f->sync($audit);
+        }
+
+        $categoryScores = $rulesEngine->calculateCategoryScores($categoryPenalties);
         $overallScore = $rulesEngine->calculateOverallScore($categoryScores);
         $overallGrade = $rulesEngine->scoreToGrade($overallScore);
 
+        $audit->refresh();
+        $allIssues = $audit->issues()->get();
         $summary = [
-            'total_issues' => count($evaluation['issues']),
-            'high_impact_issues' => collect($evaluation['issues'])->where('impact', 'high')->count(),
-            'medium_impact_issues' => collect($evaluation['issues'])->where('impact', 'medium')->count(),
-            'low_impact_issues' => collect($evaluation['issues'])->where('impact', 'low')->count(),
+            'total_issues' => $allIssues->count(),
+            'high_impact_issues' => $allIssues->where('impact', 'high')->count(),
+            'medium_impact_issues' => $allIssues->where('impact', 'medium')->count(),
+            'low_impact_issues' => $allIssues->where('impact', 'low')->count(),
         ];
 
         $audit->overall_score = $overallScore;
@@ -207,10 +311,39 @@ class RunSeoAuditJob implements ShouldQueue
         $audit->summary = $summary;
 
         $kpiBuilder = new AuditKpiBuilder();
-        $audit->audit_kpis = $kpiBuilder->build($audit);
+        $audit->audit_kpis = $this->sanitizeKpis($kpiBuilder->build($audit));
         $audit->category_grades = $audit->audit_kpis['overview']['category_grades'] ?? null;
         $audit->recommendations_count = $audit->audit_kpis['overview']['recommendations_count'] ?? $summary['total_issues'];
+        $audit->report_modules = app(ReportModuleBuilder::class)->build($audit);
+        if (FormsAuthService::isEnabled($audit)) {
+            FormsAuthService::scrubSecrets($audit);
+        }
         $audit->save();
+    }
+
+    protected function assertFetchableResponse($response, string $url): void
+    {
+        $status = $response->status();
+        $body = strtolower(substr((string) $response->body(), 0, 4000));
+
+        if ($status >= 200 && $status < 400 && !str_contains($body, 'just a moment')) {
+            return;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST) ?: $url;
+
+        if (
+            $status === 403 &&
+            (
+                str_contains($body, 'just a moment') ||
+                str_contains($body, 'cloudflare') ||
+                str_contains($body, 'attention required')
+            )
+        ) {
+            throw new \RuntimeException("This website is protected by bot/security checks and blocked the audit request. Please try auditing your own site or a URL without Cloudflare-style protection. ({$host})");
+        }
+
+        throw new \RuntimeException("The website blocked the audit request with HTTP {$status}. Please try another URL or a page that allows automated analysis. ({$host})");
     }
 
     protected function runPageSpeed(Audit $audit, array &$kpis): void
@@ -375,5 +508,10 @@ class RunSeoAuditJob implements ShouldQueue
             Log::warning('GSC integration failed, continuing', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
             $kpis['gsc'] = ['connected' => true, 'error' => $e->getMessage(), 'data' => null];
         }
+    }
+
+    protected function sanitizeKpis(array $kpis): array
+    {
+        return app(AuditKpiSanitizer::class)->sanitize($kpis);
     }
 }

@@ -29,7 +29,7 @@ class EnsureEmailIsVerified
         // Check if email is verified
         if (!Auth::user()->hasVerifiedEmail()) {
             // Allow access to verification routes
-            if ($request->routeIs('verification.*') || $request->routeIs('logout')) {
+            if ($request->routeIs('verification.*') || $request->routeIs('logout') || $request->routeIs('audit-report.*')) {
                 return $next($request);
             }
 

@@ -1,297 +1,194 @@
-import { useState, useEffect } from 'react';
 import AdminLayout from '@/Components/Layout/AdminLayout';
-import Card from '@/Components/Shared/Card';
-import Button from '@/Components/Shared/Button';
-import Input from '@/Components/Shared/Input';
-import { Link, router, usePage } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 
 export default function AdminPlansEdit({ plan }) {
-    const { flash, errors } = usePage().props;
-    const [formData, setFormData] = useState({
+    const { data, setData, put, processing, errors } = useForm({
         name: plan.name || '',
-        slug: plan.slug || '',
-        description: plan.description || '',
-        price: plan.price || '',
-        billing_interval: plan.billing_interval || 'monthly',
-        max_domains: plan.max_domains ?? 1,
-        max_campaigns: plan.max_campaigns ?? 1,
-        daily_backlink_limit: plan.daily_backlink_limit ?? 10,
-        backlink_types: plan.backlink_types || [],
-        features: plan.features && plan.features.length > 0 ? plan.features : [''],
-        is_active: plan.is_active ?? true,
+        code: plan.code || '',
+        tagline: plan.tagline || '',
+        price_monthly: plan.price_monthly ?? '',
+        price_annual: plan.price_annual ?? '',
+        stripe_price_id_monthly: plan.stripe_price_id_monthly || '',
+        stripe_price_id_yearly: plan.stripe_price_id_yearly || '',
+        is_active: !!plan.is_active,
+        is_public: !!plan.is_public,
+        is_highlighted: !!plan.is_highlighted,
+        badge: plan.badge || '',
         sort_order: plan.sort_order ?? 0,
+        display_limits: Array.isArray(plan.display_limits) ? plan.display_limits : [],
+        includes: Array.isArray(plan.includes) ? plan.includes : [],
+        limits_json: plan.limits_json || {},
+        features_json: plan.features_json || {},
+        cta_primary_label: plan.cta_primary_label || 'Subscribe Now',
+        cta_primary_href: plan.cta_primary_href || '/plans',
+        cta_secondary_label: plan.cta_secondary_label || '',
+        cta_secondary_href: plan.cta_secondary_href || '',
     });
 
-    const [featureInput, setFeatureInput] = useState('');
-
-    const handleSubmit = (e) => {
+    const submit = (e) => {
         e.preventDefault();
-        
-        // Filter out empty features
-        const features = formData.features.filter(f => f.trim() !== '');
-        
-        router.put(`/admin/plans/${plan.id}`, {
-            ...formData,
-            features: features.length > 0 ? features : null,
-            backlink_types: formData.backlink_types.length > 0 ? formData.backlink_types : null,
-        });
+        put(`/admin/plans/${plan.id}`);
     };
 
-    const handleAddFeature = () => {
-        if (featureInput.trim()) {
-            setFormData({
-                ...formData,
-                features: [...formData.features, featureInput.trim()],
-            });
-            setFeatureInput('');
-        }
+    const setDisplayLimit = (index, key, value) => {
+        const next = [...data.display_limits];
+        next[index] = { ...next[index], [key]: value };
+        setData('display_limits', next);
     };
 
-    const handleRemoveFeature = (index) => {
-        setFormData({
-            ...formData,
-            features: formData.features.filter((_, i) => i !== index),
-        });
+    const setInclude = (index, value) => {
+        const next = [...data.includes];
+        next[index] = value;
+        setData('includes', next);
     };
 
-    const toggleBacklinkType = (type) => {
-        setFormData({
-            ...formData,
-            backlink_types: formData.backlink_types.includes(type)
-                ? formData.backlink_types.filter(t => t !== type)
-                : [...formData.backlink_types, type],
+    const setLimitValue = (key, value) => {
+        setData('limits_json', {
+            ...data.limits_json,
+            [key]: Number(value) || 0,
         });
     };
 
     return (
-        <AdminLayout header={`Edit Plan: ${plan.name}`}>
-            <div className="space-y-6">
-                {/* Success/Error Messages */}
-                {flash?.success && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800">{flash.success}</p>
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-800">{flash.error}</p>
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Basic Information */}
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Basic Information</h3>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name *</label>
-                                    <Input
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        required
-                                        className={errors?.name ? 'border-red-500' : ''}
-                                    />
-                                    {errors?.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
-                                    <Input
-                                        type="text"
-                                        value={formData.slug}
-                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                                        required
-                                        className={errors?.slug ? 'border-red-500' : ''}
-                                    />
-                                    {errors?.slug && <p className="mt-1 text-sm text-red-600">{errors.slug}</p>}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows="3"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                />
-                            </div>
+        <AdminLayout header={`Edit ${plan.name}`}>
+            <form onSubmit={submit} className="mx-auto max-w-5xl space-y-6">
+                <section className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-[var(--admin-text)]">Stripe checkout plan</h1>
+                            <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Update pricing, Stripe IDs, and customer-facing plan details.</p>
                         </div>
-                    </Card>
-
-                    {/* Pricing */}
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Pricing</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                    required
-                                    className={errors?.price ? 'border-red-500' : ''}
-                                />
-                                {errors?.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Billing Interval *</label>
-                                <select
-                                    value={formData.billing_interval}
-                                    onChange={(e) => setFormData({ ...formData, billing_interval: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                    required
-                                >
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
-                                <Input
-                                    type="number"
-                                    value={formData.sort_order}
-                                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-                                />
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Limits */}
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Limits</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Max Domains *</label>
-                                <Input
-                                    type="number"
-                                    min="-1"
-                                    value={formData.max_domains}
-                                    onChange={(e) => setFormData({ ...formData, max_domains: parseInt(e.target.value) || -1 })}
-                                    required
-                                />
-                                <p className="mt-1 text-xs text-gray-500">Use -1 for unlimited</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Max Campaigns *</label>
-                                <Input
-                                    type="number"
-                                    min="-1"
-                                    value={formData.max_campaigns}
-                                    onChange={(e) => setFormData({ ...formData, max_campaigns: parseInt(e.target.value) || -1 })}
-                                    required
-                                />
-                                <p className="mt-1 text-xs text-gray-500">Use -1 for unlimited</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Daily Backlink Limit *</label>
-                                <Input
-                                    type="number"
-                                    min="-1"
-                                    value={formData.daily_backlink_limit}
-                                    onChange={(e) => setFormData({ ...formData, daily_backlink_limit: parseInt(e.target.value) || -1 })}
-                                    required
-                                />
-                                <p className="mt-1 text-xs text-gray-500">Use -1 for unlimited</p>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Backlink Types */}
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Allowed Backlink Types</h3>
-                        <div className="flex flex-wrap gap-3">
-                            {['comment', 'profile', 'forum', 'guestposting'].map((type) => (
-                                <label key={type} className="flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.backlink_types.includes(type)}
-                                        onChange={() => toggleBacklinkType(type)}
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700 capitalize">{type}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </Card>
-
-                    {/* Features */}
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Features</h3>
-                        <div className="space-y-3">
-                            {formData.features.map((feature, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <Input
-                                        type="text"
-                                        value={feature}
-                                        onChange={(e) => {
-                                            const newFeatures = [...formData.features];
-                                            newFeatures[index] = e.target.value;
-                                            setFormData({ ...formData, features: newFeatures });
-                                        }}
-                                        placeholder="Enter feature"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveFeature(index)}
-                                        className="text-red-600 hover:text-red-900"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            ))}
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    type="text"
-                                    value={featureInput}
-                                    onChange={(e) => setFeatureInput(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddFeature())}
-                                    placeholder="Add new feature"
-                                />
-                                <Button type="button" variant="secondary" onClick={handleAddFeature}>
-                                    ➕ Add
-                                </Button>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Status */}
-                    <Card className="bg-white border border-gray-200 shadow-md">
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="is_active"
-                                checked={formData.is_active}
-                                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
-                                Plan is active (visible to users)
-                            </label>
-                        </div>
-                    </Card>
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-4">
-                        <Button type="submit" variant="primary">
-                            💾 Update Plan
-                        </Button>
-                        <Link href={`/admin/plans/${plan.id}`}>
-                            <Button type="button" variant="secondary">
-                                Cancel
-                            </Button>
-                        </Link>
-                        <Link href="/admin/plans">
-                            <Button type="button" variant="secondary">
-                                ← Back to Plans
-                            </Button>
+                        <Link href="/admin/plans" className="rounded-lg border border-[var(--admin-border)] px-4 py-2 text-sm text-[var(--admin-text)]">
+                            Back
                         </Link>
                     </div>
-                </form>
-            </div>
+                </section>
+
+                <section className="grid gap-6 lg:grid-cols-2">
+                    <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 space-y-4">
+                        <h2 className="text-lg font-semibold text-[var(--admin-text)]">Plan basics</h2>
+                        <Field label="Plan name" error={errors.name}>
+                            <input className={inputClass(errors.name)} value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        </Field>
+                        <Field label="Code" error={errors.code}>
+                            <input className={inputClass(errors.code)} value={data.code} onChange={(e) => setData('code', e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
+                        </Field>
+                        <Field label="Tagline" error={errors.tagline}>
+                            <textarea className={inputClass(errors.tagline)} rows="3" value={data.tagline} onChange={(e) => setData('tagline', e.target.value)} />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="Monthly price ($)" error={errors.price_monthly}>
+                                <input type="number" step="0.01" min="0" className={inputClass(errors.price_monthly)} value={data.price_monthly} onChange={(e) => setData('price_monthly', e.target.value)} />
+                            </Field>
+                            <Field label="Yearly price ($)" error={errors.price_annual}>
+                                <input type="number" step="0.01" min="0" className={inputClass(errors.price_annual)} value={data.price_annual} onChange={(e) => setData('price_annual', e.target.value)} />
+                            </Field>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Toggle label="Active" checked={data.is_active} onChange={(checked) => setData('is_active', checked)} />
+                            <Toggle label="Public" checked={data.is_public} onChange={(checked) => setData('is_public', checked)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Toggle label="Highlighted" checked={data.is_highlighted} onChange={(checked) => setData('is_highlighted', checked)} />
+                            <Field label="Badge" error={errors.badge}>
+                                <input className={inputClass(errors.badge)} value={data.badge} onChange={(e) => setData('badge', e.target.value)} />
+                            </Field>
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 space-y-4">
+                        <h2 className="text-lg font-semibold text-[var(--admin-text)]">Stripe mapping</h2>
+                        <Field label="Monthly Stripe Price ID" error={errors.stripe_price_id_monthly}>
+                            <input className={inputClass(errors.stripe_price_id_monthly)} value={data.stripe_price_id_monthly} onChange={(e) => setData('stripe_price_id_monthly', e.target.value)} />
+                        </Field>
+                        <Field label="Yearly Stripe Price ID" error={errors.stripe_price_id_yearly}>
+                            <input className={inputClass(errors.stripe_price_id_yearly)} value={data.stripe_price_id_yearly} onChange={(e) => setData('stripe_price_id_yearly', e.target.value)} />
+                        </Field>
+                        <div className="rounded-xl border border-slate-600/50 bg-slate-950/40 p-4 text-sm text-slate-300">
+                            Stripe Product ke andar jo recurring monthly aur yearly prices bante hain, un ke `price_...` IDs yahan paste karne hain.
+                        </div>
+                    </div>
+                </section>
+
+                <section className="grid gap-6 lg:grid-cols-2">
+                    <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 space-y-4">
+                        <h2 className="text-lg font-semibold text-[var(--admin-text)]">Visible limits</h2>
+                        {data.display_limits.map((item, index) => (
+                            <div key={index} className="grid grid-cols-2 gap-3">
+                                <input className={inputClass()} value={item.label} onChange={(e) => setDisplayLimit(index, 'label', e.target.value)} />
+                                <input className={inputClass()} value={item.value} onChange={(e) => setDisplayLimit(index, 'value', e.target.value)} />
+                            </div>
+                        ))}
+                        <h3 className="pt-2 text-sm font-semibold text-[var(--admin-text)]">Internal limits</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <NumberField label="Projects" value={data.limits_json.projects} onChange={(v) => setLimitValue('projects', v)} />
+                            <NumberField label="Monthly actions" value={data.limits_json.monthly_actions} onChange={(v) => setLimitValue('monthly_actions', v)} />
+                            <NumberField label="Team seats" value={data.limits_json.team_seats} onChange={(v) => setLimitValue('team_seats', v)} />
+                            <NumberField label="Domains" value={data.limits_json['domains.max_active']} onChange={(v) => setLimitValue('domains.max_active', v)} />
+                            <NumberField label="Audit runs" value={data.limits_json['audits.runs_per_month']} onChange={(v) => setLimitValue('audits.runs_per_month', v)} />
+                            <NumberField label="Automation jobs" value={data.limits_json['automation.jobs_per_month']} onChange={(v) => setLimitValue('automation.jobs_per_month', v)} />
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 space-y-4">
+                        <h2 className="text-lg font-semibold text-[var(--admin-text)]">Checkout copy</h2>
+                        {data.includes.map((item, index) => (
+                            <Field key={index} label={`Feature ${index + 1}`}>
+                                <input className={inputClass()} value={item} onChange={(e) => setInclude(index, e.target.value)} />
+                            </Field>
+                        ))}
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="Primary CTA" error={errors.cta_primary_label}>
+                                <input className={inputClass(errors.cta_primary_label)} value={data.cta_primary_label} onChange={(e) => setData('cta_primary_label', e.target.value)} />
+                            </Field>
+                            <Field label="Primary link" error={errors.cta_primary_href}>
+                                <input className={inputClass(errors.cta_primary_href)} value={data.cta_primary_href} onChange={(e) => setData('cta_primary_href', e.target.value)} />
+                            </Field>
+                        </div>
+                    </div>
+                </section>
+
+                <div className="flex items-center justify-end gap-3 pb-6">
+                    <Link href="/admin/plans" className="rounded-lg border border-[var(--admin-border)] px-4 py-2 text-sm text-[var(--admin-text)]">
+                        Cancel
+                    </Link>
+                    <button type="submit" disabled={processing} className="rounded-lg bg-[#2F6BFF] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+                        {processing ? 'Saving...' : 'Update Plan'}
+                    </button>
+                </div>
+            </form>
         </AdminLayout>
     );
 }
 
+function Field({ label, error, children }) {
+    return (
+        <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-[var(--admin-text)]">{label}</span>
+            {children}
+            {error ? <span className="block text-xs text-red-500">{error}</span> : null}
+        </label>
+    );
+}
+
+function Toggle({ label, checked, onChange }) {
+    return (
+        <label className="flex items-center gap-3 rounded-xl border border-[var(--admin-border)] px-4 py-3">
+            <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+            <span className="text-sm text-[var(--admin-text)]">{label}</span>
+        </label>
+    );
+}
+
+function NumberField({ label, value, onChange }) {
+    return (
+        <label className="block space-y-1.5">
+            <span className="text-xs font-medium text-[var(--admin-text-muted)]">{label}</span>
+            <input type="number" className={inputClass()} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+        </label>
+    );
+}
+
+function inputClass(hasError) {
+    return `w-full rounded-xl border bg-[var(--admin-surface-2,var(--admin-hover-bg))] px-3 py-2.5 text-sm text-[var(--admin-text)] outline-none ${hasError ? 'border-red-500' : 'border-[var(--admin-border)]'}`;
+}

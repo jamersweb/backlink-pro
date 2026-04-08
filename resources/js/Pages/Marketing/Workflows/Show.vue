@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page workflow-detail-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -13,9 +13,7 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
-        <DisclosuresBar :disclosures="disclosures" />
 
         <main id="main-content">
             <WorkflowDetailHero :item="item" />
@@ -56,7 +54,6 @@
 import { onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { useReveal } from '../../../Composables/useReveal.js';
-import AnnouncementBar from '../../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../../Components/Marketing/Footer.vue';
 import FinalCTA from '../../../Components/Marketing/FinalCTA.vue';
@@ -70,7 +67,7 @@ import EvidencePackMock from '../../../Components/Marketing/Workflows/EvidencePa
 import BestForBlock from '../../../Components/Marketing/Workflows/BestForBlock.vue';
 import RelatedWorkflows from '../../../Components/Marketing/Workflows/RelatedWorkflows.vue';
 import WorkflowsFAQ from '../../../Components/Marketing/Workflows/WorkflowsFAQ.vue';
-import DisclosuresBar from '../../../Components/Marketing/Workflows/DisclosuresBar.vue';
+import '../shared-linked-page-theme.css';
 
 const props = defineProps({
     meta: {

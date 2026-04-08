@@ -15,37 +15,37 @@ class DashboardController extends Controller
     {
         $user = Auth::user()->load('plan');
         $campaignIds = Campaign::where('user_id', $user->id)->pluck('id');
-        
+
         // Get stats from opportunities (where user's links were added)
         $totalOpportunities = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)->count();
-        
+
         $linksToday = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->whereDate('created_at', today())->count();
-        
+
         $activeCampaigns = Campaign::where('user_id', $user->id)
             ->where('status', Campaign::STATUS_ACTIVE)
             ->count();
-        
+
         $verifiedLinks = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->where('status', BacklinkOpportunity::STATUS_VERIFIED)->count();
-        
+
         // Get daily limit from user's plan
         $dailyLimit = $user->plan ? ($user->plan->getLimit('daily_backlink_limit') ?? 0) : 0;
-        
+
         // Get recent opportunities (where links were added)
         $recentOpportunities = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->with(['campaign:id,name', 'backlink:id,url,pa,da'])
             ->latest()
             ->limit(10)
             ->get();
-        
+
         // Get recent campaigns
         $recentCampaigns = Campaign::where('user_id', $user->id)
             ->withCount('opportunities')
             ->latest()
             ->limit(5)
             ->get();
-        
+
         // Get subscription info
         $subscription = null;
         if ($user->stripe_subscription_id && config('services.stripe.secret')) {
@@ -56,7 +56,7 @@ class DashboardController extends Controller
                 // Handle error silently
             }
         }
-        
+
         // Get analytics preview (last 30 days)
         $dailyBacklinks = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->whereBetween('created_at', [now()->subDays(30), now()])
@@ -64,14 +64,14 @@ class DashboardController extends Controller
             ->groupBy('date')
             ->orderBy('date')
             ->get();
-        
+
         // Get opportunities by type
         $backlinksByType = BacklinkOpportunity::whereIn('campaign_id', $campaignIds)
             ->selectRaw('type, count(*) as count')
             ->groupBy('type')
             ->get()
             ->pluck('count', 'type');
-        
+
         return Inertia::render('Dashboard', [
             'user' => $user,
             'subscription' => $subscription ? [

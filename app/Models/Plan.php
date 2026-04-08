@@ -150,6 +150,7 @@ class Plan extends Model
                 ],
             ],
             'limits' => $this->display_limits ?? [],
+            'types' => $this->getBacklinkTypes(),
             'includes' => $this->includes ?? [],
             'ctas' => [
                 'primary' => [

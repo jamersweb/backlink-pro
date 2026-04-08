@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page free-plan-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -13,7 +13,6 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
 
         <main id="main-content">
@@ -64,7 +63,6 @@
 import { ref, onMounted, computed } from 'vue';
 import { Head, usePage } from '@inertiajs/vue3';
 import { useReveal } from '../../Composables/useReveal.js';
-import AnnouncementBar from '../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../Components/Marketing/Footer.vue';
 import StickyMobileCTA from '../../Components/Marketing/StickyMobileCTA.vue';
@@ -74,6 +72,7 @@ import TrustSidebar from '../../Components/Marketing/FreePlan/TrustSidebar.vue';
 import PlanPreview from '../../Components/Marketing/FreePlan/PlanPreview.vue';
 import FAQ from '../../Components/Marketing/FreePlan/FAQ.vue';
 import SuccessToast from '../../Components/Marketing/FreePlan/SuccessToast.vue';
+import './shared-linked-page-theme.css';
 
 const props = defineProps({
     meta: {

@@ -72,6 +72,17 @@ class AutomationCampaignController extends Controller
             'use_proxy' => 'nullable|boolean',
         ]);
 
+        // Enforce plan-specific allowed backlink types
+        $plan = Auth::user()->currentPlan();
+        $allowedTypes = $plan ? $plan->getBacklinkTypes() : ['comment', 'profile'];
+        $requestedActions = $validated['allowed_actions'] ?? [];
+        $disallowed = array_diff($requestedActions, $allowedTypes);
+
+        if (!empty($disallowed)) {
+            $typesList = implode(', ', $disallowed);
+            return back()->with('error', "Your plan doesn’t support {$typesList}. Upgrade to a higher plan.");
+        }
+
         // Check campaign quota
         $quotaService = app(QuotaService::class);
         try {
@@ -95,7 +106,7 @@ class AutomationCampaignController extends Controller
         ]);
 
         // Record campaign creation usage
-        $quotaService->consume(Auth::user(), 'automation.campaigns', 1, 'month', [
+        $quotaService->consume(Auth::user(), 'automation.campaigns_per_month', 1, 'month', [
             'domain_id' => $domain->id,
             'campaign_id' => $campaign->id,
         ]);
@@ -168,7 +179,14 @@ class AutomationCampaignController extends Controller
         }
 
         // Create jobs from targets
-        $allowedActions = $campaign->rules_json['allowed_actions'] ?? ['comment', 'profile', 'forum', 'guest'];
+        $allowedActionsRequested = $campaign->rules_json['allowed_actions'] ?? ['comment', 'profile', 'forum', 'guest'];
+        $plan = Auth::user()->currentPlan();
+        $allowedByPlan = $plan ? $plan->getBacklinkTypes() : ['comment', 'profile'];
+        $allowedActions = array_values(array_intersect($allowedActionsRequested, $allowedByPlan));
+
+        if (empty($allowedActions)) {
+            return back()->with('error', 'No allowed actions for your plan. Please upgrade your plan to use these campaign actions.');
+        }
         $jobsCreated = 0;
 
         DB::transaction(function() use ($campaign, $targets, $allowedActions, &$jobsCreated) {
@@ -198,7 +216,7 @@ class AutomationCampaignController extends Controller
         });
 
         // Record usage
-        $quotaService->consume(Auth::user(), 'automation.jobs', $jobsCreated, 'month', [
+        $quotaService->consume(Auth::user(), 'automation.jobs_per_month', $jobsCreated, 'month', [
             'domain_id' => $domain->id,
             'campaign_id' => $campaign->id,
         ]);

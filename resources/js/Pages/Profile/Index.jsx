@@ -106,19 +106,7 @@ export default function ProfileIndex({ user, plan, subscription, subscription_st
                                         <div>
                                             <p className="text-xs text-gray-500">Max Domains</p>
                                             <p className="text-lg font-semibold text-gray-900">
-                                                {plan.max_domains === -1 ? 'Unlimited' : plan.max_domains}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Max Campaigns</p>
-                                            <p className="text-lg font-semibold text-gray-900">
-                                                {plan.max_campaigns === -1 ? 'Unlimited' : plan.max_campaigns}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500">Daily Backlinks</p>
-                                            <p className="text-lg font-semibold text-gray-900">
-                                                {plan.daily_backlink_limit === -1 ? 'Unlimited' : plan.daily_backlink_limit}
+                                                {plan.max_domains === null ? 'Unknown' : (plan.max_domains === -1 ? 'Unlimited' : plan.max_domains)}
                                             </p>
                                         </div>
                                     </div>

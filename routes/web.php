@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\Auth\GoogleUnifiedCallbackController;
 use App\Http\Controllers\UserCampaignController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GmailOAuthController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\DomainBacklinksController;
 use App\Http\Controllers\DomainMetaController;
 use App\Http\Controllers\DomainMetaConnectorController;
 use App\Http\Controllers\DomainConnectorController;
+use App\Http\Controllers\ShopifyOAuthController;
 use App\Http\Controllers\MetaSnippetController;
 use App\Http\Controllers\SnippetAgentController;
 use App\Http\Controllers\DomainSnippetController;
@@ -64,6 +67,15 @@ Route::post('/register', [RegisterController::class, 'register']);
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+    ->middleware('guest')
+    ->where('provider', 'google|apple|github|microsoft|facebook')
+    ->name('auth.social.redirect');
+Route::get('/auth/google/callback', [GoogleUnifiedCallbackController::class, 'handle'])->name('auth.google.callback');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->middleware('guest')
+    ->where('provider', 'apple|github|microsoft|facebook')
+    ->name('auth.social.callback');
 
 // Password Reset Routes
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -89,6 +101,12 @@ Route::post('/email/verification-notification', [EmailVerificationController::cl
 // Health check endpoint (for monitoring)
 use App\Http\Controllers\HealthController;
 Route::get('/health', [HealthController::class, 'check'])->name('health');
+
+// Edge/Proxy (SEO-safe) mode – only when feature flag enabled
+if (\App\Support\Feature::enabled('edge_proxy')) {
+    Route::post('/edge/ping', [\App\Http\Controllers\EdgeProxyController::class, 'ping'])->middleware('throttle:60,1')->name('edge.ping');
+    Route::get('/edge/meta', [\App\Http\Controllers\EdgeProxyController::class, 'meta'])->middleware('throttle:120,1')->name('edge.meta');
+}
 
 // Marketing Controllers
 use App\Http\Controllers\MarketingController;
@@ -168,6 +186,8 @@ Route::get('/audit/{audit}/export/links.csv', [AuditExportController::class, 'li
 Route::get('/audit/{audit}/export/broken-links.csv', [AuditExportController::class, 'brokenLinksCsv'])->name('audit.export.broken-links.csv');
 Route::get('/audit/{audit}/export/lighthouse.json', [AuditExportController::class, 'lighthouseJson'])->name('audit.export.lighthouse.json');
 Route::get('/audit/{audit}/export/assets.csv', [AuditExportController::class, 'assetsCsv'])->name('audit.export.assets.csv');
+Route::get('/audit/{audit}/export/modules.csv', [AuditExportController::class, 'modulesCsv'])->name('audit.export.modules.csv');
+Route::get('/audit/{audit}/export/modules.json', [AuditExportController::class, 'modulesJson'])->name('audit.export.modules.json');
 
 Route::get('/Backlink/auditreport', function (Illuminate\Http\Request $request) {
     $auditId = $request->query('audit_id');
@@ -208,8 +228,6 @@ Route::middleware([\App\Http\Middleware\TrackAffiliateReferral::class])->group(f
 // Home redirect (authenticated users go to dashboard)
 Route::get('/home', [HomeController::class, 'index'])->name('home')->middleware('auth');
 
-// Stripe webhook (no CSRF protection)
-Route::post('/stripe/webhook', [SubscriptionController::class, 'webhook'])->name('stripe.webhook');
 //user routes
 //dashboard route
 
@@ -249,9 +267,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
         });
 
     // Google GA4 OAuth routes
-    Route::get('/auth/google/redirect', [GoogleGa4Controller::class, 'redirect'])->name('google.ga4.redirect');
-    Route::get('/auth/google/callback', [GoogleGa4Controller::class, 'callback'])->name('google.ga4.callback');
-    Route::post('/auth/google/disconnect', [GoogleGa4Controller::class, 'disconnect'])->name('google.ga4.disconnect');
+    Route::get('/auth/google-ga4/redirect', [GoogleGa4Controller::class, 'redirect'])->name('google.ga4.redirect');
+    Route::get('/auth/google-ga4/callback', [GoogleGa4Controller::class, 'callback'])->name('google.ga4.callback');
+    Route::post('/auth/google-ga4/disconnect', [GoogleGa4Controller::class, 'disconnect'])->name('google.ga4.disconnect');
     Route::get('/ga4/properties', [GoogleGa4Controller::class, 'properties'])->name('ga4.properties');
     Route::get('/ga4/summary', [GoogleGa4Controller::class, 'summary'])->name('ga4.summary');
 
@@ -262,7 +280,8 @@ Route::middleware(['auth', 'verified'])->group(function(){
             Route::get('/manage', [SubscriptionController::class, 'manage'])->name('manage');
             Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
             Route::post('/resume', [SubscriptionController::class, 'resume'])->name('resume');
-            Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('checkout');
+            Route::get('/checkout/{plan}', [SubscriptionController::class, 'checkoutPage'])->name('checkout');
+            Route::post('/checkout/{plan}', [SubscriptionController::class, 'checkout'])->name('checkout.process');
             Route::get('/success', [SubscriptionController::class, 'success'])->name('success');
             Route::get('/cancel-page', [SubscriptionController::class, 'cancelPage'])->name('cancel-page');
         });
@@ -337,6 +356,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/meta/connect', [DomainMetaConnectorController::class, 'connectOrUpdate'])->name('connect');
         Route::post('/meta/test', [DomainMetaConnectorController::class, 'test'])->name('test');
         Route::post('/meta/disconnect', [DomainMetaConnectorController::class, 'disconnect'])->name('disconnect');
+        Route::post('/meta/edge-proxy/rotate', [DomainMetaConnectorController::class, 'rotateEdgeProxyToken'])->name('meta.edge-proxy.rotate');
         
         // New connector routes
         Route::get('/meta/connector', [DomainConnectorController::class, 'index'])->name('connector.index');
@@ -344,6 +364,14 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/meta/connector/test', [DomainConnectorController::class, 'test'])->name('connector.test');
         Route::delete('/meta/connector', [DomainConnectorController::class, 'destroy'])->name('connector.destroy');
     });
+
+    // Shopify OAuth (feature-flagged)
+    if (\App\Support\Feature::enabled('shopify_oauth')) {
+        Route::prefix('domains/{domain}')->name('domains.shopify.')->group(function () {
+            Route::get('/shopify/install', [ShopifyOAuthController::class, 'install'])->name('install');
+            Route::get('/shopify/callback', [ShopifyOAuthController::class, 'callback'])->name('callback');
+        });
+    }
 
     // Domain Content (nested under domains)
     Route::prefix('domains/{domain}')->name('domains.content.')->group(function() {
@@ -462,6 +490,14 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/integrations/google/disconnect', [DomainGoogleIntegrationController::class, 'disconnect'])->name('google.disconnect');
         Route::get('/integrations/google/connect', [GoogleSeoOAuthController::class, 'connect'])->name('google.connect');
     });
+
+    // Cannibalization (GSC query+page) – feature-flagged
+    if (\App\Support\Feature::enabled('cannibalization')) {
+        Route::prefix('domains/{domain}')->name('domains.seo.')->group(function () {
+            Route::get('/seo/cannibalization', [\App\Http\Controllers\CannibalizationController::class, 'index'])->name('cannibalization');
+            Route::post('/seo/cannibalization/scan', [\App\Http\Controllers\CannibalizationController::class, 'runScan'])->name('cannibalization.scan');
+        });
+    }
 
     // SEO OAuth callback (separate route)
     Route::get('/seo/google/callback', [GoogleSeoOAuthController::class, 'callback'])->name('seo.google.callback');
@@ -702,3 +738,7 @@ Route::get('/test-comment', function () {
 });
 
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php
+
+
+
+

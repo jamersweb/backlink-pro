@@ -49,7 +49,7 @@ class PublicReportController extends Controller
         // Show full report
         $page = $audit->pages()->first();
         $issues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->limit(20)
             ->get();
@@ -163,7 +163,7 @@ class PublicReportController extends Controller
     protected function generatePublicSummary(Audit $audit): array
     {
         $topIssues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->limit(5)
             ->get()

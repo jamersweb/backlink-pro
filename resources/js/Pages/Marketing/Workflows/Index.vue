@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page workflows-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -13,9 +13,7 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
-        <DisclosuresBar :disclosures="disclosures" />
 
         <main id="main-content">
             <WorkflowsHero />
@@ -28,32 +26,36 @@
 
             <WorkflowComparison :items="items" :comparison="comparison" />
 
-            <!-- Proof Callout Row -->
-            <section class="py-20 bg-surface2">
+            <section class="workflow-safety-band py-20 bg-surface2">
                 <div class="marketing-container max-w-6xl mx-auto">
                     <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-text" data-reveal>
                         How we keep it safe
                     </h2>
                     <div class="grid md:grid-cols-3 gap-6">
-                        <div class="marketing-card p-6" data-reveal>
+                        <div class="marketing-card workflow-safety-card" data-reveal>
+                            <span class="workflow-safety-kicker">Approval Gate</span>
                             <h3 class="text-lg font-bold mb-3 text-text">Approvals gate risk</h3>
-                            <p class="text-sm text-muted mb-4">Manual approvals for risky actions with full audit trail.</p>
+                            <p class="text-sm text-muted mb-4">Manual approvals step in whenever actions move beyond your preferred threshold or confidence range.</p>
                             <a href="/security" class="text-primary hover:underline text-sm font-semibold">
-                                Learn more →
+                                Learn more ->
                             </a>
                         </div>
-                        <div class="marketing-card p-6" data-reveal>
+
+                        <div class="marketing-card workflow-safety-card" data-reveal>
+                            <span class="workflow-safety-kicker">Evidence Trail</span>
                             <h3 class="text-lg font-bold mb-3 text-text">Evidence logs per action</h3>
-                            <p class="text-sm text-muted mb-4">Every action tracked with placement URL, proof artifacts, and timestamps.</p>
+                            <p class="text-sm text-muted mb-4">Each workflow keeps proof artifacts, timestamps, and placement records visible for teams and clients.</p>
                             <a href="/product" class="text-primary hover:underline text-sm font-semibold">
-                                View product →
+                                View product ->
                             </a>
                         </div>
-                        <div class="marketing-card p-6" data-reveal>
+
+                        <div class="marketing-card workflow-safety-card" data-reveal>
+                            <span class="workflow-safety-kicker">Control Layer</span>
                             <h3 class="text-lg font-bold mb-3 text-text">Velocity caps to prevent spikes</h3>
-                            <p class="text-sm text-muted mb-4">Control action velocity per domain, platform, or project to avoid spam signals.</p>
+                            <p class="text-sm text-muted mb-4">Teams can control pacing across domains, projects, and platforms so outreach never turns into noisy bursts.</p>
                             <a href="/security" class="text-primary hover:underline text-sm font-semibold">
-                                See guardrails →
+                                See guardrails ->
                             </a>
                         </div>
                     </div>
@@ -74,7 +76,6 @@
 import { onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { useReveal } from '../../../Composables/useReveal.js';
-import AnnouncementBar from '../../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../../Components/Marketing/Footer.vue';
 import FinalCTA from '../../../Components/Marketing/FinalCTA.vue';
@@ -83,9 +84,9 @@ import WorkflowsHero from '../../../Components/Marketing/Workflows/WorkflowsHero
 import WorkflowCards from '../../../Components/Marketing/Workflows/WorkflowCards.vue';
 import WorkflowComparison from '../../../Components/Marketing/Workflows/WorkflowComparison.vue';
 import WorkflowsFAQ from '../../../Components/Marketing/Workflows/WorkflowsFAQ.vue';
-import DisclosuresBar from '../../../Components/Marketing/Workflows/DisclosuresBar.vue';
+import '../shared-linked-page-theme.css';
 
-const props = defineProps({
+defineProps({
     meta: {
         type: Object,
         required: true,
@@ -116,6 +117,26 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.workflow-safety-card {
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+}
+
+.workflow-safety-kicker {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0.85rem;
+    padding: 0.32rem 0.62rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 110, 64, 0.2);
+    background: rgba(255, 110, 64, 0.08);
+    color: rgba(255, 174, 143, 0.92);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
 .sr-only {
     position: absolute;
     width: 1px;

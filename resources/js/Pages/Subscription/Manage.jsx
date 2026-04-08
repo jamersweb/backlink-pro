@@ -5,6 +5,8 @@ import Button from '../../Components/Shared/Button';
 
 export default function SubscriptionManage({ user, currentPlan, subscription, customer, invoices, allPlans }) {
     const { flash } = usePage().props;
+    const hasStripeSubscription = !!user?.stripe_subscription_id && !!subscription;
+    const hasAppOnlyPlan = !!currentPlan && !hasStripeSubscription;
     
     const { post: cancelSubscription, processing: canceling } = useForm();
     const { post: resumeSubscription, processing: resuming } = useForm();
@@ -108,8 +110,14 @@ export default function SubscriptionManage({ user, currentPlan, subscription, cu
                                 </div>
                             )}
 
+                            {hasAppOnlyPlan && (
+                                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                    This plan is marked active in the app, but no Stripe subscription is linked yet. Billing actions will work after Stripe checkout is completed and synced.
+                                </div>
+                            )}
+
                             <div className="flex gap-4 pt-4 border-t">
-                                {subscription?.cancel_at_period_end ? (
+                                {hasStripeSubscription && subscription?.cancel_at_period_end ? (
                                     <Button
                                         variant="primary"
                                         onClick={handleResume}
@@ -117,7 +125,7 @@ export default function SubscriptionManage({ user, currentPlan, subscription, cu
                                     >
                                         {resuming ? 'Resuming...' : 'Resume Subscription'}
                                     </Button>
-                                ) : (
+                                ) : hasStripeSubscription ? (
                                     <Button
                                         variant="outline"
                                         onClick={handleCancel}
@@ -125,7 +133,7 @@ export default function SubscriptionManage({ user, currentPlan, subscription, cu
                                     >
                                         {canceling ? 'Cancelling...' : 'Cancel Subscription'}
                                     </Button>
-                                )}
+                                ) : null}
                                 <Link href="/pricing">
                                     <Button variant="secondary">Change Plan</Button>
                                 </Link>
@@ -230,4 +238,3 @@ export default function SubscriptionManage({ user, currentPlan, subscription, cu
         </AppLayout>
     );
 }
-

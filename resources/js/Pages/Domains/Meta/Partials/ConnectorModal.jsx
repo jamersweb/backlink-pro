@@ -1,10 +1,15 @@
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { usePage, router } from '@inertiajs/react';
 import Button from '@/Components/Shared/Button';
 import Input from '@/Components/Shared/Input';
 import Select from '@/Components/Shared/Select';
 
+const APP_URL = typeof window !== 'undefined' ? window.location.origin : '';
+
 export default function ConnectorModal({ domain, connector, onClose }) {
+    const { props } = usePage();
+    const features = props.features || {};
     const [connectorType, setConnectorType] = useState(connector?.type || 'wordpress');
     const { data, setData, post, processing } = useForm({
         type: connectorType,
@@ -13,16 +18,53 @@ export default function ConnectorModal({ domain, connector, onClose }) {
         shop_domain: '',
         admin_access_token: '',
         api_version: '2024-01',
+        cache_ttl: connector?.auth_json?.cache_ttl ?? 300,
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
         post(`/domains/${domain.id}/meta/connect`, {
-            onSuccess: () => {
-                onClose();
-            },
+            onSuccess: () => { onClose(); },
         });
     };
+
+    const copyToken = () => {
+        const t = connector?.auth_json?.edge_token;
+        if (t) navigator.clipboard.writeText(t);
+    };
+
+    const rotateToken = () => {
+        router.post(`/domains/${domain.id}/meta/edge-proxy/rotate`, {}, {
+            preserveScroll: true,
+            onSuccess: () => onClose(),
+        });
+    };
+
+    const verifyEdge = () => {
+        router.post(`/domains/${domain.id}/meta/test`, {}, {
+            preserveScroll: true,
+            onSuccess: () => onClose(),
+        });
+    };
+
+    const edgeToken = connector?.auth_json?.edge_token ?? '';
+    const tokenMasked = edgeToken ? (edgeToken.slice(0, 8) + '…' + edgeToken.slice(-4)) : '';
+    const workerScript = `// BacklinkPro Edge/Proxy Worker - deploy to Cloudflare Workers
+const BACKEND = "${APP_URL}";
+const TOKEN = "${edgeToken || 'YOUR_TOKEN'}";
+export default {
+  async fetch(req) {
+    const url = new URL(req.url);
+    const res = await fetch(BACKEND + "/edge/meta?host=" + encodeURIComponent(url.hostname) + "&path=" + encodeURIComponent(url.pathname), {
+      headers: { "Authorization": "Bearer " + TOKEN }
+    });
+    const { meta } = await res.json();
+    // Inject meta into HTML and return (implement your HTML rewrite here)
+    return new Response("<!DOCTYPE html><html><head><title>" + (meta?.title || "") + "</title></head><body>Edge meta loaded</body></html>", {
+      headers: { "Content-Type": "text/html" }
+    });
+  }
+};`;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -50,6 +92,7 @@ export default function ConnectorModal({ domain, connector, onClose }) {
                             <option value="wordpress">WordPress</option>
                             <option value="shopify">Shopify</option>
                             <option value="custom_js">Custom JS Snippet</option>
+                            {features.edge_proxy && <option value="edge_proxy">Edge/Proxy (SEO-safe)</option>}
                         </Select>
 
                         {connectorType === 'wordpress' && (
@@ -80,12 +123,39 @@ export default function ConnectorModal({ domain, connector, onClose }) {
 
                         {connectorType === 'shopify' && (
                             <>
+                                {features.shopify_oauth && (
+                                    <div className="p-4 bg-green-50 border border-green-200 rounded-md space-y-3">
+                                        <p className="text-sm text-green-800 font-medium">Connect with Shopify (OAuth)</p>
+                                        <div className="flex gap-2 items-end">
+                                            <Input
+                                                label="Shop domain"
+                                                value={data.shop_domain}
+                                                onChange={(e) => setData('shop_domain', e.target.value)}
+                                                placeholder="myshop or myshop.myshopify.com"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="primary"
+                                                onClick={() => {
+                                                    const shop = (data.shop_domain || '').trim();
+                                                    if (shop) {
+                                                        const url = `/domains/${domain.id}/shopify/install?shop=${encodeURIComponent(shop)}`;
+                                                        window.location.href = url;
+                                                    }
+                                                }}
+                                            >
+                                                Connect Shopify
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs text-green-700">Or use manual token below.</p>
+                                    </div>
+                                )}
                                 <Input
                                     label="Shop Domain"
                                     value={data.shop_domain}
                                     onChange={(e) => setData('shop_domain', e.target.value)}
                                     placeholder="myshop.myshopify.com"
-                                    required
+                                    required={!features.shopify_oauth}
                                 />
                                 <Input
                                     label="Admin API Access Token"
@@ -93,7 +163,7 @@ export default function ConnectorModal({ domain, connector, onClose }) {
                                     value={data.admin_access_token}
                                     onChange={(e) => setData('admin_access_token', e.target.value)}
                                     placeholder="Token from Shopify Custom App"
-                                    required
+                                    required={!features.shopify_oauth}
                                 />
                                 <Input
                                     label="API Version"
@@ -125,6 +195,42 @@ export default function ConnectorModal({ domain, connector, onClose }) {
                             </div>
                         )}
 
+                        {features.edge_proxy && connectorType === 'edge_proxy' && (
+                            <div className="space-y-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                                <p className="text-sm text-amber-800">
+                                    <strong>Edge/Proxy (SEO-safe):</strong> Meta tags at the edge (e.g. Cloudflare Worker). Save to generate token, then deploy the Worker script.
+                                </p>
+                                <Input
+                                    label="Cache TTL (seconds)"
+                                    type="number"
+                                    value={data.cache_ttl ?? 300}
+                                    onChange={(e) => setData('cache_ttl', parseInt(e.target.value, 10) || 300)}
+                                    min={0}
+                                    max={86400}
+                                />
+                                {edgeToken && (
+                                    <>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-gray-700">Token:</span>
+                                            <code className="text-xs bg-white px-2 py-1 rounded flex-1 truncate">{tokenMasked}</code>
+                                            <Button type="button" variant="outline" size="sm" onClick={copyToken}>Copy</Button>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-600 mb-1">Cloudflare Worker script:</p>
+                                            <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">{workerScript}</pre>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button type="button" variant="outline" size="sm" onClick={rotateToken}>Rotate token</Button>
+                                            <Button type="button" variant="outline" size="sm" onClick={verifyEdge}>Verify</Button>
+                                            {connector?.status === 'connected' && (
+                                                <span className="text-xs text-green-600 self-center">Connected</span>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
                         <div className="flex gap-4 pt-4">
                             <Button type="submit" variant="primary" disabled={processing}>
                                 {processing ? 'Saving...' : 'Save'}
@@ -139,5 +245,4 @@ export default function ConnectorModal({ domain, connector, onClose }) {
         </div>
     );
 }
-
 

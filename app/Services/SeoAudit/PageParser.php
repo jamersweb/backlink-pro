@@ -46,6 +46,7 @@ class PageParser
 
         $bodyText = self::getBodyText($xpath);
         $wordCount = self::countWords($bodyText);
+        $visibleTextLength = mb_strlen($bodyText);
         $contentExcerpt = mb_substr($bodyText, 0, 2000) ?: null;
 
         $images = $xpath->query('//img');
@@ -118,6 +119,7 @@ class PageParser
             'content_type' => $headers['content_type'] ?? null,
             'charset' => $charset,
             'content_excerpt' => $contentExcerpt,
+            'visible_text_length' => $visibleTextLength,
             'word_count' => $wordCount,
             'images_total' => $imagesTotal,
             'images_missing_alt' => $imagesMissingAlt,

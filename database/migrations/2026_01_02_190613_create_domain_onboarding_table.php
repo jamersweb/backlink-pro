@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('domain_onboarding', function (Blueprint $table) {
+        Schema::create('domain_onboardings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('domain_id')->constrained('domains')->onDelete('cascade')->unique();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('domain_onboarding');
+        Schema::dropIfExists('domain_onboardings');
     }
 };

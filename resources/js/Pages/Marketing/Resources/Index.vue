@@ -1,5 +1,5 @@
 <template>
-    <div class="marketing-dark min-h-screen">
+    <div class="marketing-dark min-h-screen marketing-linked-page resources-page">
         <Head>
             <title>{{ meta.title }}</title>
             <meta name="description" :content="meta.description" />
@@ -22,7 +22,6 @@
             Skip to main content
         </a>
 
-        <AnnouncementBar />
         <HeaderNav />
 
         <main id="main-content">
@@ -44,7 +43,6 @@
 import { computed, onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { useReveal } from '../../../Composables/useReveal.js';
-import AnnouncementBar from '../../../Components/Marketing/AnnouncementBar.vue';
 import HeaderNav from '../../../Components/Marketing/HeaderNav.vue';
 import Footer from '../../../Components/Marketing/Footer.vue';
 import FinalCTA from '../../../Components/Marketing/FinalCTA.vue';
@@ -55,6 +53,7 @@ import ResourceTypeCards from '../../../Components/Marketing/Resources/ResourceT
 import FeaturedResources from '../../../Components/Marketing/Resources/FeaturedResources.vue';
 import ResourcesList from '../../../Components/Marketing/Resources/ResourcesList.vue';
 import ResourcesCTAInline from '../../../Components/Marketing/Resources/ResourcesCTAInline.vue';
+import '../shared-linked-page-theme.css';
 
 const props = defineProps({
     meta: {

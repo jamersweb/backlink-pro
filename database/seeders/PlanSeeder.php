@@ -16,6 +16,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Starter',
                 'code' => 'starter',
+                'slug' => 'starter',
                 'tagline' => 'For small sites testing guardrailed workflows.',
                 'price_monthly' => 7900, // $79.00
                 'price_annual' => 6700, // $67.00/mo billed annually
@@ -36,6 +37,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => 3,
                     'meta.publish_per_month' => 50,
                     'insights.runs_per_day' => 5,
+                    'automation.campaigns_per_month' => 5,
+                    'automation.jobs_per_month' => 2000,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => '1'],
@@ -75,6 +78,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Growth',
                 'code' => 'growth',
+                'slug' => 'growth',
                 'tagline' => 'For teams scaling with tighter controls and more workflows.',
                 'price_monthly' => 19900, // $199.00
                 'price_annual' => 16900, // $169.00/mo billed annually
@@ -95,6 +99,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => 20,
                     'meta.publish_per_month' => 1000,
                     'insights.runs_per_day' => 20,
+                    'automation.campaigns_per_month' => 20,
+                    'automation.jobs_per_month' => 8000,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => '5'],
@@ -135,6 +141,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Pro / Agency',
                 'code' => 'pro',
+                'slug' => 'pro',
                 'tagline' => 'For agencies and multi-project operations with audit needs.',
                 'price_monthly' => 49900, // $499.00
                 'price_annual' => 42400, // $424.00/mo billed annually
@@ -155,6 +162,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => 100,
                     'meta.publish_per_month' => 10000,
                     'insights.runs_per_day' => 100,
+                    'automation.campaigns_per_month' => 50,
+                    'automation.jobs_per_month' => 25000,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => '20+'],
@@ -195,6 +204,7 @@ class PlanSeeder extends Seeder
             [
                 'name' => 'Enterprise',
                 'code' => 'enterprise',
+                'slug' => 'enterprise',
                 'tagline' => 'Custom solutions for large organizations.',
                 'price_monthly' => null, // Custom pricing
                 'price_annual' => null,
@@ -215,6 +225,8 @@ class PlanSeeder extends Seeder
                     'google.sync_now_per_day' => -1,
                     'meta.publish_per_month' => -1,
                     'insights.runs_per_day' => -1,
+                    'automation.campaigns_per_month' => -1,
+                    'automation.jobs_per_month' => -1,
                 ],
                 'display_limits' => [
                     ['label' => 'Projects', 'value' => 'Unlimited'],

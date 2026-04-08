@@ -90,14 +90,16 @@ Route::post('/proxies/{proxy}/test', [\App\Http\Controllers\Admin\ProxyControlle
 // Captcha Logs Management
 Route::get('/captcha-logs', [\App\Http\Controllers\Admin\CaptchaLogController::class, 'index'])->name('captcha-logs.index');
 
-// System Health
-Route::prefix('system-health')->name('system-health.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Admin\SystemHealthController::class, 'index'])->name('index');
-    Route::get('/activity', [\App\Http\Controllers\Admin\SystemHealthController::class, 'activity'])->name('activity');
-    Route::get('/failures', [\App\Http\Controllers\Admin\SystemHealthController::class, 'failures'])->name('failures');
-    Route::post('/failed-jobs/{id}/retry', [\App\Http\Controllers\Admin\SystemHealthController::class, 'retryFailedJob'])->name('retry-job');
-    Route::post('/failed-jobs/flush', [\App\Http\Controllers\Admin\SystemHealthController::class, 'flushFailedJobs'])->name('flush-jobs');
-});
+// System Health (behind feature flag)
+if (\App\Support\Feature::enabled('system_health')) {
+    Route::prefix('system-health')->name('system-health.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SystemHealthController::class, 'index'])->name('index');
+        Route::get('/activity', [\App\Http\Controllers\Admin\SystemHealthController::class, 'activity'])->name('activity');
+        Route::get('/failures', [\App\Http\Controllers\Admin\SystemHealthController::class, 'failures'])->name('failures');
+        Route::post('/failed-jobs/{id}/retry', [\App\Http\Controllers\Admin\SystemHealthController::class, 'retryFailedJob'])->name('retry-job');
+        Route::post('/failed-jobs/flush', [\App\Http\Controllers\Admin\SystemHealthController::class, 'flushFailedJobs'])->name('flush-jobs');
+    });
+}
 
 // Run Retry Routes
 Route::prefix('runs')->name('runs.')->group(function () {
@@ -107,6 +109,9 @@ Route::prefix('runs')->name('runs.')->group(function () {
     Route::post('/insights/{run}/retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryInsights'])->name('insights.retry');
     Route::post('/google/{domain}/sync-retry', [\App\Http\Controllers\Admin\RunRetryController::class, 'retryGoogleSync'])->name('google.sync-retry');
 });
+
+// Feature Flags (read-only; set via .env)
+Route::get('/feature-flags', [\App\Http\Controllers\Admin\FeatureFlagsController::class, 'index'])->name('feature-flags.index');
 
 // Settings Management
 Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');

@@ -6,9 +6,7 @@
             </h2>
 
             <div class="flex flex-col lg:flex-row gap-8">
-                <!-- Left: Tab List (Desktop: Vertical, Mobile: Horizontal Scroll) -->
                 <div class="lg:w-64 flex-shrink-0">
-                    <!-- Desktop: Vertical Tabs -->
                     <div class="hidden lg:block">
                         <div class="marketing-card p-2" role="tablist" aria-label="Product modules">
                             <button
@@ -34,7 +32,6 @@
                         </div>
                     </div>
 
-                    <!-- Mobile: Horizontal Scroll Tabs -->
                     <div class="lg:hidden overflow-x-auto pb-4 -mx-4 px-4">
                         <div class="flex gap-2 min-w-max" role="tablist" aria-label="Product modules">
                             <button
@@ -61,7 +58,6 @@
                     </div>
                 </div>
 
-                <!-- Right: Content Panel -->
                 <div class="flex-1">
                     <div
                         v-for="(module, idx) in modules"
@@ -80,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import ModuleSection from './ModuleSection.vue';
 
 const props = defineProps({
@@ -91,16 +87,36 @@ const props = defineProps({
 });
 
 const activeIndex = ref(0);
+let rotationInterval = null;
+
+const stopRotation = () => {
+    if (rotationInterval) {
+        window.clearInterval(rotationInterval);
+        rotationInterval = null;
+    }
+};
+
+const startRotation = () => {
+    stopRotation();
+    rotationInterval = window.setInterval(() => {
+        activeIndex.value = (activeIndex.value + 1) % props.modules.length;
+    }, 5000);
+};
+
+const restartRotation = () => {
+    startRotation();
+};
 
 const selectModule = (idx) => {
     activeIndex.value = idx;
+    restartRotation();
 };
 
 const navigateTab = (currentIdx, direction) => {
     const newIdx = currentIdx + direction;
     if (newIdx >= 0 && newIdx < props.modules.length) {
         activeIndex.value = newIdx;
-        // Focus the new tab
+        restartRotation();
         const tabId = `module-tab-${newIdx}`;
         const tab = document.getElementById(tabId);
         if (tab) {
@@ -110,7 +126,11 @@ const navigateTab = (currentIdx, direction) => {
 };
 
 onMounted(() => {
-    // Set first module as active
     activeIndex.value = 0;
+    startRotation();
+});
+
+onUnmounted(() => {
+    stopRotation();
 });
 </script>

@@ -12,19 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Make keyword column nullable
-        DB::statement('ALTER TABLE `backlinks` MODIFY `keyword` VARCHAR(255) NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `backlinks` MODIFY `keyword` VARCHAR(255) NULL');
+        }
+        // SQLite: skip column change for test compatibility
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // First, update any NULL values to empty string
-        DB::statement("UPDATE `backlinks` SET `keyword` = '' WHERE `keyword` IS NULL");
-        
-        // Then make it NOT NULL
-        DB::statement('ALTER TABLE `backlinks` MODIFY `keyword` VARCHAR(255) NOT NULL');
+        DB::statement("UPDATE backlinks SET keyword = '' WHERE keyword IS NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `backlinks` MODIFY `keyword` VARCHAR(255) NOT NULL');
+        }
     }
 };

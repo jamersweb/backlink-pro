@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useForm, usePage, Link } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import AppLayout from '../../Components/Layout/AppLayout';
 import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
-export default function CampaignEdit({ campaign, countries, states, cities, domains, connectedAccounts }) {
+export default function CampaignEdit({ campaign, countries, domains, connectedAccounts }) {
     const { flash } = usePage().props;
     const { data, setData, put, processing, errors } = useForm({
         name: campaign.name || '',
@@ -33,7 +33,6 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
         gmail: campaign.gmail || '',
         password: campaign.password || '',
     });
-
     const handleSubmit = (e) => {
         e.preventDefault();
         
@@ -49,6 +48,7 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
         
         // Convert empty strings to null for optional fields
         if (submitData.domain_id === '') submitData.domain_id = null;
+        if (submitData.company_state === '') submitData.company_state = null;
         if (submitData.company_city === '') submitData.company_city = null;
         if (submitData.gmail_account_id === '') submitData.gmail_account_id = null;
         
@@ -56,12 +56,8 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
         if (submitData.company_country) {
             submitData.company_country = parseInt(submitData.company_country) || null;
         }
-        if (submitData.company_state) {
-            submitData.company_state = parseInt(submitData.company_state) || null;
-        }
-        if (submitData.company_city) {
-            submitData.company_city = parseInt(submitData.company_city) || null;
-        }
+        submitData.company_state = null;
+        submitData.company_city = null;
         if (submitData.gmail_account_id) {
             submitData.gmail_account_id = parseInt(submitData.gmail_account_id) || null;
         }
@@ -235,7 +231,7 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Ranking Target *
+                                Targeted Countries *
                             </label>
                             <select
                                 name="web_target"
@@ -304,14 +300,14 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                                 value={data.company_country}
                                 onChange={(e) => {
                                     setData('company_country', e.target.value);
-                                    setData('company_state', ''); // Reset state when country changes
-                                    setData('company_city', ''); // Reset city when country changes
+                                    setData('company_state', '');
+                                    setData('company_city', '');
                                 }}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                 required
                             >
                                 <option value="">Select a country</option>
-                                {countries?.map((country) => (
+                                {(countries || []).map((country) => (
                                     <option key={country.id} value={country.id}>
                                         {country.name}
                                     </option>
@@ -321,56 +317,7 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                                 <p className="mt-1 text-sm text-red-600">{errors.company_country}</p>
                             )}
                         </div>
-                        {data.company_country && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Company State *
-                                </label>
-                                <select
-                                    name="company_state"
-                                    value={data.company_state}
-                                    onChange={(e) => {
-                                        setData('company_state', e.target.value);
-                                        setData('company_city', ''); // Reset city when state changes
-                                    }}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    required
-                                >
-                                    <option value="">Select a state</option>
-                                    {states?.filter(s => String(s.country_id) === String(data.company_country)).map((state) => (
-                                        <option key={state.id} value={state.id}>
-                                            {state.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.company_state && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.company_state}</p>
-                                )}
-                            </div>
-                        )}
-                        {data.company_state && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Company City
-                                </label>
-                                <select
-                                    name="company_city"
-                                    value={data.company_city}
-                                    onChange={(e) => setData('company_city', e.target.value)}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                >
-                                    <option value="">Select a city</option>
-                                    {cities?.filter(c => String(c.state_id) === String(data.company_state)).map((city) => (
-                                        <option key={city.id} value={city.id}>
-                                            {city.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.company_city && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.company_city}</p>
-                                )}
-                            </div>
-                        )}
+                        
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Company Logo (leave empty to keep current)
@@ -391,75 +338,6 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
                         </div>
                     </div>
 
-                    {/* Gmail Verification */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-medium border-b pb-2">Gmail Verification Settings</h3>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Connected Gmail Account (Optional)
-                            </label>
-                            <select
-                                name="gmail_account_id"
-                                value={data.gmail_account_id}
-                                onChange={(e) => {
-                                    setData('gmail_account_id', e.target.value);
-                                    // Clear manual gmail/password if a connected account is selected
-                                    if (e.target.value) {
-                                        setData('gmail', '');
-                                        setData('password', '');
-                                    }
-                                }}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            >
-                                <option value="">Select a Gmail account (or enter manually below)</option>
-                                {connectedAccounts?.map((account) => (
-                                    <option key={account.id} value={account.id}>
-                                        {account.email}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.gmail_account_id && (
-                                <p className="mt-1 text-sm text-red-600">{errors.gmail_account_id}</p>
-                            )}
-                            {data.gmail_account_id && (
-                                <p className="mt-2 text-sm text-green-600">
-                                    Using connected account: {connectedAccounts?.find(acc => String(acc.id) === String(data.gmail_account_id))?.email}
-                                </p>
-                            )}
-                        </div>
-                        {!data.gmail_account_id && (
-                            <>
-                                <Input
-                                    label="Gmail Address *"
-                                    name="gmail"
-                                    type="email"
-                                    value={data.gmail}
-                                    onChange={(e) => setData('gmail', e.target.value)}
-                                    error={errors.gmail}
-                                    placeholder="your-email@gmail.com"
-                                    required
-                                />
-                                <Input
-                                    label="Gmail Password *"
-                                    name="password"
-                                    type="password"
-                                    value={data.password}
-                                    onChange={(e) => setData('password', e.target.value)}
-                                    error={errors.password}
-                                    required
-                                />
-                            </>
-                        )}
-                        <label className="flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={data.requires_email_verification}
-                                onChange={(e) => setData('requires_email_verification', e.target.checked)}
-                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">Require email verification</span>
-                        </label>
-                    </div>
 
                     {/* Actions */}
                     <div className="flex gap-4">
@@ -479,4 +357,9 @@ export default function CampaignEdit({ campaign, countries, states, cities, doma
         </AppLayout>
     );
 }
+
+
+
+
+
 

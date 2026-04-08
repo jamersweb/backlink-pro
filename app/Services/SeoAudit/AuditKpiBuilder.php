@@ -3,10 +3,14 @@
 namespace App\Services\SeoAudit;
 
 use App\Models\Audit;
+use App\Models\AuditIssue;
+use App\Models\AuditCustomSearchResult;
+use App\Models\AuditCustomExtractionResult;
 use Illuminate\Support\Facades\Http;
 use App\Services\SeoAudit\SitemapDiscovery;
 use App\Services\SeoAudit\RulesEngine;
 use App\Services\SeoAudit\TextAnalyzer;
+use App\Services\SeoAudit\LinkMetrics\LinkEquityScoring;
 
 class AuditKpiBuilder
 {
@@ -162,6 +166,16 @@ class AuditKpiBuilder
         $issuesMedium = $issues->where('impact', 'medium')->count();
         $issuesLow = $issues->where('impact', 'low')->count();
 
+        $jsRendering = $this->buildJsRenderingSection($audit, $pages, $issues);
+        $nearDuplicate = $this->buildNearDuplicateSection($audit, $pages, $issues);
+        $segmentation = $this->buildSegmentationSection($audit, $pages, $issues);
+        $siteVisualisations = $this->buildSiteVisualisationsSection($audit, $pages, $links, $nearDuplicate, $segmentation);
+        $spellingGrammar = $this->buildSpellingGrammarSection($audit, $pages, $issues);
+        $customSourceSearch = $this->buildCustomSourceSearchSection($audit);
+        $customExtraction = $this->buildCustomExtractionSection($audit);
+        $formsAuthSummary = $this->buildFormsAuthSummarySection($audit);
+        $linkMetrics = $this->buildLinkMetricsSection($audit, $pages, $audit->crawl_module_flags ?? []);
+
         return [
             'overview' => [
                 'overall_grade' => $audit->overall_grade,
@@ -194,7 +208,527 @@ class AuditKpiBuilder
             'social' => $social,
             'local_seo' => $local,
             'tech_email' => $techEmail,
+            'js_rendering' => $jsRendering,
+            'near_duplicate_content' => $nearDuplicate,
+            'segmentation' => $segmentation,
+            'site_visualisations' => $siteVisualisations,
+            'spelling_grammar' => $spellingGrammar,
+            'custom_source_search' => $customSourceSearch,
+            'custom_extraction' => $customExtraction,
+            'forms_auth_summary' => $formsAuthSummary,
+            'link_metrics' => $linkMetrics,
         ];
+    }
+
+    protected function buildLinkMetricsSection(Audit $audit, $pages, array $flags): array
+    {
+        if (empty($flags['link_metrics_enabled'])) {
+            return ['module_enabled' => false];
+        }
+
+        $tiers = config('seo_audit.link_metrics.tiers', []);
+        $lowInternalMax = (int) config('seo_audit.link_metrics.low_internal_links_max', 3);
+        $minEq = (int) config('seo_audit.link_metrics.low_internal_min_equity_score', 24);
+
+        $toRow = function ($page) use ($tiers) {
+            $m = is_array($page->link_metrics_json) ? $page->link_metrics_json : [];
+            $tier = LinkEquityScoring::tier($m, $tiers);
+            $anchors = $m['top_anchors'] ?? [];
+            $themes = [];
+            if (is_array($anchors)) {
+                foreach (array_slice($anchors, 0, 5) as $a) {
+                    if (is_array($a) && isset($a['anchor'])) {
+                        $themes[] = $a['anchor'];
+                    }
+                }
+            }
+
+            return [
+                'url' => $page->url,
+                'segment' => $page->segment_key ?: 'other',
+                'status_code' => $page->status_code,
+                'referring_domains' => (int) ($m['referring_domains'] ?? 0),
+                'backlinks' => (int) ($m['backlinks'] ?? 0),
+                'authority_score' => $m['authority_score'] ?? null,
+                'anchor_themes' => $themes,
+                'internal_links_count' => (int) ($page->internal_links_count ?? 0),
+                'equity_score' => LinkEquityScoring::equityScore($m),
+                'equity_tier' => $tier,
+            ];
+        };
+
+        $sortFn = function ($subset) use ($toRow) {
+            return $subset->map(fn ($p) => $toRow($p))->sortByDesc('equity_score')->values()->take(50)->all();
+        };
+
+        $broken = $pages->filter(fn ($p) => ($p->status_code ?? 0) >= 400);
+        $redirected = $pages->filter(fn ($p) => ($p->status_code ?? 0) >= 300 && ($p->status_code ?? 0) < 400);
+        $noindex = $pages->filter(fn ($p) => $this->pageHasNoIndexSignal($p));
+        $duplicate = $pages->filter(fn ($p) => ! empty($p->near_duplicate_cluster_id));
+        $lowSupport = $pages->filter(function ($p) use ($lowInternalMax, $toRow, $minEq) {
+            $r = $toRow($p);
+
+            return $r['internal_links_count'] <= $lowInternalMax && $r['equity_score'] >= $minEq;
+        });
+
+        $tierDist = ['high' => 0, 'medium' => 0, 'low' => 0];
+        foreach ($pages as $p) {
+            $m = is_array($p->link_metrics_json) ? $p->link_metrics_json : [];
+            $t = LinkEquityScoring::tier($m, $tiers);
+            if (isset($tierDist[$t])) {
+                $tierDist[$t]++;
+            }
+        }
+
+        $withRd = $pages->filter(function ($p) {
+            if (! is_array($p->link_metrics_json)) {
+                return false;
+            }
+
+            return (int) ($p->link_metrics_json['referring_domains'] ?? 0) > 0;
+        });
+
+        $sampleThemes = [];
+        foreach ($pages as $p) {
+            if (is_array($p->link_metrics_json) && ! empty($p->link_metrics_json['global_anchor_themes'])) {
+                $sampleThemes = $p->link_metrics_json['global_anchor_themes'];
+                break;
+            }
+        }
+
+        return [
+            'module_enabled' => true,
+            'overview' => [
+                'pages_enriched' => $pages->count(),
+                'pages_with_referring_domains' => $withRd->count(),
+                'total_backlink_rows_tracked' => $pages->sum(function ($p) {
+                    if (! is_array($p->link_metrics_json)) {
+                        return 0;
+                    }
+
+                    return (int) ($p->link_metrics_json['backlinks'] ?? 0);
+                }),
+                'tier_distribution' => $tierDist,
+            ],
+            'thresholds' => $tiers,
+            'top_linked_broken_pages' => $sortFn($broken),
+            'top_linked_redirected_pages' => $sortFn($redirected),
+            'top_linked_noindex_pages' => $sortFn($noindex),
+            'top_linked_duplicate_pages' => $sortFn($duplicate),
+            'top_opportunity_low_internal_pages' => $sortFn($lowSupport),
+            'global_anchor_themes_sample' => $sampleThemes,
+        ];
+    }
+
+    protected function pageHasNoIndexSignal($page): bool
+    {
+        $robots = strtolower($page->robots_meta ?? '');
+        $xrobots = strtolower($page->x_robots_tag ?? '');
+
+        return str_contains($robots, 'noindex') || str_contains($xrobots, 'noindex');
+    }
+
+    protected function buildFormsAuthSummarySection(Audit $audit): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        if (empty($flags['forms_auth_enabled'])) {
+            return ['module_enabled' => false];
+        }
+
+        $state = $audit->forms_auth_state ?? [];
+        $pages = $audit->pages()->get();
+        $blockedUrls = $pages->filter(fn ($p) => ! empty($p->auth_crawl_metadata['http_auth_blocked']))->pluck('url')->take(30)->values()->all();
+        $loginRedirUrls = $pages->filter(fn ($p) => ! empty($p->auth_crawl_metadata['redirected_to_login_suspected']))->pluck('url')->take(30)->values()->all();
+        $authOkUrls = $pages->filter(fn ($p) => ! empty($p->auth_crawl_metadata['likely_authenticated_content']))->pluck('url')->take(30)->values()->all();
+
+        return [
+            'module_enabled' => true,
+            'login_success' => (bool) ($state['login_success'] ?? false),
+            'login_error_public' => $state['login_error'] ?? null,
+            'username_masked' => $state['username_masked'] ?? null,
+            'login_url_display' => $audit->forms_auth_login_url,
+            'selectors_configured' => [
+                'username' => trim((string) ($audit->forms_auth_username_selector ?? '')) !== '',
+                'password' => trim((string) ($audit->forms_auth_password_selector ?? '')) !== '',
+                'submit' => trim((string) ($audit->forms_auth_submit_selector ?? '')) !== '',
+                'success_indicator' => trim((string) ($audit->forms_auth_success_indicator ?? '')) !== '',
+            ],
+            'pages_total' => (int) ($state['total_pages_crawled'] ?? $pages->count()),
+            'pages_likely_authenticated' => (int) ($state['pages_likely_authenticated'] ?? 0),
+            'pages_blocked_http' => (int) ($state['pages_blocked_http'] ?? 0),
+            'pages_login_redirect_suspected' => (int) ($state['pages_login_redirect_suspected'] ?? 0),
+            'final_url_after_login' => $state['final_url_after_login'] ?? null,
+            'blocked_urls_sample' => $blockedUrls,
+            'login_redirect_urls_sample' => $loginRedirUrls,
+            'authenticated_urls_sample' => $authOkUrls,
+        ];
+    }
+
+    protected function buildCustomSourceSearchSection(Audit $audit): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['custom_source_search_enabled']);
+        if (!$enabled) {
+            return ['module_enabled' => false, 'rule_summaries' => [], 'results_table' => []];
+        }
+
+        $rows = AuditCustomSearchResult::where('audit_id', $audit->id)->get();
+        $byRule = $rows->groupBy('rule_key');
+        $summaries = [];
+        foreach ($byRule as $ruleKey => $group) {
+            $first = $group->first();
+            $pagesTotal = $audit->pages()->count();
+            $matchedUrls = $group->where('matched', true)->pluck('url')->unique()->count();
+            $policyMiss = $group->filter(function ($r) {
+                if ($r->error_message) {
+                    return false;
+                }
+                $exp = $r->expect_match;
+
+                return ($exp && ! $r->matched) || (! $exp && $r->matched);
+            })->count();
+
+            $summaries[] = [
+                'rule_key' => $ruleKey,
+                'rule_name' => $first->rule_name,
+                'target_scope' => $first->target_scope,
+                'match_type' => $first->match_type,
+                'severity' => $first->severity,
+                'pages_evaluated' => $group->count(),
+                'match_count_sum' => (int) $group->sum('match_count'),
+                'urls_with_match' => $matchedUrls,
+                'policy_miss_count' => $policyMiss,
+                'pages_total' => $pagesTotal,
+            ];
+        }
+
+        $resultsTable = $rows->take(150)->map(function ($r) {
+            return [
+                'url' => $r->url,
+                'rule_name' => $r->rule_name,
+                'rule_key' => $r->rule_key,
+                'target_scope' => $r->target_scope,
+                'matched' => $r->matched,
+                'match_count' => $r->match_count,
+                'sample_match' => $r->sample_match ? mb_substr($r->sample_match, 0, 400) : null,
+                'expect_match' => $r->expect_match,
+                'severity' => $r->severity,
+                'error_message' => $r->error_message,
+                'segment' => $r->segment_key,
+            ];
+        })->values()->toArray();
+
+        return [
+            'module_enabled' => true,
+            'rule_summaries' => $summaries,
+            'results_table' => $resultsTable,
+            'rule_keys' => collect($summaries)->pluck('rule_key')->unique()->values()->all(),
+        ];
+    }
+
+    protected function buildCustomExtractionSection(Audit $audit): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['custom_extraction_enabled']);
+        if (!$enabled) {
+            return ['module_enabled' => false, 'rule_cards' => [], 'per_url_table' => [], 'duplicate_groups' => []];
+        }
+
+        $rows = AuditCustomExtractionResult::where('audit_id', $audit->id)->get();
+        $pagesTotal = max(1, $audit->pages()->count());
+        $byRule = $rows->groupBy('rule_key');
+        $cards = [];
+        foreach ($byRule as $ruleKey => $group) {
+            $first = $group->first();
+            $missing = $group->where('missing', true)->count();
+            $withValues = $group->where('missing', false)->count();
+            $cards[] = [
+                'rule_key' => $ruleKey,
+                'rule_name' => $first->rule_name,
+                'extraction_type' => $first->extraction_type,
+                'target_scope' => $first->target_scope,
+                'coverage_pct' => round(100 * $withValues / $pagesTotal, 1),
+                'missing_count' => $missing,
+                'urls_with_value' => $withValues,
+                'pages_total' => $pagesTotal,
+            ];
+        }
+
+        $duplicateGroups = [];
+        $dupIndex = $rows->filter(fn ($r) => $r->fingerprint !== null && ! $r->missing)->groupBy(fn ($r) => $r->rule_key.'|'.$r->fingerprint);
+        foreach ($dupIndex as $key => $grp) {
+            if ($grp->count() < 2) {
+                continue;
+            }
+            $duplicateGroups[] = [
+                'rule_key' => $grp->first()->rule_key,
+                'value_fingerprint' => $grp->first()->fingerprint,
+                'sample_values' => array_slice($grp->first()->values ?? [], 0, 3),
+                'url_count' => $grp->count(),
+                'urls' => $grp->pluck('url')->values()->take(20)->all(),
+            ];
+        }
+
+        $perUrl = $rows->take(150)->map(function ($r) {
+            return [
+                'url' => $r->url,
+                'rule_key' => $r->rule_key,
+                'rule_name' => $r->rule_name,
+                'values' => $r->values,
+                'missing' => $r->missing,
+                'error_message' => $r->error_message,
+                'segment' => $r->segment_key,
+            ];
+        })->values()->toArray();
+
+        return [
+            'module_enabled' => true,
+            'rule_cards' => $cards,
+            'per_url_table' => $perUrl,
+            'duplicate_groups' => array_slice($duplicateGroups, 0, 40),
+            'rule_keys' => collect($cards)->pluck('rule_key')->unique()->values()->all(),
+        ];
+    }
+
+    protected function buildSpellingGrammarSection(Audit $audit, $pages, $issues): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['spelling_grammar_enabled']);
+        $modIssues = $issues->where('module_key', 'spelling_grammar')->values();
+        $highConfCut = (int) config('seo_audit.spelling.high_confidence', 78);
+        $highConf = $modIssues->filter(fn ($i) => (int) ($i->details_json['confidence'] ?? 0) >= $highConfCut);
+
+        $byKind = [];
+        foreach ($modIssues as $issue) {
+            $k = (string) ($issue->details_json['issue_kind'] ?? 'unknown');
+            $byKind[$k] = ($byKind[$k] ?? 0) + 1;
+        }
+
+        $rows = $modIssues->take(100)->map(function ($issue) {
+            $d = $issue->details_json ?? [];
+
+            return [
+                'url' => $issue->url,
+                'issue_kind' => $d['issue_kind'] ?? null,
+                'issue_text' => $d['issue_text'] ?? null,
+                'suggested_correction' => $d['suggested_correction'] ?? null,
+                'confidence' => $d['confidence'] ?? null,
+                'context_snippet' => $d['context_snippet'] ?? null,
+                'severity' => $issue->severity ?? null,
+            ];
+        })->values()->toArray();
+
+        $pagesWith = $modIssues->pluck('url')->filter()->unique()->count();
+
+        return [
+            'module_enabled' => $enabled,
+            'pages_with_issues' => $pagesWith,
+            'total_issues' => $modIssues->count(),
+            'high_confidence_issues' => $highConf->count(),
+            'by_kind' => $byKind,
+            'summary_cards' => [
+                'pages_with_issues' => $pagesWith,
+                'total_issues' => $modIssues->count(),
+                'high_confidence_issues' => $highConf->count(),
+            ],
+            'affected_urls_table' => $rows,
+        ];
+    }
+
+    protected function buildJsRenderingSection(Audit $audit, $pages, $issues): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['js_rendering_enabled']);
+        $modIssues = $issues->where('module_key', 'js_rendering')->values();
+        $withSnap = $pages->filter(fn ($p) => !empty($p->js_render_snapshot));
+
+        $byType = [];
+        foreach ($modIssues as $issue) {
+            $dt = $issue->details_json['diff_type'] ?? 'unknown';
+            $byType[$dt] = ($byType[$dt] ?? 0) + 1;
+        }
+
+        $rows = $modIssues->take(100)->map(function ($issue) {
+            $d = $issue->details_json ?? [];
+
+            return [
+                'url' => $issue->url,
+                'diff_type' => $d['diff_type'] ?? null,
+                'severity' => $issue->severity ?? ($d['severity'] ?? null),
+                'impact' => $issue->impact,
+                'message' => $issue->message ?? $issue->title,
+                'raw' => $d['raw'] ?? [],
+                'rendered' => $d['rendered'] ?? [],
+                'recommendation' => $issue->recommendation,
+                'filter_tags' => $d['filter_tags'] ?? [],
+            ];
+        })->values()->toArray();
+
+        return [
+            'module_enabled' => $enabled,
+            'pages_with_render_snapshot' => $withSnap->count(),
+            'diff_issue_count' => $modIssues->count(),
+            'affected_urls' => $modIssues->pluck('url')->unique()->count(),
+            'diff_types_breakdown' => $byType,
+            'summary_cards' => [
+                'pages_rendered' => $withSnap->count(),
+                'urls_with_diffs' => $modIssues->pluck('url')->unique()->count(),
+                'critical_severity' => $modIssues->where('severity', AuditIssue::SEVERITY_CRITICAL)->count(),
+            ],
+            'affected_urls_table' => $rows,
+        ];
+    }
+
+    protected function buildNearDuplicateSection(Audit $audit, $pages, $issues): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['near_duplicate_enabled']);
+        $moduleIssues = $issues->where('module_key', 'near_duplicate_content')->values();
+        $clusterGroups = $pages->filter(fn ($p) => !empty($p->near_duplicate_cluster_id))
+            ->groupBy('near_duplicate_cluster_id');
+        $clusters = $clusterGroups->map(function ($group, $clusterId) use ($moduleIssues) {
+            $canonical = $group->sortByDesc('internal_links_count')->first();
+            $related = $moduleIssues->first(function ($issue) use ($clusterId) {
+                return ($issue->details_json['cluster_id'] ?? null) === $clusterId;
+            });
+            $pair = $related->details_json['strongest_pair'] ?? null;
+
+            return [
+                'cluster_id' => $clusterId,
+                'cluster_size' => $group->count(),
+                'canonical_url' => $canonical?->url,
+                'member_urls' => $group->pluck('url')->values()->toArray(),
+                'max_similarity' => $related->details_json['max_similarity'] ?? null,
+                'strongest_pair' => $pair,
+                'recommendation' => $related->recommendation ?? 'Consolidate near duplicates and keep one canonical URL.',
+            ];
+        })->sortByDesc('cluster_size')->values()->toArray();
+
+        $pairs = $moduleIssues->map(function ($issue) {
+            $d = $issue->details_json ?? [];
+            return [
+                'url' => $issue->url,
+                'issue_code' => $issue->code,
+                'similarity' => $d['max_similarity'] ?? ($d['similarity'] ?? null),
+                'strongest_pair' => $d['strongest_pair'] ?? ($d['pair'] ?? null),
+            ];
+        })->take(30)->values()->toArray();
+
+        return [
+            'module_enabled' => $enabled,
+            'cluster_count' => count($clusters),
+            'largest_cluster_size' => collect($clusters)->max('cluster_size') ?? 0,
+            'duplicate_clusters' => $clusters,
+            'strongest_match_pairs' => $pairs,
+            'affected_urls' => $moduleIssues->pluck('url')->filter()->unique()->count(),
+        ];
+    }
+
+    protected function buildSegmentationSection(Audit $audit, $pages, $issues): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['segmentation_enabled']);
+        $counts = $pages->groupBy(fn ($page) => $page->segment_key ?: 'other')
+            ->map(fn ($group) => $group->count())
+            ->sortDesc();
+
+        $issueBySegment = $issues->groupBy(function ($issue) {
+            return $issue->details_json['segment'] ?? 'other';
+        })->map(fn ($group) => $group->count())->sortDesc();
+
+        $topProblems = $issues->groupBy(function ($issue) {
+            return $issue->details_json['segment'] ?? 'other';
+        })->map(function ($segmentIssues, $segment) {
+            $top = $segmentIssues->groupBy('code')->map(fn ($items) => $items->count())->sortDesc()->take(5);
+            return [
+                'segment' => $segment,
+                'issue_count' => $segmentIssues->count(),
+                'top_issues' => $top->toArray(),
+            ];
+        })->values()->toArray();
+
+        return [
+            'module_enabled' => $enabled,
+            'url_counts' => $counts->toArray(),
+            'issue_counts' => $issueBySegment->toArray(),
+            'top_problems_by_segment' => $topProblems,
+        ];
+    }
+
+    protected function buildSiteVisualisationsSection(Audit $audit, $pages, $links, array $nearDuplicate, array $segmentation): array
+    {
+        $flags = $audit->crawl_module_flags ?? [];
+        $enabled = !empty($flags['site_visualisation_enabled']);
+        $status = $pages->groupBy(function ($p) {
+            $code = (int) ($p->status_code ?? 0);
+            if ($code >= 500) return '5xx';
+            if ($code >= 400) return '4xx';
+            if ($code >= 300) return '3xx';
+            if ($code >= 200) return '2xx';
+            return 'other';
+        })->map->count()->toArray();
+
+        $depthDist = [];
+        $host = parse_url($audit->normalized_url, PHP_URL_HOST) ?: '';
+        foreach ($pages as $page) {
+            $path = (string) parse_url($page->url, PHP_URL_PATH);
+            $depth = max(0, substr_count(trim($path, '/'), '/'));
+            $key = (string) min(5, $depth);
+            $depthDist[$key] = ($depthDist[$key] ?? 0) + 1;
+        }
+        ksort($depthDist);
+
+        $linkDist = [
+            '0-10' => 0, '11-30' => 0, '31-75' => 0, '76-150' => 0, '151+' => 0,
+        ];
+        foreach ($pages as $page) {
+            $count = (int) ($page->internal_links_count ?? 0);
+            if ($count <= 10) $linkDist['0-10']++;
+            elseif ($count <= 30) $linkDist['11-30']++;
+            elseif ($count <= 75) $linkDist['31-75']++;
+            elseif ($count <= 150) $linkDist['76-150']++;
+            else $linkDist['151+']++;
+        }
+
+        $graph = $links->where('type', 'internal')->take(500)->map(function ($link) use ($host) {
+            $from = $this->normalizeUrlForGraph($link->from_url, $host);
+            $to = $this->normalizeUrlForGraph($link->to_url_normalized ?: $link->to_url, $host);
+            return ['from' => $from, 'to' => $to];
+        })->values()->toArray();
+
+        $clusterSize = collect($nearDuplicate['duplicate_clusters'] ?? [])
+            ->groupBy(fn ($cluster) => (string) ($cluster['cluster_size'] ?? 0))
+            ->map(fn ($items) => $items->count())
+            ->toArray();
+
+        return [
+            'module_enabled' => $enabled,
+            'status_code_distribution' => $status,
+            'crawl_depth_distribution' => $depthDist,
+            'urls_by_segment' => $segmentation['url_counts'] ?? [],
+            'duplicate_clusters_by_size' => $clusterSize,
+            'internal_link_count_distribution' => $linkDist,
+            'internal_link_graph' => [
+                'nodes' => array_values(array_unique(array_merge(array_column($graph, 'from'), array_column($graph, 'to')))),
+                'edges' => $graph,
+            ],
+        ];
+    }
+
+    protected function normalizeUrlForGraph(?string $url, string $host): string
+    {
+        if (!$url) {
+            return '/';
+        }
+        $parsed = parse_url($url);
+        if (!$parsed) {
+            return $url;
+        }
+        $pHost = strtolower($parsed['host'] ?? $host);
+        $path = $parsed['path'] ?? '/';
+        $q = isset($parsed['query']) ? '?' . $parsed['query'] : '';
+
+        return ($pHost === strtolower($host) ? '' : $pHost) . ($path ?: '/') . $q;
     }
 
     public function categoryGrades(array $scores): array

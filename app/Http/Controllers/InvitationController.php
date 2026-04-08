@@ -132,8 +132,8 @@ class InvitationController extends Controller
             // Create user account
             $user = \App\Models\User::create([
                 'name' => $request->input('name', ''),
-                'email' => $validated['email'],
-                'password' => \Illuminate\Support\Facades\Hash::make(Str::random(32)), // Temporary password
+                'email' => strtolower(trim($validated['email'])),
+                'password' => Str::random(32), // Temporary; User 'hashed' cast hashes once
                 'email_verified_at' => null,
             ]);
             
@@ -161,6 +161,8 @@ class InvitationController extends Controller
             auth()->login($user);
         }
 
+        $user->startFreeTrialIfEligible();
+
         return redirect()->route('dashboard')
             ->with('success', 'You have joined ' . $organization->name . '!');
     }
@@ -181,3 +183,4 @@ class InvitationController extends Controller
         return back()->with('success', 'Invitation revoked.');
     }
 }
+

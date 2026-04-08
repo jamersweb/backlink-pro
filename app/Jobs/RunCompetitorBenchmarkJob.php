@@ -38,8 +38,8 @@ class RunCompetitorBenchmarkJob implements ShouldQueue
         $run->update(['status' => CompetitorRun::STATUS_RUNNING]);
 
         try {
-            // Fetch competitor data (using SERP API or manual list)
-            $competitors = $this->fetchCompetitors($run->keywords, $run->country);
+            // Fetch competitor data: use run's competitor_urls (1–5 URLs) or fallback to empty
+            $competitors = $this->fetchCompetitors($run);
             
             // Run light audits on competitors
             foreach ($competitors as $competitor) {
@@ -47,8 +47,10 @@ class RunCompetitorBenchmarkJob implements ShouldQueue
                 $this->auditCompetitor($snapshot);
             }
 
-            // Generate AI summary
-            $this->generateCompetitorSummary($run);
+            // Generate AI summary (only if we have snapshots)
+            if ($run->snapshots()->count() > 0) {
+                $this->generateCompetitorSummary($run);
+            }
 
             $run->update(['status' => CompetitorRun::STATUS_COMPLETED]);
 
@@ -65,18 +67,32 @@ class RunCompetitorBenchmarkJob implements ShouldQueue
     }
 
     /**
-     * Fetch competitors from SERP API or manual list
+     * Fetch competitors from run's competitor_urls (1–5 URLs). Returns list of [url, keyword] for snapshot creation.
      */
-    protected function fetchCompetitors(array $keywords, ?string $country): array
+    protected function fetchCompetitors(CompetitorRun $run): array
     {
-        // TODO: Integrate with SERP API provider (e.g., SerpAPI, DataForSEO)
-        // For now, return empty array - implement based on your provider
-        
+        $urls = $run->competitor_urls ?? [];
+        if (!is_array($urls)) {
+            $urls = [];
+        }
         $competitors = [];
-        
-        // Example: If using manual competitor list, you could store it in the run
-        // For now, we'll return empty and let the admin manually add competitors
-        
+        $keywords = $run->keywords ?? [];
+        foreach ($urls as $index => $url) {
+            $url = is_string($url) ? trim($url) : '';
+            if ($url === '') {
+                continue;
+            }
+            $keyword = $keywords[$index] ?? ('Competitor ' . (count($competitors) + 1));
+            if (is_array($keyword)) {
+                $keyword = 'Competitor ' . (count($competitors) + 1);
+            }
+            $competitors[] = [
+                'url' => $url,
+                'keyword' => $keyword,
+                'title' => null,
+                'meta_description' => null,
+            ];
+        }
         return $competitors;
     }
 
@@ -96,28 +112,28 @@ class RunCompetitorBenchmarkJob implements ShouldQueue
     }
 
     /**
-     * Run light audit on competitor URL
+     * Run light audit on competitor URL: fetch HTML with timeout + user-agent, extract title/meta/word count.
      */
     protected function auditCompetitor(CompetitorSnapshot $snapshot): void
     {
-        // Run basic checks (title, meta, word count, page weight)
-        // This could be done via a simple HTTP request + HTML parsing
-        // Or by triggering a light audit job
-        
         try {
-            $response = Http::timeout(10)->get($snapshot->competitor_url);
+            $response = Http::timeout(15)
+                ->withHeaders(['User-Agent' => 'BacklinkPro-CompetitorBenchmark/1.0'])
+                ->get($snapshot->competitor_url);
             $html = $response->body();
             
-            // Extract basic data
-            preg_match('/<title>(.*?)<\/title>/i', $html, $titleMatch);
+            preg_match('/<title>(.*?)<\/title>/is', $html, $titleMatch);
             preg_match('/<meta\s+name=["\']description["\']\s+content=["\'](.*?)["\']/i', $html, $metaMatch);
+            if (!isset($metaMatch[1])) {
+                preg_match('/<meta\s+content=["\'](.*?)["\']\s+name=["\']description["\']/i', $html, $metaMatch);
+            }
             
             $wordCount = str_word_count(strip_tags($html));
             $pageWeight = strlen($html);
             
             $snapshot->update([
-                'title' => $titleMatch[1] ?? null,
-                'meta_description' => $metaMatch[1] ?? null,
+                'title' => isset($titleMatch[1]) ? trim($titleMatch[1]) : null,
+                'meta_description' => isset($metaMatch[1]) ? trim($metaMatch[1]) : null,
                 'word_count' => $wordCount,
                 'page_weight_bytes' => $pageWeight,
             ]);

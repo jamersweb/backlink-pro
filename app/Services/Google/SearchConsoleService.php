@@ -154,6 +154,43 @@ class SearchConsoleService
             throw $e;
         }
     }
+
+    /**
+     * Fetch query + page dimensions (for cannibalization detection)
+     */
+    public function fetchQueryPageMetrics(string $siteUrl, \DateTime $startDate, \DateTime $endDate, int $limit = 25000): array
+    {
+        try {
+            $request = new \Google_Service_SearchConsole_SearchAnalyticsQueryRequest();
+            $request->setStartDate($startDate->format('Y-m-d'));
+            $request->setEndDate($endDate->format('Y-m-d'));
+            $request->setDimensions(['query', 'page']);
+            $request->setRowLimit($limit);
+
+            $response = $this->service->searchanalytics->query($siteUrl, $request);
+            $rows = $response->getRows();
+
+            $result = [];
+            foreach ($rows as $row) {
+                $keys = $row->getKeys();
+                $result[] = [
+                    'query' => $keys[0] ?? '',
+                    'page' => $keys[1] ?? '',
+                    'clicks' => $row->getClicks(),
+                    'impressions' => $row->getImpressions(),
+                    'ctr' => $row->getCtr(),
+                    'position' => $row->getPosition(),
+                ];
+            }
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('GSC fetch query+page failed', [
+                'error' => $e->getMessage(),
+                'site_url' => $siteUrl,
+            ]);
+            throw $e;
+        }
+    }
 }
 
 

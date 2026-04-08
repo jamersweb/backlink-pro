@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RunSeoAuditJob;
+use App\Models\Audit;
 use App\Models\User;
 use App\Models\Referral;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class RegisterController extends Controller
@@ -17,7 +19,13 @@ class RegisterController extends Controller
     // Form dikhane ka method
     public function show()
     {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'prefill' => [
+                'name' => request()->query('name', ''),
+                'email' => request()->query('email', ''),
+                'audit_url' => request()->query('audit_url', ''),
+            ],
+        ]);
     }
 
     // Form submit hone per register karne ka method
@@ -28,13 +36,14 @@ class RegisterController extends Controller
             'name'                  => 'required|string|max:255',
             'email'                 => 'required|string|email|max:255|unique:users',
             'password'              => 'required|string|confirmed|min:8',
+            'audit_url'             => 'nullable|url|max:2048',
         ]);
 
-        // User create
+        // User create (password set plain so User model 'hashed' cast hashes once)
         $user = User::create([
             'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
+            'email'    => strtolower(trim($data['email'])),
+            'password' => $data['password'],
         ]);
         
         // Default role assign karo (ensure role exists first)
@@ -56,6 +65,19 @@ class RegisterController extends Controller
         
         // Auto-login user so they can access verification page
         Auth::login($user);
+        $user->startFreeTrialIfEligible();
+
+        if (!empty($data['audit_url'])) {
+            $audit = $this->createOnboardingAudit($user, $data['audit_url']);
+
+            $reportUrl = route('audit-report.show', ['id' => $audit->id]);
+
+            if ($request->header('X-Inertia')) {
+                return Inertia::location($reportUrl);
+            }
+
+            return redirect($reportUrl)->with('status', 'verification-link-sent');
+        }
         
         // Redirect to verification notice page
         return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
@@ -91,5 +113,52 @@ class RegisterController extends Controller
             // Invalid cookie, ignore
             \Log::debug('Failed to attach referral: ' . $e->getMessage());
         }
+    }
+
+    protected function createOnboardingAudit(User $user, string $url): Audit
+    {
+        $normalizedUrl = $this->normalizeUrl($url);
+
+        $audit = Audit::create([
+            'user_id' => $user->id,
+            'url' => $url,
+            'normalized_url' => $normalizedUrl,
+            'status' => Audit::STATUS_QUEUED,
+            'mode' => Audit::MODE_AUTH,
+            'lead_email' => $user->email,
+            'share_token' => Str::random(32),
+            'pages_limit' => 1,
+            'crawl_depth' => 0,
+            'started_at' => now(),
+            'progress_percent' => 0,
+        ]);
+
+        try {
+            @set_time_limit(120);
+            RunSeoAuditJob::dispatchSync($audit->id);
+        } catch (\Throwable $e) {
+            \Log::error('Onboarding audit run failed', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
+            $audit->refresh();
+
+            if ($audit->status !== Audit::STATUS_COMPLETED) {
+                $audit->status = Audit::STATUS_FAILED;
+                $audit->error = $e->getMessage();
+                $audit->finished_at = now();
+                $audit->save();
+            }
+        }
+
+        return $audit->fresh();
+    }
+
+    protected function normalizeUrl(string $url): string
+    {
+        $url = trim($url);
+
+        if (!preg_match('#^https?://#i', $url)) {
+            $url = 'https://' . $url;
+        }
+
+        return rtrim($url, '/');
     }
 }

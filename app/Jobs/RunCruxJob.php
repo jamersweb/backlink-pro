@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Audit;
 use App\Services\Google\CruxResultDto;
 use App\Services\Google\CruxService;
+use App\Services\SeoAudit\AuditKpiSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -162,7 +163,7 @@ class RunCruxJob implements ShouldQueue
             $kpis = $audit->audit_kpis ?? [];
             $kpis['google'] = $kpis['google'] ?? [];
             $kpis['google']['crux'] = $crux;
-            $audit->audit_kpis = $kpis;
+            $audit->audit_kpis = app(AuditKpiSanitizer::class)->sanitize($kpis);
             $audit->save();
         } catch (\Exception $e) {
             Log::warning('Failed to persist CrUX KPIs', [

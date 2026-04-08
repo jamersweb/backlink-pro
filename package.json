@@ -24,6 +24,7 @@
     "vue3-apexcharts": "^1.7.0"
   },
   "devDependencies": {
+    "playwright": "^1.51.0",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitejs/plugin-vue": "^5.0.4",

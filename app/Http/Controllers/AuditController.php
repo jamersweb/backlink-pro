@@ -16,6 +16,8 @@ use App\Models\Lead;
 use App\Jobs\RunSeoAuditJob;
 use App\Jobs\RunCruxJob;
 use App\Services\Billing\PlanLimiter;
+use App\Services\SeoAudit\CrawlModuleConfig;
+use App\Services\SeoAudit\CustomAuditRulesValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
@@ -70,6 +72,26 @@ class AuditController extends Controller
             'url' => ['required', 'string', 'max:2048'],
             'lead_email' => ['nullable', 'email', 'max:255'],
             'organization_id' => ['nullable', 'exists:organizations,id'],
+            'js_rendering_enabled' => ['nullable', 'boolean'],
+            'near_duplicate_enabled' => ['nullable', 'boolean'],
+            'spelling_grammar_enabled' => ['nullable', 'boolean'],
+            'custom_source_search_enabled' => ['nullable', 'boolean'],
+            'custom_extraction_enabled' => ['nullable', 'boolean'],
+            'forms_auth_enabled' => ['nullable', 'boolean'],
+            'segmentation_enabled' => ['nullable', 'boolean'],
+            'link_metrics_enabled' => ['nullable', 'boolean'],
+            'site_visualisation_enabled' => ['nullable', 'boolean'],
+            'spelling_allowlist' => ['nullable', 'array', 'max:200'],
+            'spelling_allowlist.*' => ['string', 'max:120'],
+            'custom_source_search_rules' => ['nullable', 'array'],
+            'custom_extraction_rules' => ['nullable', 'array'],
+            'forms_auth_login_url' => ['nullable', 'string', 'max:2048'],
+            'forms_auth_username' => ['nullable', 'string', 'max:255'],
+            'forms_auth_password' => ['nullable', 'string', 'max:512'],
+            'forms_auth_username_selector' => ['nullable', 'string', 'max:512'],
+            'forms_auth_password_selector' => ['nullable', 'string', 'max:512'],
+            'forms_auth_submit_selector' => ['nullable', 'string', 'max:512'],
+            'forms_auth_success_indicator' => ['nullable', 'string', 'max:512'],
         ]);
 
         $url = $this->normalizeUrl($validated['url']);
@@ -143,6 +165,69 @@ class AuditController extends Controller
         }
 
         // Create audit (share_token allows creator to view after redirect from marketing form)
+        $crawlModuleFlags = app(CrawlModuleConfig::class)->normalizeFlags($validated);
+
+        $customSearchRulesPayload = null;
+        if (array_key_exists('custom_source_search_rules', $validated) && $validated['custom_source_search_rules'] !== null) {
+            $v = CustomAuditRulesValidator::validateSearchPayload($validated['custom_source_search_rules']);
+            if (! $v['valid']) {
+                return back()->withErrors(['custom_source_search_rules' => implode(' ', $v['errors'])])->withInput();
+            }
+            if ($v['rules'] !== []) {
+                $customSearchRulesPayload = ['rules' => $v['rules']];
+            }
+        }
+        $customExtractionRulesPayload = null;
+        if (array_key_exists('custom_extraction_rules', $validated) && $validated['custom_extraction_rules'] !== null) {
+            $v = CustomAuditRulesValidator::validateExtractionPayload($validated['custom_extraction_rules']);
+            if (! $v['valid']) {
+                return back()->withErrors(['custom_extraction_rules' => implode(' ', $v['errors'])])->withInput();
+            }
+            if ($v['rules'] !== []) {
+                $customExtractionRulesPayload = ['rules' => $v['rules']];
+            }
+        }
+
+        if (! empty($crawlModuleFlags['forms_auth_enabled'])) {
+            $login = trim((string) ($validated['forms_auth_login_url'] ?? ''));
+            $fu = trim((string) ($validated['forms_auth_username'] ?? ''));
+            $fp = (string) ($validated['forms_auth_password'] ?? '');
+            if ($login === '' || $fu === '' || $fp === '') {
+                return back()->withErrors([
+                    'forms_auth_login_url' => 'Forms authentication requires login URL, username, and password.',
+                ])->withInput();
+            }
+        }
+
+        $spellingAllow = array_values(array_unique(array_filter(array_map(
+            'strtolower',
+            array_map('trim', array_merge(
+                $organization?->spelling_allowlist ?? [],
+                $validated['spelling_allowlist'] ?? []
+            ))
+        ))));
+
+        $formsAuthPayload = [
+            'forms_auth_login_url' => null,
+            'forms_auth_username' => null,
+            'forms_auth_password' => null,
+            'forms_auth_username_selector' => null,
+            'forms_auth_password_selector' => null,
+            'forms_auth_submit_selector' => null,
+            'forms_auth_success_indicator' => null,
+        ];
+        if (! empty($crawlModuleFlags['forms_auth_enabled'])) {
+            $formsAuthPayload = [
+                'forms_auth_login_url' => $validated['forms_auth_login_url'] ?? null,
+                'forms_auth_username' => $validated['forms_auth_username'] ?? null,
+                'forms_auth_password' => $validated['forms_auth_password'] ?? null,
+                'forms_auth_username_selector' => $validated['forms_auth_username_selector'] ?? null,
+                'forms_auth_password_selector' => $validated['forms_auth_password_selector'] ?? null,
+                'forms_auth_submit_selector' => $validated['forms_auth_submit_selector'] ?? null,
+                'forms_auth_success_indicator' => $validated['forms_auth_success_indicator'] ?? null,
+            ];
+        }
+
         $audit = Audit::create([
             'user_id' => auth()->id(),
             'organization_id' => $organization?->id,
@@ -157,6 +242,11 @@ class AuditController extends Controller
             'pages_limit' => $defaultPagesLimit,
             'crawl_depth' => $defaultCrawlDepth,
             'share_token' => Str::random(32),
+            'crawl_module_flags' => $crawlModuleFlags,
+            'spelling_allowlist' => $spellingAllow !== [] ? $spellingAllow : null,
+            'custom_source_search_rules' => $customSearchRulesPayload,
+            'custom_extraction_rules' => $customExtractionRulesPayload,
+            ...$formsAuthPayload,
         ]);
 
         if ($lead) {
@@ -245,7 +335,7 @@ class AuditController extends Controller
         // Load relations
         $page = $audit->pages()->first();
         $issues = $audit->issues()
-            ->orderByRaw("FIELD(impact, 'high', 'medium', 'low')")
+            ->orderByRaw("CASE impact WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END")
             ->orderBy('score_penalty', 'desc')
             ->get();
         
@@ -286,7 +376,7 @@ class AuditController extends Controller
             'missing_refresh_token' => $ga4Connected && empty($user?->google_refresh_token),
         ];
 
-        return Inertia::render('Audit/Show', [
+        $payload = [
             'audit' => [
                 'id' => $audit->id,
                 'organization_id' => $audit->organization_id,
@@ -309,6 +399,8 @@ class AuditController extends Controller
                 'pages_discovered' => $audit->pages_discovered ?? 0,
                 'progress_percent' => $audit->progress_percent ?? 0,
                 'crawl_stats' => $audit->crawl_stats ?? [],
+                'crawl_module_flags' => $audit->crawl_module_flags ?? [],
+                'report_modules' => $audit->report_modules ?? null,
                 'performance_summary' => $audit->performance_summary ?? null,
             ],
             'google' => $googleKpis,
@@ -361,6 +453,15 @@ class AuditController extends Controller
             'issues' => $issues->map(function ($issue) {
                 return [
                     'id' => $issue->id,
+                    'audit_run_id' => $issue->audit_run_id ?? $issue->audit_id,
+                    'url' => $issue->url,
+                    'module_key' => $issue->module_key,
+                    'issue_type' => $issue->issue_type ?? $issue->code,
+                    'severity' => $issue->severity,
+                    'status' => $issue->status,
+                    'message' => $issue->message ?? $issue->title,
+                    'details_json' => $issue->details_json,
+                    'discovered_at' => optional($issue->discovered_at)->toIso8601String(),
                     'code' => $issue->code,
                     'category' => $issue->category,
                     'title' => $issue->title,
@@ -422,7 +523,13 @@ class AuditController extends Controller
             }),
             'isOwner' => $audit->isOwnedBy(auth()->user()),
             'shareUrl' => $audit->share_token ? URL::route('audit.show', ['audit' => $audit->id, 'token' => $audit->share_token]) : null,
-        ]);
+        ];
+
+        if ($request->wantsJson()) {
+            return response()->json($payload);
+        }
+
+        return Inertia::render('Audit/Show', $payload);
     }
 
     /**

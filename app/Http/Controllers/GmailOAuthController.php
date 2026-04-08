@@ -25,7 +25,8 @@ class GmailOAuthController extends Controller
             $gmailService = new GmailService();
             $authUrl = $gmailService->getAuthUrl();
             
-            // Store state in session for CSRF protection
+            // Store flow + state in session
+            session(['google_oauth_flow' => 'gmail_connect']);
             session(['gmail_oauth_state' => bin2hex(random_bytes(16))]);
             
             return redirect($authUrl);
@@ -129,4 +130,5 @@ class GmailOAuthController extends Controller
             ->with('success', 'Gmail account disconnected successfully');
     }
 }
+
 

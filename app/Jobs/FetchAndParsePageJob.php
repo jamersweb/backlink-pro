@@ -6,14 +6,18 @@ use App\Models\Audit;
 use App\Models\AuditLink;
 use App\Models\AuditPage;
 use App\Models\AuditUrlQueue;
+use App\Services\SeoAudit\AuthCrawlMetadataBuilder;
+use App\Services\SeoAudit\SeoAuditHttp;
 use App\Services\SeoAudit\UrlNormalizer;
 use App\Services\SeoAudit\PageParser;
+use App\Services\SeoAudit\VisibleTextExtractor;
+use App\Services\SeoAudit\CustomSourceSearchService;
+use App\Services\SeoAudit\CustomExtractionService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class FetchAndParsePageJob implements ShouldQueue
@@ -60,20 +64,8 @@ class FetchAndParsePageJob implements ShouldQueue
             $queueItem->status = AuditUrlQueue::STATUS_PROCESSING;
             $queueItem->save();
 
-            // Fetch page
-            $response = Http::timeout(20)
-                ->connectTimeout(8)
-                ->withUserAgent('BacklinkProBot/1.0')
-                ->withOptions([
-                    'allow_redirects' => [
-                        'max' => 5,
-                        'strict' => true,
-                        'referer' => true,
-                        'protocols' => ['http', 'https'],
-                        'track_redirects' => true,
-                    ],
-                ])
-                ->get($queueItem->url);
+            // Fetch page (uses forms-auth cookies when configured)
+            $response = SeoAuditHttp::crawlGet($audit, $queueItem->url)->get($queueItem->url);
 
             $statusCode = $response->status();
             $finalUrl = $response->effectiveUri() ?? $queueItem->url;
@@ -101,17 +93,63 @@ class FetchAndParsePageJob implements ShouldQueue
             ];
             $parsed = PageParser::parse($html, $finalUrl, $queueItem->url_normalized, $headers);
 
+            $flags = $audit->crawl_module_flags ?? [];
+            $extraPage = [];
+
+            $authMeta = [];
+            if (! empty($flags['forms_auth_enabled'])) {
+                $audit->refresh();
+                $authMeta = AuthCrawlMetadataBuilder::build(
+                    $audit,
+                    $statusCode,
+                    (string) $finalUrl,
+                    $parsed['title'] ?? null,
+                    isset($parsed['word_count']) ? (int) $parsed['word_count'] : null
+                );
+                $extraPage['auth_crawl_metadata'] = $authMeta;
+            }
+
+            $headerStore = null;
+            if (!empty($flags['custom_source_search_enabled']) || !empty($flags['custom_extraction_enabled'])) {
+                $headerStore = [];
+                foreach ($response->headers() as $hKey => $hVals) {
+                    $headerStore[strtolower((string) $hKey)] = is_array($hVals) ? implode(', ', $hVals) : (string) $hVals;
+                }
+                $extraPage['response_headers_json'] = $headerStore;
+            }
+
+            if (!empty($flags['spelling_grammar_enabled'])) {
+                $mainText = VisibleTextExtractor::extractFromHtml($html);
+                $maxStore = (int) config('seo_audit.spelling.max_chars_stored', 96000);
+                if (mb_strlen($mainText) > $maxStore) {
+                    $mainText = mb_substr($mainText, 0, $maxStore);
+                }
+                $extraPage['visible_main_text'] = $mainText;
+            }
+
+            $visForCustom = '';
+            if (!empty($flags['custom_source_search_enabled']) || !empty($flags['custom_extraction_enabled'])) {
+                $visForCustom = $extraPage['visible_main_text'] ?? VisibleTextExtractor::extractFromHtml($html);
+            }
+
             // Create or update audit page
             $page = AuditPage::updateOrCreate(
                 [
                     'audit_id' => $audit->id,
                     'url' => $finalUrl,
                 ],
-                array_merge($parsed, [
+                array_merge($parsed, $extraPage, [
                     'status_code' => $statusCode,
                     'html_size_bytes' => $htmlSizeBytes,
                 ])
             );
+
+            if (!empty($flags['custom_source_search_enabled'])) {
+                app(CustomSourceSearchService::class)->runCrawlScopes($audit, $page, $html, $headerStore ?? [], $visForCustom);
+            }
+            if (!empty($flags['custom_extraction_enabled'])) {
+                app(CustomExtractionService::class)->runCrawlScopes($audit, $page, $html, $headerStore ?? [], $visForCustom);
+            }
 
             // Extract and store links
             $this->extractAndStoreLinks($audit, $queueItem->url_normalized, $html, $finalUrl);

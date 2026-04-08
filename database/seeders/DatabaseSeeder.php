@@ -25,6 +25,10 @@ class DatabaseSeeder extends Seeder
         // Seed categories and subcategories
         $this->call(CategorySeeder::class);
 
+        // Seed full country list and sample states/cities for campaign dropdowns
+        $this->call(FullCountriesSeeder::class);
+        $this->call(LocationSeeder::class);
+
         // Create test user
         $testUser = User::factory()->create([
             'name' => 'Test User',
@@ -37,3 +41,6 @@ class DatabaseSeeder extends Seeder
         }
     }
 }
+
+
+

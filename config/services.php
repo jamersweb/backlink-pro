@@ -38,10 +38,43 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect_uri' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/gmail/oauth/callback'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/auth/google/callback'),
+        'redirect_uri' => env('GOOGLE_GMAIL_REDIRECT_URI', env('APP_URL') . '/gmail/oauth/callback'),
         'pagespeed_api_key' => env('GOOGLE_PAGESPEED_API_KEY', env('PAGESPEED_API_KEY')),
         'pagespeed_global_per_min' => env('GOOGLE_PAGESPEED_GLOBAL_PER_MIN', 60),
+        'pagespeed_timeout_seconds' => env('GOOGLE_PAGESPEED_TIMEOUT_SECONDS', 90),
+        'pagespeed_connect_timeout_seconds' => env('GOOGLE_PAGESPEED_CONNECT_TIMEOUT_SECONDS', 15),
+        'pagespeed_retry_times' => env('GOOGLE_PAGESPEED_RETRY_TIMES', 2),
+        'pagespeed_retry_sleep_ms' => env('GOOGLE_PAGESPEED_RETRY_SLEEP_MS', 2000),
         'crux_api_key' => env('GOOGLE_CRUX_API_KEY'),
+    ],
+
+    'github' => [
+        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_secret' => env('GITHUB_CLIENT_SECRET'),
+        'redirect' => env('GITHUB_REDIRECT_URI', env('APP_URL') . '/auth/github/callback'),
+    ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', env('APP_URL') . '/auth/facebook/callback'),
+    ],
+
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI', env('APP_URL') . '/auth/microsoft/callback'),
+        'tenant' => env('MICROSOFT_TENANT_ID', 'common'),
+    ],
+
+    'apple' => [
+        'client_id' => env('APPLE_CLIENT_ID'),
+        'client_secret' => env('APPLE_CLIENT_SECRET'),
+        'redirect' => env('APPLE_REDIRECT_URI', env('APP_URL') . '/auth/apple/callback'),
+        'team_id' => env('APPLE_TEAM_ID'),
+        'key_id' => env('APPLE_KEY_ID'),
+        'private_key' => env('APPLE_PRIVATE_KEY'),
     ],
 
     'google_seo' => [
@@ -86,3 +119,6 @@ return [
     ],
 
 ];
+
+
+
