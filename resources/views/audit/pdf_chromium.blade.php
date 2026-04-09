@@ -262,6 +262,24 @@
     $ga4TopPages  = collect(is_array($ga4['top_pages'] ?? null) ? $ga4['top_pages'] : [])->take(5);
     $gscTopQueries = collect(is_array($gsc['top_queries'] ?? null) ? $gsc['top_queries'] : [])->take(6);
 
+    $navTabs = ['Overview', 'Technical', 'Content', 'Backlinks', 'Strategy'];
+    $heroLabel = $overallScore >= 90 ? 'Exceptional baseline' : ($overallScore >= 75 ? 'Growth opportunity' : 'Recovery required');
+    $heroStatus = $audit->status === \App\Models\Audit::STATUS_COMPLETED ? 'Deep Crawl Complete' : strtoupper((string) ($audit->status ?? 'Pending'));
+    $focusIssue = $topIssues->first();
+    $focusIssueTitle = $focusIssue ? $asText($focusIssue->title ?? $focusIssue->message ?? $focusIssue->code ?? 'Optimization Opportunity') : 'Optimization Opportunity';
+    $focusIssueBody = $focusIssue
+        ? Str::limit(strip_tags($asText($focusIssue->recommendation ?? $focusIssue->description ?? 'Address the highest-impact issue first to lift technical health and reduce crawl friction.')), 200)
+        : 'Address the highest-impact issue first to lift technical health and reduce crawl friction.';
+    $positiveInsightTitle = $overallScore >= 90 ? 'Natural Strength Detected' : 'Momentum Building';
+    $positiveInsightBody = !empty($ga4Summary)
+        ? 'Traffic instrumentation is connected. GA4 and GSC signals can now be used to prioritize fixes against real demand.'
+        : 'Core technical signals are available from the crawl, which gives a strong baseline for phased optimization.';
+    $positiveTags = array_values(array_filter([
+        is_numeric($authNum) ? 'DR '.$fmtNum($authNum) : null,
+        is_numeric($internalLinks) ? $fmtK($internalLinks).' links' : null,
+        $pagesCrawled > 0 ? $pagesCrawled.' pages' : null,
+    ]));
+
     $totalIssues = max(1, $allIssues->count());
     $critPct = round(($critCount / $totalIssues) * 100, 1);
     $warnPct = round(($warnCount / $totalIssues) * 100, 1);
@@ -273,25 +291,39 @@
      PAGE 1 — EXECUTIVE SUMMARY
 ═══════════════════════════════════════════════════════ --}}
 
-<main class="pt-6 pb-16 px-5 md:px-6 max-w-none">
+<nav class="w-full bg-neutral-950/88 backdrop-blur-xl shadow-2xl shadow-black/50">
+    <div class="flex justify-between items-center px-6 py-5 max-w-none">
+        <div class="text-lg font-black tracking-tighter text-neutral-50">Backlink Pro</div>
+        <div class="hidden md:flex gap-8 font-['Inter'] tracking-tight text-[11px] uppercase font-bold">
+            @foreach($navTabs as $tab)
+                <span class="{{ $loop->first ? 'text-orange-500 border-b-2 border-orange-500 pb-1' : 'text-neutral-500' }}">{{ $tab }}</span>
+            @endforeach
+        </div>
+        <div class="font-['Geist_Mono'] text-[10px] uppercase tracking-widest text-neutral-600">
+            Audit #{{ $audit->id }}
+        </div>
+    </div>
+</nav>
+
+<main class="pt-10 pb-16 px-5 md:px-6 max-w-none">
 
     <!-- Hero Header -->
     <header class="mb-10 flex flex-col md:flex-row justify-between items-end gap-8 no-break">
         <div class="max-w-2xl">
-            <span class="font-['Geist_Mono'] text-primary-container tracking-[0.24em] uppercase text-[10px] mb-4 block">
-                Report Ready: {{ $reportWhen?->format('Y-m-d H:i:s') ?? now()->format('Y-m-d H:i:s') }}
+            <span class="font-['Geist_Mono'] text-primary-container tracking-[0.3em] uppercase text-[10px] mb-4 block">
+                Executive Summary
             </span>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tight leading-[1.02] break-words">
-                {{ Str::limit($audit->url, 52) }}
+            <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9]">
+                Technical <br/><span class="text-outline-variant/40">Audit</span> {{ $yearLabel }}
             </h1>
-            <p class="mt-5 text-neutral-500 font-['Inter'] leading-relaxed max-w-xl">
-                {{ Str::limit($summaryText, 200) }}
+            <p class="mt-8 text-neutral-500 font-['Inter'] leading-relaxed max-w-md">
+                {{ Str::limit($summaryText, 180) }}
             </p>
         </div>
         <div class="flex flex-col items-end gap-2">
             <span class="font-['Geist_Mono'] text-[10px] text-neutral-600 uppercase tracking-widest">Property: {{ Str::limit($host, 40) }}</span>
-            <span class="font-['Geist_Mono'] text-[10px] text-neutral-600 uppercase tracking-widest">Status: {{ str_replace('_', ' ', strtoupper($audit->status ?? 'COMPLETE')) }}</span>
-            <span class="font-['Geist_Mono'] text-[10px] text-neutral-600 uppercase tracking-widest">Report ID: #{{ $audit->id }}</span>
+            <span class="font-['Geist_Mono'] text-[10px] text-neutral-600 uppercase tracking-widest">Status: {{ $heroStatus }}</span>
+            <span class="font-['Geist_Mono'] text-[10px] text-neutral-600 uppercase tracking-widest">Verified: {{ $reportWhen?->format('H:i') ?? now()->format('H:i') }} UTC</span>
         </div>
     </header>
 
@@ -299,8 +331,8 @@
     <div class="bento-grid mb-12">
 
         <!-- Main Score Card -->
-        <div class="col-span-12 p-8 bg-surface-container-low rounded-xl relative overflow-hidden border-l-4 border-primary-container no-break">
-            <div class="flex flex-col md:flex-row items-start gap-10">
+        <div class="col-span-12 lg:col-span-8 p-10 bg-surface-container-low rounded-xl relative overflow-hidden border-l-4 border-primary-container no-break">
+            <div class="flex flex-col md:flex-row items-center gap-12">
             <div class="relative w-60 h-60 flex-shrink-0">
                 <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <defs>
@@ -326,7 +358,7 @@
                 <h2 class="text-3xl font-bold tracking-tight">Overall Health Score</h2>
                 <p class="text-neutral-400 text-sm leading-relaxed">{{ $scoreInsight }}</p>
                 <div class="text-xs text-neutral-500 font-['Geist_Mono'] leading-relaxed">
-                    <span class="block">90-100: Excellent · 75-89: Good · below 75: Needs improvement</span>
+                    <span class="block">{{ strtoupper($heroLabel) }} · Based on crawl, issues, and on-page diagnostics</span>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="p-4 bg-surface-container rounded-lg">
@@ -344,22 +376,22 @@
         </div>
 
         <!-- Quick Stats under overall score -->
-        <div class="col-span-12 grid grid-cols-3 gap-4">
-            <div class="p-6 bg-surface-container-high rounded-xl flex items-center justify-between no-break">
+        <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
+            <div class="p-8 bg-surface-container-high rounded-xl flex items-center justify-between no-break">
                 <div>
                     <span class="font-['Geist_Mono'] text-[10px] text-neutral-500 uppercase tracking-widest block mb-2">Internal Links</span>
                     <span class="text-3xl font-black">{{ $fmtK($internalLinks) }}</span>
                 </div>
                 <span class="material-symbols-outlined text-primary-container text-4xl">hub</span>
             </div>
-            <div class="p-6 bg-surface-container-high rounded-xl flex items-center justify-between no-break">
+            <div class="p-8 bg-surface-container-high rounded-xl flex items-center justify-between no-break">
                 <div>
                     <span class="font-['Geist_Mono'] text-[10px] text-neutral-500 uppercase tracking-widest block mb-2">Domain Rating</span>
                     <span class="text-3xl font-black">{{ is_numeric($authNum) ? $fmtNum($authNum) : '—' }}</span>
                 </div>
                 <span class="material-symbols-outlined text-orange-400 text-4xl">star_half</span>
             </div>
-            <div class="p-6 bg-surface-container-high rounded-xl flex items-center justify-between no-break">
+            <div class="p-8 bg-surface-container-high rounded-xl flex items-center justify-between no-break">
                 <div>
                     <span class="font-['Geist_Mono'] text-[10px] text-neutral-500 uppercase tracking-widest block mb-2">Pages Crawled</span>
                     <span class="text-3xl font-black">{{ $fmtK($pagesCrawled) }}</span>
@@ -758,14 +790,44 @@
     </div>
     @endif
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
+        <div class="p-10 bg-primary-container rounded-xl text-on-primary-container no-break">
+            <span class="font-['Geist_Mono'] text-[10px] uppercase tracking-widest block mb-4 opacity-70">Strategic Insight</span>
+            <h4 class="text-3xl font-black tracking-tight mb-4">{{ Str::limit($focusIssueTitle, 42) }}</h4>
+            <p class="leading-relaxed opacity-90">{{ $focusIssueBody }}</p>
+            <div class="mt-8 flex items-center gap-4">
+                <span class="font-bold text-sm uppercase tracking-widest border-b-2 border-on-primary-container/30">Priority Recommendation</span>
+                <span class="material-symbols-outlined">trending_up</span>
+            </div>
+        </div>
+        <div class="p-10 bg-surface-container-low rounded-xl relative overflow-hidden group no-break">
+            <div class="absolute inset-0 opacity-20" style="background:
+                radial-gradient(circle at top right, rgba(255,86,38,0.28), transparent 35%),
+                linear-gradient(120deg, rgba(255,255,255,0.02), rgba(255,86,38,0.08));"></div>
+            <div class="relative z-10">
+                <span class="font-['Geist_Mono'] text-[10px] uppercase tracking-widest text-neutral-500 block mb-4">Backlink Profile</span>
+                <h4 class="text-3xl font-black tracking-tight mb-4 text-neutral-50">{{ $positiveInsightTitle }}</h4>
+                <p class="text-neutral-400 leading-relaxed mb-6">{{ $positiveInsightBody }}</p>
+                <div class="flex gap-2 flex-wrap">
+                    @foreach($positiveTags as $tag)
+                        <span class="bg-surface-container px-3 py-1 rounded text-[10px] font-['Geist_Mono'] text-neutral-400">{{ $tag }}</span>
+                    @endforeach
+                    @if(empty($positiveTags))
+                        <span class="bg-surface-container px-3 py-1 rounded text-[10px] font-['Geist_Mono'] text-neutral-400">Audit baseline</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
 </main>
 
 <!-- Footer Shell -->
 <footer class="w-full border-t border-neutral-900 bg-neutral-950 mt-16">
     <div class="flex flex-col md:flex-row justify-between items-center px-6 py-8 gap-4 max-w-none">
-        <div class="text-neutral-50 font-bold">SEO.Core</div>
+        <div class="text-neutral-50 font-bold">Backlink Pro</div>
         <p class="font-['Geist_Mono'] text-[10px] tracking-widest uppercase text-neutral-600">
-            © {{ now()->format('Y') }} SEO.Core Digital Curator Systems. Confidential Audit Report · {{ Str::limit($host, 44) }}
+            © {{ now()->format('Y') }} Backlink Pro Digital Curator Systems. Confidential Audit Report · {{ Str::limit($host, 44) }}
         </p>
         <div class="flex gap-6 font-['Geist_Mono'] text-[10px] tracking-widest uppercase">
             <span class="text-neutral-600">Privacy Policy</span>
