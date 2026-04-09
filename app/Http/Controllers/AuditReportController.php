@@ -22,6 +22,7 @@ use App\Models\ConnectedAccount;
 use App\Models\Organization;
 use App\Jobs\RunSeoAuditJob;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -159,7 +160,7 @@ class AuditReportController extends Controller
             ];
         }
 
-        $audit = Audit::create([
+        $audit = Audit::create($this->filterAuditCreatePayload([
             'user_id' => $user->id,
             'url' => $validated['url'],
             'normalized_url' => $normalizedUrl,
@@ -176,7 +177,7 @@ class AuditReportController extends Controller
             'custom_source_search_rules' => $customSearchRulesPayload,
             'custom_extraction_rules' => $customExtractionRulesPayload,
             ...$formsAuthPayload,
-        ]);
+        ]));
         
         \Log::info('User audit created', [
             'audit_id' => $audit->id,
@@ -460,5 +461,18 @@ class AuditReportController extends Controller
             $url = 'https://' . $url;
         }
         return rtrim($url, '/');
+    }
+
+    private function filterAuditCreatePayload(array $payload): array
+    {
+        static $columns = null;
+
+        $columns ??= array_flip(Schema::getColumnListing('audits'));
+
+        return array_filter(
+            $payload,
+            static fn (string $key): bool => isset($columns[$key]),
+            ARRAY_FILTER_USE_KEY
+        );
     }
 }

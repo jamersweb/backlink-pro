@@ -20,6 +20,7 @@ use App\Services\SeoAudit\CrawlModuleConfig;
 use App\Services\SeoAudit\CustomAuditRulesValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Inertia;
@@ -228,7 +229,7 @@ class AuditController extends Controller
             ];
         }
 
-        $audit = Audit::create([
+        $audit = Audit::create($this->filterAuditCreatePayload([
             'user_id' => auth()->id(),
             'organization_id' => $organization?->id,
             'url' => $validated['url'],
@@ -247,7 +248,7 @@ class AuditController extends Controller
             'custom_source_search_rules' => $customSearchRulesPayload,
             'custom_extraction_rules' => $customExtractionRulesPayload,
             ...$formsAuthPayload,
-        ]);
+        ]));
 
         if ($lead) {
             $lead->update(['audit_id' => $audit->id]);
@@ -986,5 +987,18 @@ class AuditController extends Controller
         }
 
         return $normalized;
+    }
+
+    private function filterAuditCreatePayload(array $payload): array
+    {
+        static $columns = null;
+
+        $columns ??= array_flip(Schema::getColumnListing('audits'));
+
+        return array_filter(
+            $payload,
+            static fn (string $key): bool => isset($columns[$key]),
+            ARRAY_FILTER_USE_KEY
+        );
     }
 }
