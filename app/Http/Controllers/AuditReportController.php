@@ -431,8 +431,13 @@ class AuditReportController extends Controller
         }
 
         try {
-            // Same Stitch-style HTML as Chromium path (`audit.pdf_chromium`), not legacy `audit.pdf`.
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('A4');
+            $legacyHtml = View::make('audit.pdf', [
+                'audit' => $audit,
+                'page' => $page,
+                'issues' => $issues,
+            ])->render();
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($legacyHtml)->setPaper('A4');
             if (method_exists($pdf, 'setOption')) {
                 $pdf->setOption('isRemoteEnabled', true);
             }

@@ -14,6 +14,18 @@ return [
 
     'node_binary' => env('PDF_NODE_BINARY', 'node'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Browser executable
+    |--------------------------------------------------------------------------
+    |
+    | Optional absolute path to a local Chromium-compatible browser.
+    | If empty, the renderer will auto-detect common Chrome/Edge locations.
+    |
+    */
+
+    'browser_binary' => env('PDF_BROWSER_BINARY'),
+
     'timeout' => (int) env('PDF_CHROMIUM_TIMEOUT', 120),
 
     /**

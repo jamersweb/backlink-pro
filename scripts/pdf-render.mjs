@@ -10,6 +10,7 @@ import puppeteer from 'puppeteer';
 const htmlPath  = process.argv[2];
 const outPath   = process.argv[3];
 const waitUntil = process.argv[4] || process.env.PDF_PUPPETEER_WAIT_UNTIL || 'networkidle2';
+const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
 
 if (!htmlPath || !outPath) {
     console.error('Usage: node pdf-render.mjs <input.html> <output.pdf>');
@@ -20,6 +21,7 @@ const html = fs.readFileSync(htmlPath, 'utf8');
 
 const browser = await puppeteer.launch({
     headless: true,
+    executablePath,
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',

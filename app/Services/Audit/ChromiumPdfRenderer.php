@@ -60,6 +60,11 @@ class ChromiumPdfRenderer
         }
         $inheritedEnv['PUPPETEER_CACHE_DIR'] = $puppeteerCacheDir;
 
+        $browserBinary = $this->resolveBrowserBinary();
+        if ($browserBinary !== null) {
+            $inheritedEnv['PUPPETEER_EXECUTABLE_PATH'] = $browserBinary;
+        }
+
         $process = new Process(
             [$node, $script, $htmlPath, $pdfPath, $waitUntil],
             base_path(),
@@ -93,5 +98,38 @@ class ChromiumPdfRenderer
         @unlink($pdfPath);
 
         return $binary;
+    }
+
+    private function resolveBrowserBinary(): ?string
+    {
+        $configured = config('audit_pdf.browser_binary');
+        if (is_string($configured) && $configured !== '' && File::exists($configured)) {
+            return $configured;
+        }
+
+        foreach ($this->candidateBrowserPaths() as $path) {
+            if (File::exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    private function candidateBrowserPaths(): array
+    {
+        return array_values(array_unique(array_filter([
+            env('PUPPETEER_EXECUTABLE_PATH'),
+            'C:\Program Files\Google\Chrome\Application\chrome.exe',
+            'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+            'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium',
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+        ])));
     }
 }
