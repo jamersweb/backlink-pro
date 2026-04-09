@@ -436,6 +436,7 @@ class AuditReportController extends Controller
                 'audit' => $audit,
                 'page' => $page,
                 'issues' => $issues,
+                'auditUi' => $auditUi,
             ])->render();
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($legacyHtml)->setPaper('A4');
