@@ -532,6 +532,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
     // Reports/Analytics
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
     Route::get('/white-label-report', [WhiteLabelReportController::class, 'index'])->name('white-label-report.index');
+    Route::put('/white-label-report', [WhiteLabelReportController::class, 'update'])->name('white-label-report.update');
 
     // Help & Documentation
     Route::get('/help', [HelpController::class, 'index'])->name('help.index');
@@ -740,6 +741,5 @@ Route::get('/test-comment', function () {
 });
 
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php
-
 
 
