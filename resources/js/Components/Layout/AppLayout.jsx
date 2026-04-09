@@ -36,6 +36,7 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
         { href: '/campaign', label: 'Campaigns', icon: 'bi-megaphone', iconActive: 'bi-megaphone-fill' },
         { href: '/reports', label: 'Reports', icon: 'bi-bar-chart', iconActive: 'bi-bar-chart-fill' },
         { href: '/audit-report', label: 'Audit Report', icon: 'bi-clipboard-check', iconActive: 'bi-clipboard-check-fill' },
+        { href: '/white-label-report', label: 'White Label Report', icon: 'bi-file-earmark-richtext', iconActive: 'bi-file-earmark-richtext-fill' },
         { href: '/settings', label: 'Settings', icon: 'bi-gear', iconActive: 'bi-gear-fill' },
     ];
 
@@ -137,4 +138,3 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
         </div>
     );
 }
-

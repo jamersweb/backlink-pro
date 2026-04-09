@@ -55,6 +55,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditExportController;
 use App\Http\Controllers\AuditReportController;
+use App\Http\Controllers\WhiteLabelReportController;
 use App\Http\Controllers\GoogleOAuthController;
 use Inertia\Inertia;
 
@@ -530,6 +531,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
     // Reports/Analytics
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::get('/white-label-report', [WhiteLabelReportController::class, 'index'])->name('white-label-report.index');
 
     // Help & Documentation
     Route::get('/help', [HelpController::class, 'index'])->name('help.index');
@@ -738,7 +740,6 @@ Route::get('/test-comment', function () {
 });
 
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php
-
 
 
 
