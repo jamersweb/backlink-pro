@@ -18,6 +18,7 @@ class BrandingProfile extends Model
         'website',
         'support_email',
         'report_footer_text',
+        'report_sections_json',
         'use_custom_cover_title',
         'custom_cover_title',
         'hide_backlinkpro_branding',
@@ -28,6 +29,7 @@ class BrandingProfile extends Model
 
     protected $casts = [
         'white_label_enabled' => 'boolean',
+        'report_sections_json' => 'array',
         'use_custom_cover_title' => 'boolean',
         'hide_backlinkpro_branding' => 'boolean',
     ];

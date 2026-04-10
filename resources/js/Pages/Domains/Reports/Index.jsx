@@ -6,7 +6,7 @@ import Button from '@/Components/Shared/Button';
 import CreateReportModal from './Partials/CreateReportModal';
 import ReportsTable from './Partials/ReportsTable';
 
-export default function ReportsIndex({ domain, reports }) {
+export default function ReportsIndex({ domain, reports, whiteLabelReportSections = null }) {
     const [showCreateModal, setShowCreateModal] = useState(false);
 
     const handleCopyLink = (url) => {
@@ -69,6 +69,7 @@ export default function ReportsIndex({ domain, reports }) {
                 {showCreateModal && (
                     <CreateReportModal
                         domain={domain}
+                        whiteLabelReportSections={whiteLabelReportSections}
                         onClose={() => setShowCreateModal(false)}
                     />
                 )}
@@ -76,5 +77,4 @@ export default function ReportsIndex({ domain, reports }) {
         </AppLayout>
     );
 }
-
 

@@ -5,7 +5,45 @@ import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
-const previewSections = ['Overview', 'Branding', 'Footer', 'Delivery'];
+const SECTION_GROUPS = [
+    {
+        key: 'on_page',
+        title: 'On Page SEO',
+        description: 'Choose the main on-page checkpoints you want included in the report.',
+        items: [
+            { key: 'title_optimization', label: 'Title Optimization' },
+            { key: 'meta_descriptions', label: 'Meta Descriptions' },
+            { key: 'heading_structure', label: 'Heading Structure' },
+            { key: 'content_quality', label: 'Content Quality' },
+            { key: 'internal_linking', label: 'Internal Linking' },
+        ],
+    },
+    {
+        key: 'off_page',
+        title: 'Off Page SEO',
+        description: 'Control the backlink and authority areas clients should receive.',
+        items: [
+            { key: 'backlink_quality', label: 'Backlink Quality' },
+            { key: 'referring_domains', label: 'Referring Domains' },
+            { key: 'anchor_text_profile', label: 'Anchor Text Profile' },
+            { key: 'link_velocity', label: 'Link Velocity' },
+        ],
+    },
+    {
+        key: 'technical_seo',
+        title: 'Technical SEO',
+        description: 'Add the technical checks that should appear in white label delivery.',
+        items: [
+            { key: 'crawlability', label: 'Crawlability' },
+            { key: 'indexability', label: 'Indexability' },
+            { key: 'pagespeed', label: 'PageSpeed' },
+            { key: 'structured_data', label: 'Structured Data' },
+            { key: 'mobile_usability', label: 'Mobile Usability' },
+        ],
+    },
+];
+
+const cloneReportSections = (sections = {}) => JSON.parse(JSON.stringify(sections));
 
 export default function WhiteLabelReportIndex({
     organization = null,
@@ -25,11 +63,9 @@ export default function WhiteLabelReportIndex({
         company_name: settings.company_name ?? '',
         logo: null,
         remove_logo: false,
-        primary_color: settings.primary_color ?? defaultSettings.primary_color,
-        secondary_color: settings.secondary_color ?? defaultSettings.secondary_color,
         website: settings.website ?? '',
-        support_email: settings.support_email ?? '',
         footer_text: settings.footer_text ?? '',
+        report_sections: cloneReportSections(settings.report_sections ?? defaultSettings.report_sections),
         use_custom_cover_title: settings.use_custom_cover_title ?? false,
         custom_cover_title: settings.custom_cover_title ?? '',
     });
@@ -47,11 +83,12 @@ export default function WhiteLabelReportIndex({
     const previewFooter = form.data.footer_text.trim()
         || `${form.data.company_name || organization?.name || 'Your company'} client reporting`;
     const previewWebsite = form.data.website.trim() || 'Website not set yet';
-    const previewSupportEmail = form.data.support_email.trim() || 'Support email not set yet';
-    const primaryColor = form.data.primary_color || defaultSettings.primary_color;
-    const secondaryColor = form.data.secondary_color || defaultSettings.secondary_color;
     const previewModeLabel = form.data.enabled ? 'Client-ready white label mode' : 'White label disabled';
     const statusHeading = form.data.enabled ? 'White label enabled' : 'Ready for setup';
+    const previewFocusSections = SECTION_GROUPS.map((group) => ({
+        ...group,
+        selectedItems: group.items.filter((item) => form.data.report_sections?.[group.key]?.[item.key]),
+    })).filter((group) => group.selectedItems.length > 0);
 
     const brandingSummary = useMemo(() => (
         form.data.company_name || organization?.name || 'Your Company'
@@ -95,11 +132,9 @@ export default function WhiteLabelReportIndex({
             company_name: defaultSettings.company_name,
             logo: null,
             remove_logo: Boolean(settings.logo_url),
-            primary_color: defaultSettings.primary_color,
-            secondary_color: defaultSettings.secondary_color,
             website: defaultSettings.website,
-            support_email: defaultSettings.support_email,
             footer_text: defaultSettings.footer_text,
+            report_sections: cloneReportSections(defaultSettings.report_sections),
             use_custom_cover_title: defaultSettings.use_custom_cover_title,
             custom_cover_title: defaultSettings.custom_cover_title,
         });
@@ -151,7 +186,7 @@ export default function WhiteLabelReportIndex({
     return (
         <AppLayout
             header="White Label Report"
-            subtitle="Manage the branding settings that power client-facing SEO report presentation."
+            subtitle="Manage the branding and section settings that power client-facing SEO report presentation."
         >
             <div className="space-y-6">
                 {flash?.success && (
@@ -172,7 +207,7 @@ export default function WhiteLabelReportIndex({
                             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Client Reporting</p>
                             <h2 className="mt-2 text-3xl font-semibold text-[#fff7f2]">Launch branded reports without breaking your dashboard flow</h2>
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-[rgba(255,240,232,0.68)]">
-                                Keep the existing premium reporting experience, but control how your company appears inside branded SEO report delivery.
+                                Keep the existing premium reporting experience, but control how your company appears and which SEO sections are included inside branded report delivery.
                             </p>
                             <div className="mt-6 flex flex-wrap gap-3">
                                 <Button
@@ -252,7 +287,7 @@ export default function WhiteLabelReportIndex({
                                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Branding Settings</p>
                                 <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Configure your white label identity</h3>
                                 <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                    Everything below saves into workspace branding settings and updates the preview panel instantly.
+                                    Everything below saves into workspace report settings and updates the preview panel instantly.
                                 </p>
                             </div>
 
@@ -299,18 +334,7 @@ export default function WhiteLabelReportIndex({
                                         helpText="Displayed in the footer branding area."
                                         disabled={formLocked}
                                     />
-                                    <Input
-                                        label="Support Email"
-                                        name="support_email"
-                                        type="email"
-                                        value={form.data.support_email}
-                                        onChange={(event) => form.setData('support_email', event.target.value)}
-                                        error={form.errors.support_email}
-                                        className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
-                                        helpText="Used for the client-facing support contact in preview."
-                                        disabled={formLocked}
-                                    />
-                                    <div>
+                                    <div className="md:col-span-2">
                                         <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Logo Upload</label>
                                         <div className="rounded-2xl border border-dashed border-[rgba(255,110,64,0.18)] bg-[rgba(255,247,242,0.03)] p-4">
                                             <input
@@ -337,41 +361,52 @@ export default function WhiteLabelReportIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid gap-5 md:grid-cols-2">
+                                <div className="space-y-4 rounded-3xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-5">
                                     <div>
-                                        <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Primary Color</label>
-                                        <div className="flex items-center gap-3 rounded-2xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)] px-4 py-3">
-                                            <input
-                                                type="color"
-                                                value={primaryColor}
-                                                onChange={(event) => form.setData('primary_color', event.target.value)}
-                                                disabled={formLocked}
-                                                className="h-11 w-14 rounded-lg border border-[rgba(255,110,64,0.18)] bg-transparent"
-                                            />
-                                            <div className="min-w-0">
-                                                <div className="text-sm font-semibold text-[#fff7f2]">{primaryColor}</div>
-                                                <div className="text-xs text-[rgba(255,240,232,0.58)]">Drives main CTA and top brand accents.</div>
-                                            </div>
-                                        </div>
-                                        {form.errors.primary_color && <p className="mt-2 text-sm text-[#F04438]">{form.errors.primary_color}</p>}
+                                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Report Sections</p>
+                                        <h4 className="mt-2 text-xl font-semibold text-[#fff7f2]">Choose what clients should receive</h4>
+                                        <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.62)]">
+                                            Select the SEO focus areas you want included when branded report delivery is prepared for users.
+                                        </p>
                                     </div>
 
-                                    <div>
-                                        <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Secondary Color</label>
-                                        <div className="flex items-center gap-3 rounded-2xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)] px-4 py-3">
-                                            <input
-                                                type="color"
-                                                value={secondaryColor}
-                                                onChange={(event) => form.setData('secondary_color', event.target.value)}
-                                                disabled={formLocked}
-                                                className="h-11 w-14 rounded-lg border border-[rgba(255,110,64,0.18)] bg-transparent"
-                                            />
-                                            <div className="min-w-0">
-                                                <div className="text-sm font-semibold text-[#fff7f2]">{secondaryColor}</div>
-                                                <div className="text-xs text-[rgba(255,240,232,0.58)]">Supports footer, chips and highlight surfaces.</div>
+                                    <div className="grid gap-4">
+                                        {SECTION_GROUPS.map((group) => (
+                                            <div key={group.key} className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(14,11,11,0.72)] p-4">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div>
+                                                        <h5 className="text-lg font-semibold text-[#fff7f2]">{group.title}</h5>
+                                                        <p className="mt-1 text-sm leading-6 text-[rgba(255,240,232,0.58)]">{group.description}</p>
+                                                    </div>
+                                                    <span className="inline-flex rounded-full border border-[rgba(255,110,64,0.16)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
+                                                        {group.items.filter((item) => form.data.report_sections?.[group.key]?.[item.key]).length} selected
+                                                    </span>
+                                                </div>
+                                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                                    {group.items.map((item) => (
+                                                        <label
+                                                            key={item.key}
+                                                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.02)] px-4 py-3 transition hover:border-[rgba(255,110,64,0.22)]"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={Boolean(form.data.report_sections?.[group.key]?.[item.key])}
+                                                                onChange={(event) => form.setData('report_sections', {
+                                                                    ...form.data.report_sections,
+                                                                    [group.key]: {
+                                                                        ...form.data.report_sections[group.key],
+                                                                        [item.key]: event.target.checked,
+                                                                    },
+                                                                })}
+                                                                className="h-4 w-4 rounded border-[rgba(255,110,64,0.3)] bg-transparent text-[var(--admin-primary)] focus:ring-[var(--admin-primary)]"
+                                                                disabled={formLocked}
+                                                            />
+                                                            <span className="text-sm font-medium text-[rgba(255,240,232,0.84)]">{item.label}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                        {form.errors.secondary_color && <p className="mt-2 text-sm text-[#F04438]">{form.errors.secondary_color}</p>}
+                                        ))}
                                     </div>
                                 </div>
 
@@ -469,26 +504,16 @@ export default function WhiteLabelReportIndex({
                                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Live Preview</p>
                                     <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Preview Report Theme</h3>
                                     <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                        Reflects your current form state before any PDF or public report integration changes.
+                                        Reflects your current form state before branded report delivery is generated for users.
                                     </p>
                                 </div>
-                                <span
-                                    className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
-                                    style={{
-                                        borderColor: `${primaryColor}55`,
-                                        backgroundColor: `${primaryColor}18`,
-                                        color: secondaryColor,
-                                    }}
-                                >
+                                <span className="inline-flex items-center rounded-full border border-[rgba(255,110,64,0.18)] bg-[rgba(255,110,64,0.12)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#ffcfb9]">
                                     {form.data.enabled ? 'Enabled' : 'Draft'}
                                 </span>
                             </div>
 
                             <div className="overflow-hidden rounded-[28px] border border-[rgba(255,110,64,0.16)] bg-[#120f0f]">
-                                <div
-                                    className="border-b border-[rgba(255,255,255,0.06)] px-6 py-5"
-                                    style={{ background: `linear-gradient(135deg, ${primaryColor}24, transparent 60%)` }}
-                                >
+                                <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-5" style={{ background: 'linear-gradient(135deg, rgba(255,110,64,0.18), transparent 60%)' }}>
                                     <div className="flex flex-wrap items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">
                                             {renderLogoPreview()}
@@ -507,44 +532,47 @@ export default function WhiteLabelReportIndex({
                                     <div
                                         className="rounded-3xl border p-5"
                                         style={{
-                                            borderColor: `${primaryColor}30`,
-                                            background: `linear-gradient(180deg, ${primaryColor}12, rgba(255,255,255,0.02))`,
+                                            borderColor: 'rgba(255,110,64,0.18)',
+                                            background: 'linear-gradient(180deg, rgba(255,110,64,0.10), rgba(255,255,255,0.02))',
                                         }}
                                     >
                                         <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Sample Report Header Card</div>
                                         <div className="mt-3 text-lg font-semibold text-[#fff7f2]">{brandingSummary}</div>
                                         <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.68)]">
-                                            Accent colors, cover title and visible company identity update from the branding form in real time.
+                                            Company identity, cover title and selected SEO focus areas update from the white label form in real time.
                                         </p>
                                     </div>
 
                                     <div className="rounded-3xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5">
-                                        <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Client Branding Area</div>
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            {previewSections.map((label) => (
-                                                <span
-                                                    key={label}
-                                                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                                                    style={{
-                                                        backgroundColor: `${secondaryColor}22`,
-                                                        color: secondaryColor,
-                                                    }}
-                                                >
-                                                    {label}
-                                                </span>
-                                            ))}
-                                        </div>
+                                        <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Client Report Scope</div>
                                         <div className="mt-5 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#0f0c0c] p-4">
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
                                                 <div>
                                                     <div className="text-sm font-semibold text-[#fff7f2]">{brandingSummary}</div>
                                                     <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">{previewWebsite}</div>
-                                                    <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">{previewSupportEmail}</div>
                                                 </div>
-                                                <div
-                                                    className="h-3 w-28 rounded-full"
-                                                    style={{ background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})` }}
-                                                ></div>
+                                                <div className="rounded-full border border-[rgba(255,110,64,0.18)] bg-[rgba(255,110,64,0.08)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
+                                                    {previewFocusSections.reduce((total, group) => total + group.selectedItems.length, 0)} focus points
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 grid gap-4 md:grid-cols-3">
+                                                {previewFocusSections.length > 0 ? previewFocusSections.map((group) => (
+                                                    <div key={group.key} className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.03)] p-4">
+                                                        <div className="text-sm font-semibold text-[#fff7f2]">{group.title}</div>
+                                                        <div className="mt-3 space-y-2">
+                                                            {group.selectedItems.map((item) => (
+                                                                <div key={item.key} className="flex items-center gap-2 text-sm text-[rgba(255,240,232,0.68)]">
+                                                                    <i className="bi bi-check-circle-fill text-[#ff9f7f]"></i>
+                                                                    <span>{item.label}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )) : (
+                                                    <div className="rounded-2xl border border-dashed border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.02)] p-4 text-sm text-[rgba(255,240,232,0.58)] md:col-span-3">
+                                                        No SEO focus sections selected yet. Choose On Page, Off Page, or Technical SEO items from the form.
+                                                    </div>
+                                                )}
                                             </div>
                                             <p className="mt-4 text-sm leading-6 text-[rgba(255,240,232,0.68)]">{previewFooter}</p>
                                         </div>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BrandingProfile;
 use App\Models\Domain;
+use App\Models\Organization;
 use App\Models\PublicReport;
 use App\Services\Reports\PublicReportBuilder;
 use Illuminate\Http\Request;
@@ -43,6 +45,7 @@ class DomainReportsController extends Controller
         return Inertia::render('Domains/Reports/Index', [
             'domain' => $domain,
             'reports' => $reports,
+            'whiteLabelReportSections' => $this->resolveWhiteLabelReportSections(Auth::user()?->id),
         ]);
     }
 
@@ -73,6 +76,8 @@ class DomainReportsController extends Controller
             'branding.accent_color' => 'nullable|string|max:7',
         ]);
 
+        $whiteLabelReportSections = $this->resolveWhiteLabelReportSections(Auth::id());
+
         // Generate secure token
         $token = hash('sha256', random_bytes(32));
 
@@ -92,6 +97,7 @@ class DomainReportsController extends Controller
                     'logo_url' => null,
                     'accent_color' => '#2E2E2E',
                 ],
+                'white_label_report_sections' => $whiteLabelReportSections,
             ],
         ]);
 
@@ -143,5 +149,35 @@ class DomainReportsController extends Controller
         ]);
 
         return back()->with('success', 'Report refreshed');
+    }
+
+    private function resolveWhiteLabelReportSections(?int $userId): ?array
+    {
+        if (!$userId) {
+            return null;
+        }
+
+        $organization = Organization::query()
+            ->where('owner_user_id', $userId)
+            ->orderBy('id')
+            ->first();
+
+        if (!$organization) {
+            $organization = Organization::query()
+                ->whereHas('users', fn ($query) => $query
+                    ->where('user_id', $userId)
+                    ->whereIn('role', ['owner', 'admin']))
+                ->orderBy('id')
+                ->first();
+        }
+
+        if (!$organization) {
+            return null;
+        }
+
+        /** @var BrandingProfile|null $branding */
+        $branding = $organization->brandingProfile;
+
+        return $branding?->report_sections_json ?: null;
     }
 }

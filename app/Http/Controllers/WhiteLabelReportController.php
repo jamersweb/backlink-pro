@@ -20,11 +20,30 @@ class WhiteLabelReportController extends Controller
         'company_name' => '',
         'logo_url' => null,
         'logo_path' => null,
-        'primary_color' => '#ff8a65',
-        'secondary_color' => '#ffcfb9',
         'website' => '',
-        'support_email' => '',
         'footer_text' => '',
+        'report_sections' => [
+            'on_page' => [
+                'title_optimization' => true,
+                'meta_descriptions' => true,
+                'heading_structure' => true,
+                'content_quality' => false,
+                'internal_linking' => false,
+            ],
+            'off_page' => [
+                'backlink_quality' => true,
+                'referring_domains' => true,
+                'anchor_text_profile' => false,
+                'link_velocity' => false,
+            ],
+            'technical_seo' => [
+                'crawlability' => true,
+                'indexability' => true,
+                'pagespeed' => true,
+                'structured_data' => false,
+                'mobile_usability' => false,
+            ],
+        ],
         'use_custom_cover_title' => false,
         'custom_cover_title' => '',
     ];
@@ -55,13 +74,13 @@ class WhiteLabelReportController extends Controller
             'reportHighlights' => [
                 [
                     'title' => 'Own your brand experience',
-                    'description' => 'Replace platform branding with your logo, company name and color palette for every client-facing report.',
+                    'description' => 'Replace platform branding with your logo and company identity for every client-facing report.',
                     'icon' => 'bi-palette',
                 ],
                 [
-                    'title' => 'Send polished deliverables',
-                    'description' => 'Present backlink progress, SEO wins and recommendations in a clean format your clients can forward with confidence.',
-                    'icon' => 'bi-file-earmark-text',
+                    'title' => 'Control SEO report scope',
+                    'description' => 'Choose the on-page, off-page and technical SEO checkpoints you want included in branded delivery.',
+                    'icon' => 'bi-check2-square',
                 ],
                 [
                     'title' => 'Keep delivery consistent',
@@ -71,8 +90,9 @@ class WhiteLabelReportController extends Controller
             ],
             'setupSteps' => [
                 'Enable white label mode for this workspace',
-                'Upload a logo, colors and support contact details',
-                'Preview the report header and footer before saving',
+                'Upload your logo and website details',
+                'Select the SEO sections you want included before saving',
+                'Preview the report header and delivery scope before saving',
             ],
         ]);
     }
@@ -100,12 +120,9 @@ class WhiteLabelReportController extends Controller
         $data = [
             'white_label_enabled' => (bool) $validated['enabled'],
             'brand_name' => $validated['company_name'] ?: null,
-            'primary_color' => $validated['primary_color'] ?: null,
-            'secondary_color' => $validated['secondary_color'] ?: null,
-            'accent_color' => $validated['secondary_color'] ?: null,
             'website' => $validated['website'] ?: null,
-            'support_email' => $validated['support_email'] ?: null,
             'report_footer_text' => $validated['footer_text'] ?: null,
+            'report_sections_json' => $validated['report_sections'] ?? self::DEFAULTS['report_sections'],
             'use_custom_cover_title' => (bool) $validated['use_custom_cover_title'],
             'custom_cover_title' => ($validated['use_custom_cover_title'] ?? false) ? ($validated['custom_cover_title'] ?: null) : null,
         ];
@@ -169,11 +186,9 @@ class WhiteLabelReportController extends Controller
             'company_name' => $branding->brand_name ?? '',
             'logo_url' => $branding->logo_path ? Storage::disk('public')->url($branding->logo_path) : null,
             'logo_path' => $branding->logo_path,
-            'primary_color' => $branding->primary_color ?: self::DEFAULTS['primary_color'],
-            'secondary_color' => $branding->secondary_color ?: self::DEFAULTS['secondary_color'],
             'website' => $branding->website ?? '',
-            'support_email' => $branding->support_email ?? '',
             'footer_text' => $branding->report_footer_text ?? '',
+            'report_sections' => $branding->report_sections_json ?: self::DEFAULTS['report_sections'],
             'use_custom_cover_title' => (bool) $branding->use_custom_cover_title,
             'custom_cover_title' => $branding->custom_cover_title ?? '',
         ];

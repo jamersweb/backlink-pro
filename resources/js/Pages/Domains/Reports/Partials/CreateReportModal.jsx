@@ -4,19 +4,53 @@ import Button from '@/Components/Shared/Button';
 import Input from '@/Components/Shared/Input';
 import BpDatePicker from '@/Components/Shared/BpDatePicker';
 
-export default function CreateReportModal({ domain, onClose }) {
+const DEFAULT_REPORT_SECTIONS = {
+    analyzer: true,
+    google: true,
+    backlinks: true,
+    meta: true,
+    insights: true,
+    content: false,
+};
+
+const GROUP_TO_REPORT_SECTIONS = {
+    on_page: ['analyzer', 'meta', 'content'],
+    off_page: ['backlinks', 'insights'],
+    technical_seo: ['analyzer', 'google'],
+};
+
+const buildSectionsFromWhiteLabel = (whiteLabelReportSections) => {
+    if (!whiteLabelReportSections) {
+        return { ...DEFAULT_REPORT_SECTIONS };
+    }
+
+    const sections = {
+        analyzer: false,
+        google: false,
+        backlinks: false,
+        meta: false,
+        insights: false,
+        content: false,
+    };
+
+    Object.entries(GROUP_TO_REPORT_SECTIONS).forEach(([groupKey, reportKeys]) => {
+        const hasSelection = Object.values(whiteLabelReportSections[groupKey] ?? {}).some(Boolean);
+        if (hasSelection) {
+            reportKeys.forEach((reportKey) => {
+                sections[reportKey] = true;
+            });
+        }
+    });
+
+    return Object.values(sections).some(Boolean) ? sections : { ...DEFAULT_REPORT_SECTIONS };
+};
+
+export default function CreateReportModal({ domain, whiteLabelReportSections = null, onClose }) {
     const [formData, setFormData] = useState({
         title: `SEO Report for ${domain.name}`,
         expires_at: '',
         password: '',
-        sections: {
-            analyzer: true,
-            google: true,
-            backlinks: true,
-            meta: true,
-            insights: true,
-            content: false,
-        },
+        sections: buildSectionsFromWhiteLabel(whiteLabelReportSections),
         branding: {
             company_name: '',
             logo_url: '',
@@ -177,5 +211,3 @@ export default function CreateReportModal({ domain, onClose }) {
         </div>
     );
 }
-
-
