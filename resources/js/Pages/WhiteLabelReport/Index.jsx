@@ -45,6 +45,13 @@ const SECTION_GROUPS = [
 
 const cloneReportSections = (sections = {}) => JSON.parse(JSON.stringify(sections));
 
+const DEMO_REPORT_SECTIONS = [
+    { key: 'overview', title: 'Executive Overview' },
+    { key: 'branding', title: 'Branding Snapshot' },
+    { key: 'recommendations', title: 'Priority Recommendations' },
+    { key: 'next_steps', title: 'Next Steps' },
+];
+
 export default function WhiteLabelReportIndex({
     organization = null,
     canUseWhiteLabel = false,
@@ -76,7 +83,8 @@ export default function WhiteLabelReportIndex({
         }
     }, [logoPreviewUrl]);
 
-    const formLocked = !organization || !canUseWhiteLabel;
+    const saveLocked = !organization || !canUseWhiteLabel;
+    const controlsLocked = form.processing;
     const previewTitle = form.data.use_custom_cover_title
         ? form.data.custom_cover_title.trim()
         : `${form.data.company_name || organization?.name || 'Your Company'} SEO Report`;
@@ -96,6 +104,10 @@ export default function WhiteLabelReportIndex({
 
     const submit = (event) => {
         event.preventDefault();
+
+        if (saveLocked) {
+            return;
+        }
 
         form.transform((data) => ({
             ...data,
@@ -165,6 +177,12 @@ export default function WhiteLabelReportIndex({
         setLogoPreviewUrl(null);
     };
 
+    const openLogoPicker = () => {
+        if (!controlsLocked) {
+            fileInputRef.current?.click();
+        }
+    };
+
     const renderLogoPreview = () => {
         if (logoPreviewUrl && !form.data.remove_logo) {
             return (
@@ -183,6 +201,14 @@ export default function WhiteLabelReportIndex({
         );
     };
 
+    const demoReportSections = [
+        ...DEMO_REPORT_SECTIONS,
+        ...previewFocusSections.map((group) => ({
+            key: group.key,
+            title: group.title,
+        })),
+    ];
+
     return (
         <AppLayout
             header="White Label Report"
@@ -198,6 +224,12 @@ export default function WhiteLabelReportIndex({
                 {(flash?.error || form.errors.organization || form.errors.plan) && (
                     <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-5 py-4 text-sm text-rose-200 shadow-lg shadow-rose-950/20">
                         {flash?.error || form.errors.organization || form.errors.plan}
+                    </div>
+                )}
+
+                {saveLocked && (
+                    <div className="rounded-2xl border border-[rgba(255,166,77,0.24)] bg-[rgba(255,166,77,0.08)] px-5 py-4 text-sm text-[#ffd9b0]">
+                        Buttons, selectors aur logo preview ab demo mode me fully work karte hain. Save karne ke liye workspace aur eligible plan zaroori hoga.
                     </div>
                 )}
 
@@ -304,7 +336,7 @@ export default function WhiteLabelReportIndex({
                                                 checked={form.data.enabled}
                                                 onChange={(event) => form.setData('enabled', event.target.checked)}
                                                 className="peer sr-only"
-                                                disabled={formLocked}
+                                                disabled={controlsLocked}
                                             />
                                             <span className="absolute inset-0 rounded-full bg-[rgba(255,255,255,0.12)] transition peer-checked:bg-[var(--admin-primary)]"></span>
                                             <span className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
@@ -321,7 +353,7 @@ export default function WhiteLabelReportIndex({
                                         error={form.errors.company_name}
                                         className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
                                         helpText="Shown when no logo is uploaded and used in the preview header."
-                                        disabled={formLocked}
+                                        disabled={controlsLocked}
                                     />
                                     <Input
                                         label="Website"
@@ -332,7 +364,7 @@ export default function WhiteLabelReportIndex({
                                         error={form.errors.website}
                                         className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
                                         helpText="Displayed in the footer branding area."
-                                        disabled={formLocked}
+                                        disabled={controlsLocked}
                                     />
                                     <div className="md:col-span-2">
                                         <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Logo Upload</label>
@@ -342,16 +374,31 @@ export default function WhiteLabelReportIndex({
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={onLogoChange}
-                                                disabled={formLocked}
-                                                className="block w-full text-sm text-[rgba(255,240,232,0.7)] file:mr-4 file:rounded-xl file:border-0 file:bg-[rgba(255,110,64,0.14)] file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-[#fff7f2] hover:file:bg-[rgba(255,110,64,0.2)]"
+                                                disabled={controlsLocked}
+                                                className="sr-only"
                                             />
-                                            <p className="mt-3 text-xs text-[rgba(255,240,232,0.56)]">Accepted: JPG, PNG, WEBP, SVG up to 2MB.</p>
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <Button
+                                                    type="button"
+                                                    variant="primary"
+                                                    size="sm"
+                                                    className="rounded-2xl px-4"
+                                                    onClick={openLogoPicker}
+                                                    disabled={controlsLocked}
+                                                >
+                                                    <i className="bi bi-images mr-2"></i>Choose Logo From Device
+                                                </Button>
+                                                <span className="text-sm text-[rgba(255,240,232,0.64)]">
+                                                    {form.data.logo?.name || 'Gallery/files will open from your device'}
+                                                </span>
+                                            </div>
+                                            <p className="mt-3 text-xs text-[rgba(255,240,232,0.56)]">Accepted: JPG, PNG, WEBP, SVG up to 2MB. Mobile par ye device gallery open karega.</p>
                                             {form.errors.logo && <p className="mt-2 text-sm text-[#F04438]">{form.errors.logo}</p>}
                                             {(logoPreviewUrl || settings.logo_url) && (
                                                 <button
                                                     type="button"
                                                     onClick={removeCurrentLogo}
-                                                    disabled={formLocked}
+                                                    disabled={controlsLocked}
                                                     className="mt-4 text-sm font-medium text-[#ffcfb9] transition hover:text-[#fff7f2]"
                                                 >
                                                     Remove current logo
@@ -399,7 +446,7 @@ export default function WhiteLabelReportIndex({
                                                                     },
                                                                 })}
                                                                 className="h-4 w-4 rounded border-[rgba(255,110,64,0.3)] bg-transparent text-[var(--admin-primary)] focus:ring-[var(--admin-primary)]"
-                                                                disabled={formLocked}
+                                                                disabled={controlsLocked}
                                                             />
                                                             <span className="text-sm font-medium text-[rgba(255,240,232,0.84)]">{item.label}</span>
                                                         </label>
@@ -423,7 +470,7 @@ export default function WhiteLabelReportIndex({
                                                     checked={form.data.use_custom_cover_title}
                                                     onChange={(event) => form.setData('use_custom_cover_title', event.target.checked)}
                                                     className="peer sr-only"
-                                                    disabled={formLocked}
+                                                    disabled={controlsLocked}
                                                 />
                                                 <span className="absolute inset-0 rounded-full bg-[rgba(255,255,255,0.12)] transition peer-checked:bg-[var(--admin-primary)]"></span>
                                                 <span className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
@@ -439,7 +486,7 @@ export default function WhiteLabelReportIndex({
                                         error={form.errors.custom_cover_title}
                                         className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
                                         helpText="Required when custom cover title is enabled."
-                                        disabled={formLocked || !form.data.use_custom_cover_title}
+                                        disabled={controlsLocked || !form.data.use_custom_cover_title}
                                     />
                                 </div>
 
@@ -450,7 +497,7 @@ export default function WhiteLabelReportIndex({
                                         value={form.data.footer_text}
                                         onChange={(event) => form.setData('footer_text', event.target.value)}
                                         rows={4}
-                                        disabled={formLocked}
+                                        disabled={controlsLocked}
                                         className="block min-h-[120px] w-full rounded-2xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)] px-4 py-3 text-base text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] transition-all duration-200 focus:border-[#2F6BFF] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/20 disabled:cursor-not-allowed disabled:opacity-60"
                                         placeholder="Add a branded footer note for clients."
                                     />
@@ -462,7 +509,7 @@ export default function WhiteLabelReportIndex({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-3 border-t border-[rgba(255,110,64,0.12)] pt-6">
-                                    <Button type="submit" variant="primary" size="lg" disabled={form.processing || formLocked} className="rounded-2xl px-6">
+                                    <Button type="submit" variant="primary" size="lg" disabled={form.processing || saveLocked} className="rounded-2xl px-6">
                                         {form.processing ? 'Saving Branding...' : <><i className="bi bi-save mr-2"></i>Save Branding Settings</>}
                                     </Button>
                                     <Button type="button" variant="secondary" size="lg" disabled={form.processing} className="rounded-2xl px-6" onClick={resetToDefaults}>
@@ -575,6 +622,53 @@ export default function WhiteLabelReportIndex({
                                                 )}
                                             </div>
                                             <p className="mt-4 text-sm leading-6 text-[rgba(255,240,232,0.68)]">{previewFooter}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-3xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5">
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Demo Report Layout</div>
+                                                <div className="mt-2 text-lg font-semibold text-[#fff7f2]">Client-facing sample design</div>
+                                            </div>
+                                            <div className="rounded-full border border-[rgba(255,110,64,0.18)] bg-[rgba(255,110,64,0.08)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
+                                                Demo only
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-5 rounded-[28px] border border-[rgba(255,110,64,0.16)] bg-[linear-gradient(180deg,#161010,#0d0a0a)] p-5">
+                                            <div className="rounded-[24px] border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(135deg,rgba(255,110,64,0.12),rgba(255,255,255,0.02))] p-5">
+                                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-4">
+                                                        {renderLogoPreview()}
+                                                        <div>
+                                                            <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Company / Logo Placement</div>
+                                                            <div className="mt-2 text-2xl font-semibold text-[#fff7f2]">{brandingSummary}</div>
+                                                            <div className="mt-1 text-sm text-[rgba(255,240,232,0.62)]">{previewTitle}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-[rgba(255,240,232,0.72)]">
+                                                        Report cover preview
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid gap-4">
+                                                {demoReportSections.map((section, index) => (
+                                                    <div key={section.key} className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.03)] p-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,110,64,0.14)] text-sm font-semibold text-[#ffcfb9]">
+                                                                {index + 1}
+                                                            </div>
+                                                            <div className="text-base font-semibold text-[#fff7f2]">{section.title}</div>
+                                                        </div>
+                                                        <div className="mt-3 space-y-2">
+                                                            <div className="h-3 rounded-full bg-[rgba(255,255,255,0.07)]"></div>
+                                                            <div className="h-3 w-5/6 rounded-full bg-[rgba(255,255,255,0.05)]"></div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
