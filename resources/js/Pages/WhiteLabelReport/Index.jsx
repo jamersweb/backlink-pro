@@ -57,6 +57,25 @@ const DIAGNOSTIC_METRICS = [
     { label: 'SEO Score', value: 100, tone: 'emerald' },
 ];
 
+const DEVICE_BREAKDOWN = [
+    {
+        label: 'Mobile',
+        score: 89,
+        speed: '2.8s',
+        stability: '92%',
+        bars: [84, 76, 88],
+        tone: 'bg-[linear-gradient(135deg,#ff5626,#ff764d)]',
+    },
+    {
+        label: 'Desktop',
+        score: 96,
+        speed: '1.4s',
+        stability: '98%',
+        bars: [92, 96, 94],
+        tone: 'bg-[linear-gradient(135deg,#242323,#363434)]',
+    },
+];
+
 const ISSUE_ROWS = [
     { title: 'Duplicate Meta Descriptions', affected: '1,340', severity: 'critical', action: 'Meta refresh' },
     { title: 'Large Image Payloads', affected: '42', severity: 'warning', action: 'Compress' },
@@ -585,25 +604,6 @@ export default function WhiteLabelReportIndex({
                                         </div>
                                     </div>
 
-                                    <div className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-                                        <div className="max-w-2xl">
-                                            <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#ff8d64]">Executive Summary</span>
-                                            <h4 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.04em] text-[#fff7f2] sm:text-6xl">
-                                                Technical
-                                                <br />
-                                                <span className="text-[rgba(255,255,255,0.22)]">Audit</span> 2026
-                                            </h4>
-                                            <p className="mt-6 max-w-md text-sm leading-7 text-[rgba(255,240,232,0.50)]">
-                                                Editorial demo report for {brandingSummary}. Your logo, title and company name appear live while the metrics below remain beautiful placeholders.
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col gap-2 text-left font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)] lg:text-right">
-                                            <span>{previewWebsite}</span>
-                                            <span>{brandingSummary}</span>
-                                            <span>{previewTitle}</span>
-                                        </div>
-                                    </div>
-
                                     <div className="grid gap-4 xl:grid-cols-[1.7fr,0.85fr]">
                                         <div className="relative overflow-hidden rounded-[26px] bg-[#1c1b1b] p-7">
                                             <div className="absolute inset-y-0 left-0 w-1 bg-[#ff5626]"></div>
@@ -640,6 +640,53 @@ export default function WhiteLabelReportIndex({
                                         <div className="grid gap-4">
                                             <div className="rounded-[24px] bg-[#2a2a2a] p-6"><span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Internal Links</span><div className="mt-3 flex items-center justify-between"><span className="text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">12.4K</span><i className="bi bi-diagram-3-fill text-xl text-[#ff8d64]"></i></div></div>
                                             <div className="rounded-[24px] bg-[#2a2a2a] p-6"><span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Domain Rating</span><div className="mt-3 flex items-center justify-between"><span className="text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">74.1</span><i className="bi bi-star-fill text-xl text-[#ff8d64]"></i></div></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
+                                        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+                                            <div>
+                                                <h5 className="text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Mobile vs Desktop</h5>
+                                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.48)]">Device comparison block for showing performance snapshots inside the branded demo report.</p>
+                                            </div>
+                                            <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">
+                                                Core Web Vitals
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-4 lg:grid-cols-2">
+                                            {DEVICE_BREAKDOWN.map((device) => (
+                                                <div key={device.label} className="rounded-[24px] bg-[#151414] p-5">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div>
+                                                            <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">{device.label}</div>
+                                                            <div className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">{device.score}</div>
+                                                            <div className="mt-1 text-sm text-[rgba(255,240,232,0.52)]">Experience score</div>
+                                                        </div>
+                                                        <div className={`rounded-2xl px-4 py-3 text-right ${device.tone}`}>
+                                                            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,244,238,0.78)]">Load Speed</div>
+                                                            <div className="mt-2 text-2xl font-bold text-[#fff7f2]">{device.speed}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-5 grid grid-cols-3 gap-3">
+                                                        {device.bars.map((value, index) => (
+                                                            <div key={`${device.label}-${index}`} className="rounded-2xl bg-[#201f1f] p-3">
+                                                                <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-[rgba(255,240,232,0.32)]">
+                                                                    {index === 0 ? 'Speed' : index === 1 ? 'UX' : 'SEO'}
+                                                                </div>
+                                                                <div className="mt-3 h-20 rounded-2xl bg-[rgba(255,255,255,0.04)] p-2">
+                                                                    <div className="flex h-full items-end">
+                                                                        <div className="w-full rounded-xl bg-[linear-gradient(180deg,rgba(255,181,161,0.2),rgba(255,86,38,0.88))]" style={{ height: `${value}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#201f1f] px-4 py-3">
+                                                        <span className="text-sm text-[rgba(255,240,232,0.68)]">Layout stability</span>
+                                                        <span className="text-sm font-semibold text-[#fff7f2]">{device.stability}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
 
