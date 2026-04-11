@@ -45,11 +45,35 @@ const SECTION_GROUPS = [
 
 const cloneReportSections = (sections = {}) => JSON.parse(JSON.stringify(sections));
 
-const DEMO_REPORT_SECTIONS = [
-    { key: 'overview', title: 'Executive Overview' },
-    { key: 'branding', title: 'Branding Snapshot' },
-    { key: 'recommendations', title: 'Priority Recommendations' },
-    { key: 'next_steps', title: 'Next Steps' },
+const DEMO_SCORE_RING = {
+    circumference: 282.7,
+    offset: 19.7,
+};
+
+const DIAGNOSTIC_METRICS = [
+    { label: 'Performance', value: 98, tone: 'emerald' },
+    { label: 'Accessibility', value: 90, tone: 'emerald' },
+    { label: 'Best Practices', value: 75, tone: 'orange' },
+    { label: 'SEO Score', value: 100, tone: 'emerald' },
+];
+
+const ISSUE_ROWS = [
+    { title: 'Duplicate Meta Descriptions', affected: '1,340', severity: 'critical', action: 'Meta refresh' },
+    { title: 'Large Image Payloads', affected: '42', severity: 'warning', action: 'Compress' },
+    { title: 'Broken Outbound Links', affected: '12', severity: 'medium', action: 'Redirect' },
+];
+
+const INSIGHT_CARDS = [
+    {
+        title: 'Semantic Gap Opportunity',
+        body: 'Competitor topics show a 22% faster uplift when supporting entities and FAQ depth are introduced.',
+        tone: 'primary',
+    },
+    {
+        title: 'Natural Growth Detected',
+        body: 'Branded search demand is trending upward, creating a stronger base for off-page amplification.',
+        tone: 'neutral',
+    },
 ];
 
 export default function WhiteLabelReportIndex({
@@ -59,7 +83,6 @@ export default function WhiteLabelReportIndex({
     settings,
     defaultSettings,
     reportHighlights = [],
-    setupSteps = [],
 }) {
     const { flash } = usePage().props;
     const fileInputRef = useRef(null);
@@ -91,7 +114,6 @@ export default function WhiteLabelReportIndex({
     const previewFooter = form.data.footer_text.trim()
         || `${form.data.company_name || organization?.name || 'Your company'} client reporting`;
     const previewWebsite = form.data.website.trim() || 'Website not set yet';
-    const previewModeLabel = form.data.enabled ? 'Client-ready white label mode' : 'White label disabled';
     const statusHeading = form.data.enabled ? 'White label enabled' : 'Ready for setup';
     const previewFocusSections = SECTION_GROUPS.map((group) => ({
         ...group,
@@ -201,14 +223,6 @@ export default function WhiteLabelReportIndex({
         );
     };
 
-    const demoReportSections = [
-        ...DEMO_REPORT_SECTIONS,
-        ...previewFocusSections.map((group) => ({
-            key: group.key,
-            title: group.title,
-        })),
-    ];
-
     return (
         <AppLayout
             header="White Label Report"
@@ -224,12 +238,6 @@ export default function WhiteLabelReportIndex({
                 {(flash?.error || form.errors.organization || form.errors.plan) && (
                     <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-5 py-4 text-sm text-rose-200 shadow-lg shadow-rose-950/20">
                         {flash?.error || form.errors.organization || form.errors.plan}
-                    </div>
-                )}
-
-                {saveLocked && (
-                    <div className="rounded-2xl border border-[rgba(255,166,77,0.24)] bg-[rgba(255,166,77,0.08)] px-5 py-4 text-sm text-[#ffd9b0]">
-                        Buttons, selectors aur logo preview ab demo mode me fully work karte hain. Save karne ke liye workspace aur eligible plan zaroori hoga.
                     </div>
                 )}
 
@@ -559,133 +567,255 @@ export default function WhiteLabelReportIndex({
                                 </span>
                             </div>
 
-                            <div className="overflow-hidden rounded-[28px] border border-[rgba(255,110,64,0.16)] bg-[#120f0f]">
-                                <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-5" style={{ background: 'linear-gradient(135deg, rgba(255,110,64,0.18), transparent 60%)' }}>
-                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="overflow-hidden rounded-[28px] bg-[#131313]">
+                                <div className="px-6 py-6 sm:px-8 lg:px-10">
+                                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-5 py-4">
                                         <div className="flex items-center gap-4">
                                             {renderLogoPreview()}
                                             <div>
-                                                <div className="text-sm uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Report Header</div>
-                                                <div className="mt-2 text-2xl font-semibold text-[#fff7f2]">{previewTitle}</div>
-                                            </div>
-                                        </div>
-                                        <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-[rgba(255,240,232,0.7)]">
-                                            {previewModeLabel}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 px-6 py-6">
-                                    <div
-                                        className="rounded-3xl border p-5"
-                                        style={{
-                                            borderColor: 'rgba(255,110,64,0.18)',
-                                            background: 'linear-gradient(180deg, rgba(255,110,64,0.10), rgba(255,255,255,0.02))',
-                                        }}
-                                    >
-                                        <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Sample Report Header Card</div>
-                                        <div className="mt-3 text-lg font-semibold text-[#fff7f2]">{brandingSummary}</div>
-                                        <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.68)]">
-                                            Company identity, cover title and selected SEO focus areas update from the white label form in real time.
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-3xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5">
-                                        <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Client Report Scope</div>
-                                        <div className="mt-5 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[#0f0c0c] p-4">
-                                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <div>
-                                                    <div className="text-sm font-semibold text-[#fff7f2]">{brandingSummary}</div>
-                                                    <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">{previewWebsite}</div>
-                                                </div>
-                                                <div className="rounded-full border border-[rgba(255,110,64,0.18)] bg-[rgba(255,110,64,0.08)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
-                                                    {previewFocusSections.reduce((total, group) => total + group.selectedItems.length, 0)} focus points
+                                                <div className="text-lg font-semibold tracking-[-0.02em] text-[#fff7f2]">{brandingSummary}</div>
+                                                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">
+                                                    {previewWebsite}
                                                 </div>
                                             </div>
-                                            <div className="mt-4 grid gap-4 md:grid-cols-3">
-                                                {previewFocusSections.length > 0 ? previewFocusSections.map((group) => (
-                                                    <div key={group.key} className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.03)] p-4">
-                                                        <div className="text-sm font-semibold text-[#fff7f2]">{group.title}</div>
-                                                        <div className="mt-3 space-y-2">
-                                                            {group.selectedItems.map((item) => (
-                                                                <div key={item.key} className="flex items-center gap-2 text-sm text-[rgba(255,240,232,0.68)]">
-                                                                    <i className="bi bi-check-circle-fill text-[#ff9f7f]"></i>
-                                                                    <span>{item.label}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )) : (
-                                                    <div className="rounded-2xl border border-dashed border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.02)] p-4 text-sm text-[rgba(255,240,232,0.58)] md:col-span-3">
-                                                        No SEO focus sections selected yet. Choose On Page, Off Page, or Technical SEO items from the form.
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <p className="mt-4 text-sm leading-6 text-[rgba(255,240,232,0.68)]">{previewFooter}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#ff8d64]">Client SEO Report</div>
+                                            <div className="mt-2 text-sm text-[rgba(255,240,232,0.58)]">{previewTitle}</div>
                                         </div>
                                     </div>
 
-                                    <div className="rounded-3xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                            <div>
-                                                <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Demo Report Layout</div>
-                                                <div className="mt-2 text-lg font-semibold text-[#fff7f2]">Client-facing sample design</div>
-                                            </div>
-                                            <div className="rounded-full border border-[rgba(255,110,64,0.18)] bg-[rgba(255,110,64,0.08)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
-                                                Demo only
-                                            </div>
+                                    <div className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+                                        <div className="max-w-2xl">
+                                            <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#ff8d64]">Executive Summary</span>
+                                            <h4 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.04em] text-[#fff7f2] sm:text-6xl">
+                                                Technical
+                                                <br />
+                                                <span className="text-[rgba(255,255,255,0.22)]">Audit</span> 2026
+                                            </h4>
+                                            <p className="mt-6 max-w-md text-sm leading-7 text-[rgba(255,240,232,0.50)]">
+                                                Editorial demo report for {brandingSummary}. Your logo, title and company name appear live while the metrics below remain beautiful placeholders.
+                                            </p>
                                         </div>
+                                        <div className="flex flex-col gap-2 text-left font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)] lg:text-right">
+                                            <span>{previewWebsite}</span>
+                                            <span>{brandingSummary}</span>
+                                            <span>{previewTitle}</span>
+                                        </div>
+                                    </div>
 
-                                        <div className="mt-5 rounded-[28px] border border-[rgba(255,110,64,0.16)] bg-[linear-gradient(180deg,#161010,#0d0a0a)] p-5">
-                                            <div className="rounded-[24px] border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(135deg,rgba(255,110,64,0.12),rgba(255,255,255,0.02))] p-5">
-                                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                                    <div className="flex items-center gap-4">
+                                    <div className="grid gap-4 xl:grid-cols-[1.7fr,0.85fr]">
+                                        <div className="relative overflow-hidden rounded-[26px] bg-[#1c1b1b] p-7">
+                                            <div className="absolute inset-y-0 left-0 w-1 bg-[#ff5626]"></div>
+                                            <div className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-[rgba(255,86,38,0.16)] blur-[100px]"></div>
+                                            <div className="relative flex flex-col gap-8 md:flex-row md:items-center">
+                                                <div className="relative h-52 w-52 flex-shrink-0">
+                                                    <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
+                                                        <circle cx="50" cy="50" r="45" fill="transparent" stroke="#2a2a2a" strokeWidth="8"></circle>
+                                                        <circle cx="50" cy="50" r="45" fill="transparent" stroke="#ff5626" strokeWidth="8" strokeDasharray={DEMO_SCORE_RING.circumference} strokeDashoffset={DEMO_SCORE_RING.offset} strokeLinecap="round"></circle>
+                                                    </svg>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                        <span className="text-5xl font-black tracking-[-0.04em] text-[#fff7f2]">93</span>
+                                                        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#ff8d64]">Grade A</span>
+                                                    </div>
+                                                </div>
+                                                <div className="relative z-10 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-4">
                                                         {renderLogoPreview()}
                                                         <div>
-                                                            <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Company / Logo Placement</div>
-                                                            <div className="mt-2 text-2xl font-semibold text-[#fff7f2]">{brandingSummary}</div>
-                                                            <div className="mt-1 text-sm text-[rgba(255,240,232,0.62)]">{previewTitle}</div>
+                                                            <div className="text-3xl font-bold tracking-[-0.03em] text-[#fff7f2]">Overall Health Score</div>
+                                                            <div className="mt-2 text-sm text-[rgba(255,240,232,0.56)]">Live company identity preview in the report header.</div>
                                                         </div>
                                                     </div>
-                                                    <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3 text-sm text-[rgba(255,240,232,0.72)]">
-                                                        Report cover preview
+                                                    <p className="mt-6 max-w-lg text-sm leading-7 text-[rgba(255,240,232,0.58)]">
+                                                        This premium demo block shows how the report opens with strong typography, a cinematic score ring and branded header treatment.
+                                                    </p>
+                                                    <div className="mt-6 grid grid-cols-2 gap-4">
+                                                        <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Crawl Capacity</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">98.2%</span></div>
+                                                        <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Indexability</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">100%</span></div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+                                        <div className="grid gap-4">
+                                            <div className="rounded-[24px] bg-[#2a2a2a] p-6"><span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Internal Links</span><div className="mt-3 flex items-center justify-between"><span className="text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">12.4K</span><i className="bi bi-diagram-3-fill text-xl text-[#ff8d64]"></i></div></div>
+                                            <div className="rounded-[24px] bg-[#2a2a2a] p-6"><span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Domain Rating</span><div className="mt-3 flex items-center justify-between"><span className="text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">74.1</span><i className="bi bi-star-fill text-xl text-[#ff8d64]"></i></div></div>
+                                        </div>
+                                    </div>
 
-                                            <div className="mt-5 grid gap-4">
-                                                {demoReportSections.map((section, index) => (
-                                                    <div key={section.key} className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.03)] p-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,110,64,0.14)] text-sm font-semibold text-[#ffcfb9]">
-                                                                {index + 1}
-                                                            </div>
-                                                            <div className="text-base font-semibold text-[#fff7f2]">{section.title}</div>
+                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
+                                        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+                                            <div>
+                                                <h5 className="text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Projected Visibility Growth</h5>
+                                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.48)]">Estimated traffic recovery bars styled like the revamp reference.</p>
+                                            </div>
+                                            <div className="flex gap-4 font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.4)]">
+                                                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#ff5626]"></span>Current</span>
+                                                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#6b625f]"></span>Projected</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex h-64 items-end gap-2">
+                                            {[40, 44, 43, 55, 58, 61, 76, 84, 92, 100].map((value, index) => (
+                                                <div
+                                                    key={value}
+                                                    className={`flex-1 rounded-t-[4px] ${index < 6 ? 'bg-[#201f1f]' : 'border-t-2 border-[#ff5626]'}`}
+                                                    style={{ height: `${value}%`, backgroundColor: index < 6 ? '#201f1f' : `rgba(255,86,38,${0.18 + (index - 5) * 0.08})` }}
+                                                ></div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr,0.8fr]">
+                                        <div className="rounded-[26px] bg-[#1c1b1b] p-7">
+                                            <div className="mb-8 font-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(255,240,232,0.34)]">Lighthouse Diagnostics</div>
+                                            <div className="grid grid-cols-2 gap-6 xl:grid-cols-4">
+                                                {DIAGNOSTIC_METRICS.map((metric) => (
+                                                    <div key={metric.label} className="text-center">
+                                                        <div className="relative mx-auto mb-4 h-24 w-24">
+                                                            <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+                                                                <circle cx="18" cy="18" r="16" fill="none" stroke="#2a2a2a" strokeWidth="3"></circle>
+                                                                <circle cx="18" cy="18" r="16" fill="none" stroke={metric.tone === 'orange' ? '#ff5626' : '#22c55e'} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - metric.value}></circle>
+                                                            </svg>
+                                                            <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-[#fff7f2]">{metric.value}</span>
                                                         </div>
-                                                        <div className="mt-3 space-y-2">
-                                                            <div className="h-3 rounded-full bg-[rgba(255,255,255,0.07)]"></div>
-                                                            <div className="h-3 w-5/6 rounded-full bg-[rgba(255,255,255,0.05)]"></div>
-                                                        </div>
+                                                        <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[rgba(255,240,232,0.55)]">{metric.label}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-[26px] bg-[#2a2a2a] p-7">
+                                            <div className="mb-6 font-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(255,240,232,0.34)]">Status Ledger</div>
+                                            <div className="space-y-5">
+                                                {[
+                                                    { label: 'HTTPS Protocol', state: 'Good', tone: '#22c55e' },
+                                                    { label: 'XML Sitemap', state: 'Good', tone: '#22c55e' },
+                                                    { label: 'Robots.txt', state: 'Stable', tone: '#22c55e' },
+                                                    { label: 'Canonical Tags', state: 'Check', tone: '#f59e0b' },
+                                                ].map((item) => (
+                                                    <div key={item.label} className="flex items-center justify-between gap-3">
+                                                        <span className="text-sm text-[rgba(255,240,232,0.72)]">{item.label}</span>
+                                                        <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em]" style={{ color: item.tone }}>
+                                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.tone }}></span>
+                                                            {item.state}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </Card>
 
-                        <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[rgba(255,240,232,0.58)]">Quick Setup</p>
-                            <div className="mt-5 space-y-3">
-                                {setupSteps.map((step, index) => (
-                                    <div key={step} className="flex items-start gap-3 rounded-2xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-4">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,110,64,0.14)] text-sm font-semibold text-[#ffcfb9]">
-                                            {index + 1}
+                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
+                                        <div className="mb-6 flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(255,240,232,0.34)]">Top Issues By Severity</div>
+                                                <div className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Audit issue summary</div>
+                                            </div>
+                                            <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">Demo findings</div>
                                         </div>
-                                        <p className="pt-1 text-sm leading-6 text-[rgba(255,240,232,0.72)]">{step}</p>
+                                        <div className="overflow-hidden rounded-[20px] bg-[#151414]">
+                                            <div className="grid grid-cols-[1.8fr,0.7fr,0.8fr,0.9fr] gap-3 px-5 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,240,232,0.32)]">
+                                                <span>Issue</span><span>Affected</span><span>Severity</span><span>Action</span>
+                                            </div>
+                                            {ISSUE_ROWS.map((row) => (
+                                                <div key={row.title} className="grid grid-cols-[1.8fr,0.7fr,0.8fr,0.9fr] gap-3 border-t border-[rgba(255,255,255,0.04)] px-5 py-4">
+                                                    <div><div className="text-sm font-semibold text-[#fff7f2]">{row.title}</div><div className="mt-1 text-xs text-[rgba(255,240,232,0.42)]">High-quality placeholder explanation for visual report structure.</div></div>
+                                                    <div className="text-sm text-[rgba(255,240,232,0.72)]">{row.affected}</div>
+                                                    <div><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] ${row.severity === 'critical' ? 'bg-[rgba(239,68,68,0.16)] text-[#f87171]' : row.severity === 'warning' ? 'bg-[rgba(245,158,11,0.16)] text-[#fbbf24]' : 'bg-[rgba(96,165,250,0.16)] text-[#93c5fd]'}`}>{row.severity}</span></div>
+                                                    <div className="text-sm text-[#ffb5a1]">{row.action}</div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                ))}
+
+                                    <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                                        {INSIGHT_CARDS.map((card) => (
+                                            <div key={card.title} className={`relative overflow-hidden rounded-[24px] p-6 ${card.tone === 'primary' ? 'bg-[linear-gradient(135deg,#ff5626,#ff764d)] text-[#fff4ee]' : 'bg-[linear-gradient(135deg,#1c1b1b,#222222)] text-[#fff7f2]'}`}>
+                                                <div className="relative">
+                                                    <div className="text-xl font-bold tracking-[-0.03em]">{card.title}</div>
+                                                    <p className={`mt-3 max-w-md text-sm leading-7 ${card.tone === 'primary' ? 'text-[#ffe0d4]' : 'text-[rgba(255,240,232,0.56)]'}`}>{card.body}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {previewFocusSections.length > 0 && (
+                                        <div className="mt-6 grid gap-4">
+                                            {previewFocusSections.map((group) => (
+                                                <div key={group.key} className="rounded-[26px] bg-[#1c1b1b] p-7">
+                                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                                        <div>
+                                                            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(255,240,232,0.34)]">{group.title}</div>
+                                                            <div className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Demo section with live-selected headings</div>
+                                                        </div>
+                                                        <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">{group.selectedItems.length} items</div>
+                                                    </div>
+                                                    <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+                                                        <div className="rounded-[22px] bg-[#201f1f] p-5">
+                                                            <div className="space-y-3">
+                                                                {group.selectedItems.map((item) => (
+                                                                    <div key={item.key} className="rounded-2xl bg-[#161515] px-4 py-3">
+                                                                        <div className="flex items-center gap-3"><i className="bi bi-check-circle-fill text-[#ff8d64]"></i><span className="text-sm font-medium text-[#fff7f2]">{item.label}</span></div>
+                                                                        <div className="mt-2 h-2.5 rounded-full bg-[rgba(255,255,255,0.06)]"><div className="h-2.5 rounded-full bg-[linear-gradient(90deg,#ff5626,#ff9c7c)]" style={{ width: `${62 + (item.label.length % 5) * 7}%` }}></div></div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <div className="rounded-[22px] bg-[#201f1f] p-5">
+                                                            <div className="flex h-40 items-end gap-2">
+                                                                {[34, 52, 48, 66, 74, 58].map((value) => (
+                                                                    <div key={value} className="flex-1 rounded-t-[4px] bg-[linear-gradient(180deg,rgba(255,181,161,0.20),rgba(255,86,38,0.75))]" style={{ height: `${value}%` }}></div>
+                                                                ))}
+                                                            </div>
+                                                            <div className="mt-4 space-y-2">
+                                                                <div className="h-3 rounded-full bg-[rgba(255,255,255,0.07)]"></div>
+                                                                <div className="h-3 w-4/5 rounded-full bg-[rgba(255,255,255,0.05)]"></div>
+                                                                <div className="h-3 w-3/5 rounded-full bg-[rgba(255,255,255,0.04)]"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
+                                        <div className="flex flex-wrap items-end justify-between gap-4">
+                                            <div>
+                                                <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(255,240,232,0.34)]">Report Closing Note</div>
+                                                <div className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Branded ending block with your identity</div>
+                                            </div>
+                                            <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">
+                                                Ready for export
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+                                            <div className="rounded-[22px] bg-[#151414] p-5">
+                                                <div className="text-sm leading-7 text-[rgba(255,240,232,0.60)]">
+                                                    This footer-style report area stays inside the preview card, so the page ends neatly while still showing where your company name, support copy and branded sign-off would appear.
+                                                </div>
+                                                <div className="mt-5 h-px bg-[rgba(255,255,255,0.06)]"></div>
+                                                <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="text-base font-semibold text-[#fff7f2]">{brandingSummary}</div>
+                                                        <div className="mt-1 text-sm text-[rgba(255,240,232,0.52)]">{previewFooter}</div>
+                                                    </div>
+                                                    {renderLogoPreview()}
+                                                </div>
+                                            </div>
+                                            <div className="rounded-[22px] bg-[#201f1f] p-5">
+                                                <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Delivery Modules</div>
+                                                <div className="mt-4 space-y-3">
+                                                    {['Executive Summary', 'Priority Fixes', 'Section Snapshots', 'Performance Signals'].map((label) => (
+                                                        <div key={label} className="flex items-center justify-between rounded-2xl bg-[#161515] px-4 py-3">
+                                                            <span className="text-sm text-[#fff7f2]">{label}</span>
+                                                            <i className="bi bi-check2-circle text-[#ff8d64]"></i>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </Card>
                     </div>
