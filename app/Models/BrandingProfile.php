@@ -20,6 +20,8 @@ class BrandingProfile extends Model
         'support_phone',
         'company_address',
         'report_footer_text',
+        'report_intro_text',
+        'report_outro_text',
         'report_period_days',
         'report_sections_json',
         'use_custom_cover_title',

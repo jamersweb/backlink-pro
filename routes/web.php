@@ -534,12 +534,18 @@ Route::middleware(['auth', 'verified'])->group(function(){
     Route::prefix('label')->name('label.')->group(function () {
         Route::get('/', [WhiteLabelReportController::class, 'index'])->name('index');
         Route::put('/branding', [WhiteLabelReportController::class, 'update'])->name('branding.update');
+        Route::get('/clients', [WhiteLabelReportController::class, 'clients'])->name('clients');
+        Route::post('/clients', [WhiteLabelReportController::class, 'storeClient'])->name('clients.store');
+        Route::put('/clients/{profile}', [WhiteLabelReportController::class, 'updateClient'])->name('clients.update');
+        Route::delete('/clients/{profile}', [WhiteLabelReportController::class, 'destroyClient'])->name('clients.destroy');
+        Route::get('/clients/{profile}/preview', [WhiteLabelReportController::class, 'preview'])->name('preview');
+
         Route::get('/reports', [WhiteLabelReportController::class, 'reports'])->name('reports');
-        Route::post('/reports', [WhiteLabelReportController::class, 'storeProfile'])->name('reports.store');
-        Route::put('/reports/{profile}', [WhiteLabelReportController::class, 'updateProfile'])->name('reports.update');
-        Route::delete('/reports/{profile}', [WhiteLabelReportController::class, 'destroyProfile'])->name('reports.destroy');
-        Route::get('/reports/{profile}/preview', [WhiteLabelReportController::class, 'preview'])->name('preview');
-        Route::get('/reports/{profile}/pdf', [WhiteLabelReportController::class, 'pdf'])->name('pdf');
+        Route::post('/reports/generate', [WhiteLabelReportController::class, 'generateReport'])->name('reports.generate');
+        Route::get('/reports/{report}', [WhiteLabelReportController::class, 'showReport'])->name('reports.show');
+        Route::post('/reports/{report}/regenerate', [WhiteLabelReportController::class, 'regenerateReport'])->name('reports.regenerate');
+        Route::get('/reports/{report}/pdf', [WhiteLabelReportController::class, 'pdf'])->name('reports.pdf');
+        Route::delete('/reports/{report}', [WhiteLabelReportController::class, 'destroyReport'])->name('reports.destroy');
     });
 
     Route::get('/white-label-report', [WhiteLabelReportController::class, 'legacyIndex'])->name('white-label-report.index');
@@ -752,4 +758,3 @@ Route::get('/test-comment', function () {
 });
 
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php
-

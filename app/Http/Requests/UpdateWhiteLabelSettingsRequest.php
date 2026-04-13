@@ -27,6 +27,8 @@ class UpdateWhiteLabelSettingsRequest extends FormRequest
             'support_phone' => ['nullable', 'string', 'max:50'],
             'company_address' => ['nullable', 'string', 'max:1000'],
             'footer_text' => ['nullable', 'string', 'max:1000'],
+            'intro_text' => ['nullable', 'string', 'max:5000'],
+            'outro_text' => ['nullable', 'string', 'max:5000'],
             'report_period_days' => ['required', 'integer', 'in:7,15,30'],
             'report_sections' => ['required', 'array'],
             'report_sections.on_page' => ['required', 'array'],

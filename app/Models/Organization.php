@@ -225,6 +225,11 @@ class Organization extends Model
         return $this->hasMany(WhiteLabelReportProfile::class);
     }
 
+    public function whiteLabelReports(): HasMany
+    {
+        return $this->hasMany(WhiteLabelReport::class);
+    }
+
     /**
      * Get plan model
      */

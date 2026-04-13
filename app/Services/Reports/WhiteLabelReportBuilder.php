@@ -58,6 +58,7 @@ class WhiteLabelReportBuilder
                 'id' => $profile->id,
                 'client_name' => $profile->client_name,
                 'client_website' => $profile->client_website,
+                'client_company_info' => $profile->client_company_info,
                 'report_title' => $profile->report_title,
                 'reporting_period_label' => $this->formatReportingPeriod($profile),
                 'target_keywords' => $this->splitLines($profile->target_keywords),
@@ -75,6 +76,8 @@ class WhiteLabelReportBuilder
                 'support_phone' => $branding?->support_phone,
                 'company_address' => $branding?->company_address,
                 'footer_text' => $branding?->report_footer_text ?: 'Professional SEO reporting powered by your saved workspace branding.',
+                'intro_text' => $branding?->report_intro_text,
+                'outro_text' => $branding?->report_outro_text,
             ],
             'domain' => $domain ? [
                 'id' => $domain->id,
@@ -90,9 +93,10 @@ class WhiteLabelReportBuilder
                     'reporting_period' => $this->formatReportingPeriod($profile),
                 ],
                 'executive_summary' => [
-                    'available' => !empty($summaryBullets) || !empty($profile->notes),
+                    'available' => !empty($summaryBullets) || !empty($profile->notes) || !empty($branding?->report_intro_text),
                     'summary_bullets' => $summaryBullets,
                     'custom_summary' => $profile->notes,
+                    'intro_text' => $branding?->report_intro_text,
                 ],
                 'keyword_overview' => [
                     'available' => count($keywordRows) > 0 || count($this->splitLines($profile->target_keywords)) > 0,
@@ -122,6 +126,7 @@ class WhiteLabelReportBuilder
                 ],
                 'footer_branding' => [
                     'footer_text' => $branding?->report_footer_text ?: 'Thank you for reviewing this SEO report.',
+                    'outro_text' => $branding?->report_outro_text,
                     'website' => $branding?->website,
                     'support_email' => $branding?->support_email,
                     'support_phone' => $branding?->support_phone,
