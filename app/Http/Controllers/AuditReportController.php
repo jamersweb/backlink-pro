@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use App\Services\Audit\ChromiumPdfRenderer;
+use App\Services\Billing\PlanLimiter;
 use App\Services\SeoAudit\CrawlModuleConfig;
 use App\Services\SeoAudit\CustomAuditRulesValidator;
 use Inertia\Inertia;
@@ -37,6 +38,8 @@ class AuditReportController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $organization = $user?->organizationUsers()->with('organization.plan')->first()?->organization;
+        $planLimiter = app(PlanLimiter::class);
         
         $googleSeoAccount = ConnectedAccount::where('user_id', $user->id)
             ->where('provider', 'google')
@@ -59,6 +62,7 @@ class AuditReportController extends Controller
             'googleEmail' => $googleSeoAccount?->email,
             'recentAudits' => $recentAudits,
             'lastCompletedAuditId' => $lastCompleted?->id,
+            'canUseWhiteLabel' => $organization ? $planLimiter->canUseWhiteLabel($organization) : false,
         ]);
     }
 

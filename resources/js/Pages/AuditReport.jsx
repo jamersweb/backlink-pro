@@ -6,6 +6,7 @@ export default function AuditReport({
     googleConnected = false,
     googleEmail = null,
     recentAudits = [],
+    canUseWhiteLabel = false,
 }) {
     const { props } = usePage();
     const serverErrors = props.errors || {};
@@ -13,7 +14,7 @@ export default function AuditReport({
     const [formData, setFormData] = useState({
         url: '',
         email: '',
-        send_to_email: true,
+        include_white_label_data: false,
     });
 
     const [errors, setErrors] = useState({ url: '', email: '' });
@@ -39,7 +40,6 @@ export default function AuditReport({
     };
 
     const validateEmail = (email) => {
-        if (formData.send_to_email && !email.trim()) return 'Email is required when "Send report to email" is checked';
         if (email.trim()) {
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(email)) return 'Please enter a valid email address';
@@ -52,11 +52,6 @@ export default function AuditReport({
         if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
     };
 
-    const handleCheckboxChange = (checked) => {
-        setFormData((prev) => ({ ...prev, send_to_email: checked }));
-        if (!checked) setErrors((prev) => ({ ...prev, email: '' }));
-    };
-
     const validateForm = () => {
         const urlError = validateUrl(formData.url);
         const emailError = validateEmail(formData.email);
@@ -66,8 +61,7 @@ export default function AuditReport({
 
     const isFormValid = () => {
         const hasUrl = formData.url.trim() !== '';
-        const hasEmail = formData.send_to_email ? formData.email.trim() !== '' : true;
-        return hasUrl && hasEmail && !errors.url && !errors.email;
+        return hasUrl && !errors.url && !errors.email;
     };
 
     const handleSubmit = (e) => {
@@ -77,7 +71,8 @@ export default function AuditReport({
         router.post('/audit-report', {
             url: formData.url.trim(),
             email: formData.email.trim() || null,
-            send_to_email: formData.send_to_email,
+            send_to_email: Boolean(formData.email.trim()),
+            include_white_label_data: formData.include_white_label_data,
         }, {
             preserveScroll: true,
             onFinish: () => setIsLoading(false),
@@ -194,7 +189,7 @@ export default function AuditReport({
 
                                 <div>
                                     <label className="bp-form-label block text-sm mb-2">
-                                        Email {formData.send_to_email && <span className="text-[#F04438]">*</span>}
+                                        Email
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -217,20 +212,27 @@ export default function AuditReport({
                                             {errors.email}
                                         </p>
                                     )}
+                                    <p className="bp-form-helper mt-2 flex items-center gap-1">
+                                        <i className="bi bi-info-circle"></i>
+                                        Add an email if you want the completed audit sent to your inbox automatically.
+                                    </p>
                                 </div>
 
                                 <div className="bp-checkbox-info-card flex items-start gap-3">
                                     <input
                                         type="checkbox"
-                                        id="send-email"
-                                        checked={formData.send_to_email}
-                                        onChange={(e) => handleCheckboxChange(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded border-[var(--admin-border)] bg-[var(--admin-bg)] focus:ring-[var(--admin-primary)] focus:ring-offset-0 cursor-pointer"
+                                        id="include-white-label-data"
+                                        checked={formData.include_white_label_data}
+                                        onChange={(e) => handleInputChange('include_white_label_data', e.target.checked)}
+                                        disabled={!canUseWhiteLabel}
+                                        className="mt-0.5 w-4 h-4 rounded border-[var(--admin-border)] bg-[var(--admin-bg)] focus:ring-[var(--admin-primary)] focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                     />
-                                    <label htmlFor="send-email" className="flex-1 text-sm text-[var(--admin-text)] cursor-pointer">
-                                        <span className="font-medium">Send report to email</span>
+                                    <label htmlFor="include-white-label-data" className={`flex-1 text-sm ${canUseWhiteLabel ? 'text-[var(--admin-text)] cursor-pointer' : 'text-[var(--admin-text-dim)] cursor-not-allowed'}`}>
+                                        <span className="font-medium">Do you want this report with white-label data?</span>
                                         <p className="bp-form-helper mt-1">
-                                            Receive the audit report in your email inbox once completed.
+                                            {canUseWhiteLabel
+                                                ? 'Use your saved Label branding and white-label report details where available.'
+                                                : 'White-label data becomes available once Label settings are configured on a supported plan.'}
                                         </p>
                                     </label>
                                 </div>
