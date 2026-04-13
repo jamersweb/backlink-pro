@@ -95,10 +95,10 @@ const INSIGHT_CARDS = [
     },
 ];
 
+const REPORT_PERIOD_OPTIONS = [7, 15, 30];
+
 export default function WhiteLabelReportIndex({
     organization = null,
-    canUseWhiteLabel = false,
-    upgradeUrl = '/plans',
     settings,
     defaultSettings,
     reportHighlights = [],
@@ -114,6 +114,7 @@ export default function WhiteLabelReportIndex({
         remove_logo: false,
         website: settings.website ?? '',
         footer_text: settings.footer_text ?? '',
+        report_period_days: settings.report_period_days ?? defaultSettings.report_period_days ?? 30,
         report_sections: cloneReportSections(settings.report_sections ?? defaultSettings.report_sections),
         use_custom_cover_title: settings.use_custom_cover_title ?? false,
         custom_cover_title: settings.custom_cover_title ?? '',
@@ -125,7 +126,7 @@ export default function WhiteLabelReportIndex({
         }
     }, [logoPreviewUrl]);
 
-    const saveLocked = !organization || !canUseWhiteLabel;
+    const saveLocked = !organization;
     const controlsLocked = form.processing;
     const previewTitle = form.data.use_custom_cover_title
         ? form.data.custom_cover_title.trim()
@@ -133,6 +134,7 @@ export default function WhiteLabelReportIndex({
     const previewFooter = form.data.footer_text.trim()
         || `${form.data.company_name || organization?.name || 'Your company'} client reporting`;
     const previewWebsite = form.data.website.trim() || 'Website not set yet';
+    const previewPeriodDays = Number(form.data.report_period_days) || 30;
     const statusHeading = form.data.enabled ? 'White label enabled' : 'Ready for setup';
     const previewFocusSections = SECTION_GROUPS.map((group) => ({
         ...group,
@@ -187,6 +189,7 @@ export default function WhiteLabelReportIndex({
             remove_logo: Boolean(settings.logo_url),
             website: defaultSettings.website,
             footer_text: defaultSettings.footer_text,
+            report_period_days: defaultSettings.report_period_days,
             report_sections: cloneReportSections(defaultSettings.report_sections),
             use_custom_cover_title: defaultSettings.use_custom_cover_title,
             custom_cover_title: defaultSettings.custom_cover_title,
@@ -322,23 +325,6 @@ export default function WhiteLabelReportIndex({
                     </Card>
                 )}
 
-                {organization && !canUseWhiteLabel && (
-                    <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(34,24,22,0.96),rgba(18,14,13,0.98))]" variant="ghost">
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Plan Upgrade</p>
-                                <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">White label branding is gated on your current plan</h3>
-                                <p className="mt-2 max-w-2xl text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                    This workspace is currently on the `{organization.plan_key || 'free'}` plan. Upgrade to Agency to save custom client branding for SEO reports.
-                                </p>
-                            </div>
-                            <Button href={upgradeUrl} variant="primary" size="lg" className="rounded-2xl px-6">
-                                <i className="bi bi-arrow-up-right-circle mr-2"></i>View Upgrade Options
-                            </Button>
-                        </div>
-                    </Card>
-                )}
-
                 <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
                     <div className="space-y-6">
                         <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
@@ -442,6 +428,48 @@ export default function WhiteLabelReportIndex({
                                         <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.62)]">
                                             Select the SEO focus areas you want included when branded report delivery is prepared for users.
                                         </p>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(14,11,11,0.72)] p-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div>
+                                                <h5 className="text-lg font-semibold text-[#fff7f2]">Reporting Window</h5>
+                                                <p className="mt-1 text-sm leading-6 text-[rgba(255,240,232,0.58)]">
+                                                    Choose how many days of analytics and search performance data should appear in the client report.
+                                                </p>
+                                            </div>
+                                            <span className="inline-flex rounded-full border border-[rgba(255,110,64,0.16)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
+                                                {previewPeriodDays} days selected
+                                            </span>
+                                        </div>
+                                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                            {REPORT_PERIOD_OPTIONS.map((days) => {
+                                                const active = previewPeriodDays === days;
+
+                                                return (
+                                                    <button
+                                                        key={days}
+                                                        type="button"
+                                                        onClick={() => form.setData('report_period_days', days)}
+                                                        disabled={controlsLocked}
+                                                        className={`rounded-2xl border px-4 py-4 text-left transition ${
+                                                            active
+                                                                ? 'border-[rgba(255,110,64,0.45)] bg-[linear-gradient(135deg,rgba(255,86,38,0.22),rgba(255,118,77,0.08))] shadow-[0_12px_30px_rgba(255,86,38,0.12)]'
+                                                                : 'border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.02)] hover:border-[rgba(255,110,64,0.22)]'
+                                                        } ${controlsLocked ? 'cursor-not-allowed opacity-70' : ''}`}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span className="text-lg font-semibold text-[#fff7f2]">{days} Days</span>
+                                                            {active && <i className="bi bi-check2-circle text-[#ff8d64]"></i>}
+                                                        </div>
+                                                        <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.56)]">
+                                                            Report me last {days} days ka live GA4 aur Search Console data include hoga.
+                                                        </p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {form.errors.report_period_days && <p className="mt-3 text-sm text-[#F04438]">{form.errors.report_period_days}</p>}
                                     </div>
 
                                     <div className="grid gap-4">
@@ -601,6 +629,7 @@ export default function WhiteLabelReportIndex({
                                         <div className="text-right">
                                             <div className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#ff8d64]">Client SEO Report</div>
                                             <div className="mt-2 text-sm text-[rgba(255,240,232,0.58)]">{previewTitle}</div>
+                                            <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,240,232,0.34)]">Last {previewPeriodDays} days</div>
                                         </div>
                                     </div>
 
@@ -630,9 +659,10 @@ export default function WhiteLabelReportIndex({
                                                     <p className="mt-6 max-w-lg text-sm leading-7 text-[rgba(255,240,232,0.58)]">
                                                         This premium demo block shows how the report opens with strong typography, a cinematic score ring and branded header treatment.
                                                     </p>
-                                                    <div className="mt-6 grid grid-cols-2 gap-4">
+                                                    <div className="mt-6 grid gap-4 sm:grid-cols-3">
                                                         <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Crawl Capacity</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">98.2%</span></div>
                                                         <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Indexability</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">100%</span></div>
+                                                        <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Reporting Window</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">{previewPeriodDays} days</span></div>
                                                     </div>
                                                 </div>
                                             </div>

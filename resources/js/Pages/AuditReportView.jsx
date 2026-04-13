@@ -2,6 +2,7 @@ import AppLayout from '../Components/Layout/AppLayout';
 import Card from '../Components/Shared/Card';
 import { useState, useMemo, useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import BrandedAuditReportView from './WhiteLabelReport/BrandedAuditReportView';
 
 function isPdfArrayBuffer(buf) {
     if (!buf || buf.byteLength < 5) return false;
@@ -794,6 +795,10 @@ function AuditExtendedModuleSection({ audit, module: mod }) {
 export default function AuditReportView({ audit }) {
     const [activeTab, setActiveTab] = useState('overview');
     const [exportingPdf, exportPdf] = useExportPdf(audit?.id);
+
+    if (audit?.branding?.enabled) {
+        return <BrandedAuditReportView audit={audit} exportingPdf={exportingPdf} onExportPdf={exportPdf} />;
+    }
 
     const overallScore = audit?.overall_score ?? 0;
     const overallGrade = audit?.overall_grade || 'N/A';

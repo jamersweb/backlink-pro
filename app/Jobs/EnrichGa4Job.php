@@ -56,7 +56,7 @@ class EnrichGa4Job implements ShouldQueue
 
             $propertyId = $properties[0]['propertyName'];
             $endDate = new \DateTime('now');
-            $startDate = (clone $endDate)->modify('-30 days');
+            $startDate = (clone $endDate)->modify('-' . $this->resolveReportPeriodDays($audit) . ' days');
             $dailyMetrics = $ga4->runDailyReport($propertyId, $startDate, $endDate);
             $landingPages = [];
             try {
@@ -107,5 +107,14 @@ class EnrichGa4Job implements ShouldQueue
         }
         $audit->ga4_ready_at = now();
         $audit->save();
+    }
+
+    protected function resolveReportPeriodDays(Audit $audit): int
+    {
+        $audit->loadMissing('organization.brandingProfile');
+
+        $days = (int) ($audit->organization?->brandingProfile?->report_period_days ?: 30);
+
+        return in_array($days, [7, 15, 30], true) ? $days : 30;
     }
 }

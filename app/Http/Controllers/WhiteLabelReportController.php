@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateWhiteLabelSettingsRequest;
 use App\Models\BrandingProfile;
 use App\Models\Organization;
-use App\Services\Billing\PlanLimiter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +21,7 @@ class WhiteLabelReportController extends Controller
         'logo_path' => null,
         'website' => '',
         'footer_text' => '',
+        'report_period_days' => 30,
         'report_sections' => [
             'on_page' => [
                 'title_optimization' => true,
@@ -56,9 +56,6 @@ class WhiteLabelReportController extends Controller
         }
 
         $branding = $organization?->brandingProfile;
-        $planLimiter = app(PlanLimiter::class);
-        $canUseWhiteLabel = $organization ? $planLimiter->canUseWhiteLabel($organization) : false;
-
         return Inertia::render('WhiteLabelReport/Index', [
             'organization' => $organization ? [
                 'id' => $organization->id,
@@ -67,7 +64,7 @@ class WhiteLabelReportController extends Controller
                 'plan_key' => $organization->plan_key,
                 'plan_status' => $organization->plan_status,
             ] : null,
-            'canUseWhiteLabel' => $canUseWhiteLabel,
+            'canUseWhiteLabel' => (bool) $organization,
             'upgradeUrl' => $organization ? route('orgs.billing.plans', $organization) : '/plans',
             'settings' => $this->formatSettings($branding),
             'defaultSettings' => self::DEFAULTS,
@@ -107,11 +104,6 @@ class WhiteLabelReportController extends Controller
 
         $this->authorize('manage', $organization);
 
-        $planLimiter = app(PlanLimiter::class);
-        if (!$planLimiter->canUseWhiteLabel($organization)) {
-            return back()->withErrors(['plan' => 'White label branding is available on the Agency plan.']);
-        }
-
         $branding = $organization->brandingProfile ?? BrandingProfile::create([
             'organization_id' => $organization->id,
         ]);
@@ -122,6 +114,7 @@ class WhiteLabelReportController extends Controller
             'brand_name' => $validated['company_name'] ?: null,
             'website' => $validated['website'] ?: null,
             'report_footer_text' => $validated['footer_text'] ?: null,
+            'report_period_days' => (int) ($validated['report_period_days'] ?? self::DEFAULTS['report_period_days']),
             'report_sections_json' => $validated['report_sections'] ?? self::DEFAULTS['report_sections'],
             'use_custom_cover_title' => (bool) $validated['use_custom_cover_title'],
             'custom_cover_title' => ($validated['use_custom_cover_title'] ?? false) ? ($validated['custom_cover_title'] ?: null) : null,
@@ -188,6 +181,7 @@ class WhiteLabelReportController extends Controller
             'logo_path' => $branding->logo_path,
             'website' => $branding->website ?? '',
             'footer_text' => $branding->report_footer_text ?? '',
+            'report_period_days' => (int) ($branding->report_period_days ?: self::DEFAULTS['report_period_days']),
             'report_sections' => $branding->report_sections_json ?: self::DEFAULTS['report_sections'],
             'use_custom_cover_title' => (bool) $branding->use_custom_cover_title,
             'custom_cover_title' => $branding->custom_cover_title ?? '',

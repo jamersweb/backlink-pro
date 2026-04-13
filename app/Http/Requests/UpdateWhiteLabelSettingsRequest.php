@@ -20,6 +20,7 @@ class UpdateWhiteLabelSettingsRequest extends FormRequest
             'remove_logo' => ['nullable', 'boolean'],
             'website' => ['nullable', 'url', 'max:255'],
             'footer_text' => ['nullable', 'string', 'max:1000'],
+            'report_period_days' => ['required', 'integer', 'in:7,15,30'],
             'report_sections' => ['required', 'array'],
             'report_sections.on_page' => ['required', 'array'],
             'report_sections.on_page.title_optimization' => ['required', 'boolean'],
@@ -49,6 +50,7 @@ class UpdateWhiteLabelSettingsRequest extends FormRequest
             'enabled' => filter_var($this->input('enabled'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
             'remove_logo' => filter_var($this->input('remove_logo'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
             'use_custom_cover_title' => filter_var($this->input('use_custom_cover_title'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
+            'report_period_days' => (int) ($this->input('report_period_days', 30) ?: 30),
         ]);
     }
 }

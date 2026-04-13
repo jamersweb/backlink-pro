@@ -407,7 +407,7 @@ class RunSeoAuditJob implements ShouldQueue
 
             $propertyId = $properties[0]['propertyName'];
             $endDate = new \DateTime('now');
-            $startDate = (clone $endDate)->modify('-30 days');
+            $startDate = (clone $endDate)->modify('-' . $this->resolveReportPeriodDays($audit) . ' days');
 
             $dailyMetrics = $ga4->runDailyReport($propertyId, $startDate, $endDate);
             
@@ -479,7 +479,7 @@ class RunSeoAuditJob implements ShouldQueue
             }
 
             $endDate = new \DateTime('now');
-            $startDate = (clone $endDate)->modify('-30 days');
+            $startDate = (clone $endDate)->modify('-' . $this->resolveReportPeriodDays($audit) . ' days');
 
             $dailyMetrics = $gsc->fetchDailyMetrics($siteUrl, $startDate, $endDate);
             $topQueries = $gsc->fetchTopQueries($siteUrl, $startDate, $endDate, 20);
@@ -513,5 +513,14 @@ class RunSeoAuditJob implements ShouldQueue
     protected function sanitizeKpis(array $kpis): array
     {
         return app(AuditKpiSanitizer::class)->sanitize($kpis);
+    }
+
+    protected function resolveReportPeriodDays(Audit $audit): int
+    {
+        $audit->loadMissing('organization.brandingProfile');
+
+        $days = (int) ($audit->organization?->brandingProfile?->report_period_days ?: 30);
+
+        return in_array($days, [7, 15, 30], true) ? $days : 30;
     }
 }

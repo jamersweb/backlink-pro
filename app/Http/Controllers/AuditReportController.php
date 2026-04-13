@@ -24,6 +24,7 @@ use App\Jobs\RunSeoAuditJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use App\Services\Audit\ChromiumPdfRenderer;
@@ -93,6 +94,7 @@ class AuditReportController extends Controller
         $normalizedUrl = $this->normalizeUrl($validated['url']);
 
         $orgAllow = [];
+        $org = null;
         if ($user) {
             $orgUser = $user->organizationUsers()->first();
             if ($orgUser) {
@@ -162,6 +164,7 @@ class AuditReportController extends Controller
 
         $audit = Audit::create($this->filterAuditCreatePayload([
             'user_id' => $user->id,
+            'organization_id' => $org?->id,
             'url' => $validated['url'],
             'normalized_url' => $normalizedUrl,
             'status' => Audit::STATUS_QUEUED,
@@ -225,7 +228,7 @@ class AuditReportController extends Controller
 
     public function show(Request $request, $id)
     {
-        $audit = Audit::with(['pages', 'issues'])
+        $audit = Audit::with(['pages', 'issues', 'organization.brandingProfile'])
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
@@ -269,7 +272,7 @@ class AuditReportController extends Controller
 
     public function share(Request $request, $token)
     {
-        $audit = Audit::with(['pages', 'issues'])
+        $audit = Audit::with(['pages', 'issues', 'organization.brandingProfile'])
             ->where('share_token', $token)
             ->where('status', Audit::STATUS_COMPLETED)
             ->firstOrFail();
@@ -298,6 +301,7 @@ class AuditReportController extends Controller
         
         return [
             'id' => $audit->id,
+            'organization_id' => $audit->organization_id,
             'url' => $audit->url,
             'normalized_url' => $audit->normalized_url,
             'status' => $audit->status,
@@ -343,6 +347,7 @@ class AuditReportController extends Controller
                 'lighthouse_desktop' => $page->lighthouse_desktop,
                 'performance_metrics' => $page->performance_metrics,
                 'security_headers' => $page->security_headers,
+                'link_metrics_json' => $page->link_metrics_json,
             ] : null,
             
             // Issues (severity for AuditReportView: high->critical, medium->warning, low->info)
@@ -380,6 +385,28 @@ class AuditReportController extends Controller
             
             // GSC data
             'gsc' => $kpis['gsc'] ?? null,
+            'branding' => $this->formatBrandingForFrontend($audit),
+        ];
+    }
+
+    protected function formatBrandingForFrontend(Audit $audit): ?array
+    {
+        $branding = $audit->organization?->brandingProfile;
+
+        if (! $branding || ! $branding->white_label_enabled) {
+            return null;
+        }
+
+        return [
+            'enabled' => true,
+            'company_name' => $branding->brand_name ?: ($audit->organization?->name ?? null),
+            'website' => $branding->website ?: $audit->normalized_url,
+            'footer_text' => $branding->report_footer_text,
+            'logo_url' => $branding->logo_path ? Storage::disk('public')->url($branding->logo_path) : null,
+            'report_period_days' => (int) ($branding->report_period_days ?: 30),
+            'report_sections' => $branding->report_sections_json ?: [],
+            'use_custom_cover_title' => (bool) $branding->use_custom_cover_title,
+            'custom_cover_title' => $branding->custom_cover_title,
         ];
     }
 
