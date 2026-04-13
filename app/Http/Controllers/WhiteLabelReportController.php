@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -320,7 +321,34 @@ class WhiteLabelReportController extends Controller
         return Organization::query()
             ->whereHas('users', fn ($query) => $query->where('user_id', $user->id))
             ->orderBy('id')
-            ->first();
+            ->first()
+            ?? $this->createPersonalOrganization($user->id, $user->name ?? 'User');
+    }
+
+    private function createPersonalOrganization(int $userId, string $userName): Organization
+    {
+        $baseName = trim($userName) !== '' ? trim($userName) . ' Workspace' : 'My Workspace';
+        $slugBase = Str::slug($baseName) ?: 'workspace';
+        $slug = $slugBase;
+        $suffix = 2;
+
+        while (Organization::query()->where('slug', $slug)->exists()) {
+            $slug = $slugBase . '-' . $suffix;
+            $suffix++;
+        }
+
+        $organization = Organization::create([
+            'name' => $baseName,
+            'slug' => $slug,
+            'owner_user_id' => $userId,
+        ]);
+
+        $organization->users()->create([
+            'user_id' => $userId,
+            'role' => 'owner',
+        ]);
+
+        return $organization;
     }
 
     private function resolveOwnedProfile(Request $request, WhiteLabelReportProfile $profile): WhiteLabelReportProfile
