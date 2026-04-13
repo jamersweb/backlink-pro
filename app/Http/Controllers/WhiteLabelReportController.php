@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -128,6 +129,7 @@ class WhiteLabelReportController extends Controller
     {
         $organization = $this->requireOrganization($request);
         Gate::authorize('view', $organization);
+        $this->ensureProfilesTableExists();
 
         $validated = $request->validated();
         $domain = $this->resolveOwnedDomain($validated['domain_id'] ?? null);
@@ -151,6 +153,7 @@ class WhiteLabelReportController extends Controller
 
     public function updateProfile(UpsertWhiteLabelReportProfileRequest $request, WhiteLabelReportProfile $profile): RedirectResponse
     {
+        $this->ensureProfilesTableExists();
         $profile = $this->resolveOwnedProfile($request, $profile);
         $validated = $request->validated();
         $domain = $this->resolveOwnedDomain($validated['domain_id'] ?? null);
@@ -172,6 +175,7 @@ class WhiteLabelReportController extends Controller
 
     public function destroyProfile(Request $request, WhiteLabelReportProfile $profile): RedirectResponse
     {
+        $this->ensureProfilesTableExists();
         $profile = $this->resolveOwnedProfile($request, $profile);
         $profile->delete();
 
@@ -180,6 +184,7 @@ class WhiteLabelReportController extends Controller
 
     public function pdf(Request $request, WhiteLabelReportProfile $profile, WhiteLabelReportBuilder $builder)
     {
+        $this->ensureProfilesTableExists();
         $profile = $this->resolveOwnedProfile($request, $profile);
         $organization = $this->requireOrganization($request);
         $report = $builder->build($organization, $profile);
@@ -204,6 +209,7 @@ class WhiteLabelReportController extends Controller
         ?WhiteLabelReportProfile $selectedProfile = null,
         ?WhiteLabelReportBuilder $builder = null
     ): Response {
+        $profilesTableExists = Schema::hasTable('white_label_report_profiles');
         $organization = $this->resolveOrganization($request);
         if ($organization) {
             Gate::authorize('view', $organization);
@@ -213,7 +219,7 @@ class WhiteLabelReportController extends Controller
         $domains = collect();
         $previewReport = null;
 
-        if ($organization) {
+        if ($organization && $profilesTableExists) {
             $profiles = WhiteLabelReportProfile::query()
                 ->where('organization_id', $organization->id)
                 ->where('user_id', Auth::id())
@@ -248,7 +254,7 @@ class WhiteLabelReportController extends Controller
                 ->values();
         }
 
-        if ($selectedProfile && $organization) {
+        if ($selectedProfile && $organization && $profilesTableExists) {
             $previewReport = ($builder ?? app(WhiteLabelReportBuilder::class))->build($organization, $selectedProfile);
         }
 
@@ -280,6 +286,10 @@ class WhiteLabelReportController extends Controller
                 'pdf_url' => route('label.pdf', $selectedProfile),
             ] : null,
             'previewReport' => $previewReport,
+            'profilesTableExists' => $profilesTableExists,
+            'setupWarning' => $profilesTableExists
+                ? null
+                : 'White label report profiles table is missing. Run the latest migrations to enable client report creation and previews.',
             'tabLinks' => [
                 'branding' => route('label.index'),
                 'reports' => route('label.reports'),
@@ -346,6 +356,15 @@ class WhiteLabelReportController extends Controller
             ->where('id', $domainId)
             ->where('user_id', Auth::id())
             ->firstOrFail();
+    }
+
+    private function ensureProfilesTableExists(): void
+    {
+        abort_unless(
+            Schema::hasTable('white_label_report_profiles'),
+            500,
+            'The white_label_report_profiles table is missing. Please run the latest migrations.'
+        );
     }
 
     private function formatSettings(?BrandingProfile $branding): array

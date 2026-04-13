@@ -135,6 +135,8 @@ export default function WhiteLabelReportIndex({
     domains = [],
     selectedProfile = null,
     previewReport = null,
+    profilesTableExists = true,
+    setupWarning = null,
     tabLinks = {},
 }) {
     const { flash, errors } = usePage().props;
@@ -458,7 +460,9 @@ export default function WhiteLabelReportIndex({
                         <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[#fff7f2]">Client Reports</h3>
                         <p className="mt-2 text-sm text-[rgba(255,240,232,0.56)]">Create, edit, preview, and delete white-label report profiles.</p>
                     </div>
-                    <Button type="button" variant="secondary" onClick={startNewProfile}>New Profile</Button>
+                    <Button type="button" variant="secondary" onClick={startNewProfile} disabled={!profilesTableExists}>
+                        New Profile
+                    </Button>
                 </div>
 
                 <div className="mt-5 space-y-3">
@@ -495,20 +499,20 @@ export default function WhiteLabelReportIndex({
 
                 <form onSubmit={submitProfile} className="space-y-5">
                     <div className="grid gap-5 md:grid-cols-2">
-                        <Input label="Client Name" name="client_name" value={profileForm.data.client_name} onChange={(e) => profileForm.setData('client_name', e.target.value)} error={profileForm.errors.client_name || errors.client_name} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
-                        <Input label="Client Website / Domain" name="client_website" type="url" value={profileForm.data.client_website} onChange={(e) => profileForm.setData('client_website', e.target.value)} error={profileForm.errors.client_website || errors.client_website} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
-                        <Input label="Report Title" name="report_title" value={profileForm.data.report_title} onChange={(e) => profileForm.setData('report_title', e.target.value)} error={profileForm.errors.report_title || errors.report_title} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
-                        <DomainSelect domains={domains} value={profileForm.data.domain_id} onChange={(e) => profileForm.setData('domain_id', e.target.value)} error={profileForm.errors.domain_id || errors.domain_id} disabled={!hasWorkspace || profileForm.processing} />
-                        <Input label="Reporting Period Start" name="reporting_period_start" type="date" value={profileForm.data.reporting_period_start} onChange={(e) => profileForm.setData('reporting_period_start', e.target.value)} error={profileForm.errors.reporting_period_start || errors.reporting_period_start} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
-                        <Input label="Reporting Period End" name="reporting_period_end" type="date" value={profileForm.data.reporting_period_end} onChange={(e) => profileForm.setData('reporting_period_end', e.target.value)} error={profileForm.errors.reporting_period_end || errors.reporting_period_end} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
+                        <Input label="Client Name" name="client_name" value={profileForm.data.client_name} onChange={(e) => profileForm.setData('client_name', e.target.value)} error={profileForm.errors.client_name || errors.client_name} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
+                        <Input label="Client Website / Domain" name="client_website" type="url" value={profileForm.data.client_website} onChange={(e) => profileForm.setData('client_website', e.target.value)} error={profileForm.errors.client_website || errors.client_website} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
+                        <Input label="Report Title" name="report_title" value={profileForm.data.report_title} onChange={(e) => profileForm.setData('report_title', e.target.value)} error={profileForm.errors.report_title || errors.report_title} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
+                        <DomainSelect domains={domains} value={profileForm.data.domain_id} onChange={(e) => profileForm.setData('domain_id', e.target.value)} error={profileForm.errors.domain_id || errors.domain_id} disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
+                        <Input label="Reporting Period Start" name="reporting_period_start" type="date" value={profileForm.data.reporting_period_start} onChange={(e) => profileForm.setData('reporting_period_start', e.target.value)} error={profileForm.errors.reporting_period_start || errors.reporting_period_start} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
+                        <Input label="Reporting Period End" name="reporting_period_end" type="date" value={profileForm.data.reporting_period_end} onChange={(e) => profileForm.setData('reporting_period_end', e.target.value)} error={profileForm.errors.reporting_period_end || errors.reporting_period_end} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2">
-                        <TextareaField label="Target Keywords" value={profileForm.data.target_keywords} onChange={(e) => profileForm.setData('target_keywords', e.target.value)} error={profileForm.errors.target_keywords || errors.target_keywords} disabled={!hasWorkspace || profileForm.processing} />
-                        <TextareaField label="Notes / Custom Summary" value={profileForm.data.notes} onChange={(e) => profileForm.setData('notes', e.target.value)} error={profileForm.errors.notes || errors.notes} disabled={!hasWorkspace || profileForm.processing} />
+                        <TextareaField label="Target Keywords" value={profileForm.data.target_keywords} onChange={(e) => profileForm.setData('target_keywords', e.target.value)} error={profileForm.errors.target_keywords || errors.target_keywords} disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
+                        <TextareaField label="Notes / Custom Summary" value={profileForm.data.notes} onChange={(e) => profileForm.setData('notes', e.target.value)} error={profileForm.errors.notes || errors.notes} disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
                     </div>
 
-                    <TextareaField label="Recommendations / Next Steps" value={profileForm.data.recommendations} onChange={(e) => profileForm.setData('recommendations', e.target.value)} error={profileForm.errors.recommendations || errors.recommendations} disabled={!hasWorkspace || profileForm.processing} />
+                    <TextareaField label="Recommendations / Next Steps" value={profileForm.data.recommendations} onChange={(e) => profileForm.setData('recommendations', e.target.value)} error={profileForm.errors.recommendations || errors.recommendations} disabled={!hasWorkspace || !profilesTableExists || profileForm.processing} />
 
                     <div className="flex flex-wrap justify-end gap-3">
                         {editingProfileId && (
@@ -516,7 +520,7 @@ export default function WhiteLabelReportIndex({
                                 Cancel Edit
                             </Button>
                         )}
-                        <Button type="submit" variant="primary" disabled={!hasWorkspace || profileForm.processing}>
+                        <Button type="submit" variant="primary" disabled={!hasWorkspace || !profilesTableExists || profileForm.processing}>
                             {profileForm.processing ? 'Saving...' : editingProfileId ? 'Update Profile' : 'Create Profile'}
                         </Button>
                     </div>
@@ -585,6 +589,12 @@ export default function WhiteLabelReportIndex({
                 {(flash?.success || flash?.error) && (
                     <div className={`rounded-2xl px-5 py-4 text-sm ${flash?.success ? 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border border-rose-400/20 bg-rose-500/10 text-rose-200'}`}>
                         {flash?.success || flash?.error}
+                    </div>
+                )}
+
+                {setupWarning && (
+                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
+                        {setupWarning}
                     </div>
                 )}
 
