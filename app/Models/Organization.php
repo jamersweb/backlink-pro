@@ -257,10 +257,6 @@ class Organization extends Model
      */
     public function hasUser(User $user): bool
     {
-        if ($this->owner_user_id === $user->id) {
-            return true;
-        }
-
         return $this->users()->where('user_id', $user->id)->exists();
     }
 
