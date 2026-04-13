@@ -14,19 +14,29 @@ class ProjectController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $currentPlan = $user->currentPlan();
         $googleSeoAccount = $user->connectedAccounts()
             ->google()
             ->service(ConnectedAccount::SERVICE_SEO)
             ->active()
             ->latest()
             ->first();
+        $storageReady = Schema::hasTable('projects');
 
-        $projects = Schema::hasTable('projects')
+        $projects = $storageReady
             ? $user->projects()
                 ->latest()
                 ->get()
                 ->map(fn (Project $project) => $this->transformProject($project))
             : collect();
+
+        $projectLimit = $currentPlan?->getLimit('domains.max_active');
+        $projectsUsed = $projects->count();
+        $projectsRemaining = null;
+
+        if ($projectLimit !== null && $projectLimit !== -1) {
+            $projectsRemaining = max($projectLimit - $projectsUsed, 0);
+        }
 
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
@@ -35,7 +45,16 @@ class ProjectController extends Controller
                 'ga4_connected' => (bool) $user->google_connected_at,
                 'google_email' => $user->google_email ?: $googleSeoAccount?->email,
             ],
-            'storageReady' => Schema::hasTable('projects'),
+            'storageReady' => $storageReady,
+            'planSummary' => [
+                'label' => $user->subscription_status === 'trialing'
+                    ? 'Free Trial'
+                    : ($currentPlan?->name ?? 'Starter'),
+                'projects_limit' => $projectLimit,
+                'projects_used' => $projectsUsed,
+                'projects_remaining' => $projectsRemaining,
+                'is_unlimited' => $projectLimit === -1 || $projectLimit === null,
+            ],
         ]);
     }
 

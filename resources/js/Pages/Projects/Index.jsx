@@ -6,7 +6,7 @@ import Input from '../../Components/Shared/Input';
 
 const DRAFT_STORAGE_KEY = 'bp-project-draft';
 
-export default function ProjectsIndex({ projects = [], googleStatus, storageReady = true }) {
+export default function ProjectsIndex({ projects = [], googleStatus, storageReady = true, planSummary }) {
     const { flash } = usePage().props;
     const [creatorOpen, setCreatorOpen] = useState(false);
     const [draftBooted, setDraftBooted] = useState(false);
@@ -109,18 +109,6 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                 Pehle sirf create button. Us ke baad clean create panel khulta hai jahan name, URL, Google Analytics aur Search Console sab ek hi flow mein milta hai.
                             </p>
 
-                            <div className="mt-7 flex flex-wrap gap-3">
-                                <button
-                                    type="button"
-                                    onClick={openCreator}
-                                    className="inline-flex items-center rounded-2xl bg-[#fff3ec] px-6 py-3 text-sm font-semibold text-[#1c130f] transition hover:bg-white"
-                                >
-                                    <i className="bi bi-plus-lg mr-2"></i>Create Project
-                                </button>
-                                <div className="inline-flex items-center rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-3 text-sm text-[rgba(255,240,232,0.78)]">
-                                    <i className="bi bi-kanban mr-2 text-[var(--admin-primary-light)]"></i>{projects.length} saved projects
-                                </div>
-                            </div>
                         </div>
 
                         <div className="grid gap-4 self-end">
@@ -179,13 +167,25 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                     Pehli line mein details, neeche Google connect buttons, aur phir create.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={closeCreator}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-[rgba(255,240,232,0.78)] transition hover:bg-[rgba(255,255,255,0.08)]"
-                            >
-                                <i className="bi bi-x-lg"></i>
-                            </button>
+                            <div className="flex flex-wrap items-center justify-end gap-3">
+                                <div className="rounded-2xl border border-[rgba(255,138,101,0.18)] bg-[rgba(255,247,242,0.05)] px-4 py-3">
+                                    <div className="text-[11px] uppercase tracking-[0.22em] text-[rgba(255,240,232,0.45)]">Current Plan</div>
+                                    <div className="mt-1 text-sm font-semibold text-[#fff7f2]">{planSummary?.label || 'Starter'}</div>
+                                </div>
+                                <div className="rounded-2xl border border-[rgba(255,138,101,0.18)] bg-[rgba(255,247,242,0.05)] px-4 py-3">
+                                    <div className="text-[11px] uppercase tracking-[0.22em] text-[rgba(255,240,232,0.45)]">Projects Remaining</div>
+                                    <div className="mt-1 text-sm font-semibold text-[#fff7f2]">
+                                        {planSummary?.is_unlimited ? 'Unlimited' : `${planSummary?.projects_remaining ?? 0} left`}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={closeCreator}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-[rgba(255,240,232,0.78)] transition hover:bg-[rgba(255,255,255,0.08)]"
+                                >
+                                    <i className="bi bi-x-lg"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <form onSubmit={submit} className="px-6 py-6 lg:px-8 lg:py-8">
@@ -218,7 +218,12 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <div className="text-sm font-semibold text-[#fff7f2]">Google Connections</div>
-                                        <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">Chaho to create se pehle connect kar lo, phir project list mein ready status ke saath aayega.</div>
+                                        <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">
+                                            Chaho to create se pehle connect kar lo, phir project list mein ready status ke saath aayega.
+                                            {!planSummary?.is_unlimited && (
+                                                <span className="ml-1 text-[rgba(255,240,232,0.82)]">Aap ke paas {planSummary?.projects_remaining ?? 0} projects remaining hain.</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="text-xs uppercase tracking-[0.2em] text-[rgba(255,240,232,0.44)]">Optional</div>
                                 </div>
