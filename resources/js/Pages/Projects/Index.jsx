@@ -8,7 +8,7 @@ const DRAFT_STORAGE_KEY = 'bp-project-draft';
 
 export default function ProjectsIndex({ projects = [], googleStatus, storageReady = true, planSummary }) {
     const { flash } = usePage().props;
-    const [creatorOpen, setCreatorOpen] = useState(false);
+    const [creatorOpen, setCreatorOpen] = useState(true);
     const [draftBooted, setDraftBooted] = useState(false);
     const form = useForm({
         name: '',
@@ -77,7 +77,7 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
     return (
         <AppLayout
             header="Projects"
-            subtitle="Create projects your way, connect Google tools, and keep the list tidy"
+            subtitle="Create and manage your projects"
             actions={
                 <button type="button" onClick={openCreator} className="bp-topbar-btn-primary">
                     <i className="bi bi-plus-lg"></i>
@@ -98,65 +98,6 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                     </div>
                 )}
 
-                <section className="overflow-hidden rounded-[32px] border border-[rgba(255,138,101,0.18)] bg-[linear-gradient(135deg,rgba(255,120,82,0.18),rgba(16,11,10,0.98)_34%,rgba(9,9,9,1)_100%)] shadow-[0_28px_90px_rgba(0,0,0,0.35)]">
-                    <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.2fr,0.8fr] lg:px-10 lg:py-10">
-                        <div className="max-w-2xl">
-                            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#ffb697]">Project Workspace</p>
-                            <h2 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-[#fff7f2] sm:text-5xl">
-                                Ek click se project banao, connect karo, aur list mein dekh lo.
-                            </h2>
-                            <p className="mt-4 max-w-xl text-base leading-7 text-[rgba(255,240,232,0.72)]">
-                                Pehle sirf create button. Us ke baad clean create panel khulta hai jahan name, URL, Google Analytics aur Search Console sab ek hi flow mein milta hai.
-                            </p>
-
-                        </div>
-
-                        <div className="grid gap-4 self-end">
-                            <div className="rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,247,242,0.04)] p-5 backdrop-blur-sm">
-                                <div className="text-xs uppercase tracking-[0.22em] text-[rgba(255,240,232,0.5)]">Connection Status</div>
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-2xl bg-[rgba(255,255,255,0.04)] p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-300">
-                                                <i className="bi bi-graph-up-arrow text-lg"></i>
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-semibold text-[#fff7f2]">Google Analytics</div>
-                                                <div className={`mt-1 text-xs ${googleStatus?.ga4_connected ? 'text-emerald-300' : 'text-amber-200'}`}>
-                                                    {googleStatus?.ga4_connected ? 'Connected' : 'Pending'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl bg-[rgba(255,255,255,0.04)] p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/12 text-sky-200">
-                                                <i className="bi bi-search text-lg"></i>
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-semibold text-[#fff7f2]">Search Console</div>
-                                                <div className={`mt-1 text-xs ${googleStatus?.seo_connected ? 'text-sky-200' : 'text-amber-200'}`}>
-                                                    {googleStatus?.seo_connected ? 'Connected' : 'Pending'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {googleStatus?.google_email && (
-                                    <p className="mt-4 text-sm text-[rgba(255,240,232,0.66)]">{googleStatus.google_email}</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {!storageReady && (
-                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-100 shadow-lg shadow-amber-950/20">
-                        Projects ka design ready hai, lekin database migration abhi apply nahi hui. Create action tab enable hogi jab `projects` table ban jayegi.
-                    </div>
-                )}
-
                 {creatorOpen && (
                     <section className="overflow-hidden rounded-[30px] border border-[rgba(255,138,101,0.2)] bg-[linear-gradient(180deg,rgba(24,16,14,0.98),rgba(10,10,10,1))] shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
                         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[rgba(255,138,101,0.14)] px-6 py-6 lg:px-8">
@@ -164,7 +105,7 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                 <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[#ffb697]">Create Flow</p>
                                 <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff7f2]">New project</h3>
                                 <p className="mt-2 text-sm text-[rgba(255,240,232,0.62)]">
-                                    Pehli line mein details, neeche Google connect buttons, aur phir create.
+                                    Enter your project details, optionally connect Google services, and create the project.
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center justify-end gap-3">
@@ -219,9 +160,9 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                     <div>
                                         <div className="text-sm font-semibold text-[#fff7f2]">Google Connections</div>
                                         <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">
-                                            Chaho to create se pehle connect kar lo, phir project list mein ready status ke saath aayega.
+                                            Connect Google services before creating the project so the project appears with ready-to-use integration status.
                                             {!planSummary?.is_unlimited && (
-                                                <span className="ml-1 text-[rgba(255,240,232,0.82)]">Aap ke paas {planSummary?.projects_remaining ?? 0} projects remaining hain.</span>
+                                                <span className="ml-1 text-[rgba(255,240,232,0.82)]">You have {planSummary?.projects_remaining ?? 0} project slots remaining.</span>
                                             )}
                                         </div>
                                     </div>
@@ -243,7 +184,7 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                             </span>
                                         </div>
                                         <h4 className="mt-4 text-lg font-semibold text-[#fff7f2]">Google Analytics</h4>
-                                        <p className="mt-1 text-sm text-[rgba(255,240,232,0.6)]">Traffic aur behavior data connect karein.</p>
+                                        <p className="mt-1 text-sm text-[rgba(255,240,232,0.6)]">Connect traffic and behavior data.</p>
                                     </button>
 
                                     <button
@@ -260,14 +201,14 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                             </span>
                                         </div>
                                         <h4 className="mt-4 text-lg font-semibold text-[#fff7f2]">Google Search Console</h4>
-                                        <p className="mt-1 text-sm text-[rgba(255,240,232,0.6)]">Search visibility aur keywords connect karein.</p>
+                                        <p className="mt-1 text-sm text-[rgba(255,240,232,0.6)]">Connect search visibility and keyword data.</p>
                                     </button>
                                 </div>
                             </div>
 
                             <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(255,138,101,0.14)] pt-6">
                                 <p className="text-sm text-[rgba(255,240,232,0.56)]">
-                                    Create karte hi project neeche list mein aa jayega.
+                                    The project will be added directly to the list below after creation.
                                 </p>
                                 <Button type="submit" variant="primary" size="lg" disabled={form.processing || !storageReady} className="rounded-2xl px-8">
                                     {form.processing ? 'Creating Project...' : <><i className="bi bi-stars mr-2"></i>Create Project</>}
@@ -325,9 +266,9 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                                 <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-[rgba(255,138,101,0.14)] text-[var(--admin-primary-light)]">
                                     <i className="bi bi-plus-square text-3xl"></i>
                                 </div>
-                                <h4 className="mt-6 text-2xl font-semibold text-[#fff7f2]">Abhi koi project list mein nahi hai</h4>
+                                <h4 className="mt-6 text-2xl font-semibold text-[#fff7f2]">No projects have been created yet</h4>
                                 <p className="mt-3 max-w-md text-sm leading-6 text-[rgba(255,240,232,0.58)]">
-                                    Upar `Create Project` par click karein, details fill karein, Google connect karein aur project ko yahin list mein add kar dein.
+                                    Use the create section above to add your first project and it will appear here immediately.
                                 </p>
                                 <button
                                     type="button"

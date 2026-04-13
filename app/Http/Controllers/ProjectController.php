@@ -30,7 +30,9 @@ class ProjectController extends Controller
                 ->map(fn (Project $project) => $this->transformProject($project))
             : collect();
 
-        $projectLimit = $currentPlan?->getLimit('domains.max_active');
+        $projectLimit = $user->subscription_status === 'trialing'
+            ? 1
+            : $currentPlan?->getLimit('domains.max_active');
         $projectsUsed = $projects->count();
         $projectsRemaining = null;
 
@@ -70,6 +72,15 @@ class ProjectController extends Controller
         ]);
 
         $user = $request->user();
+        $currentPlan = $user->currentPlan();
+        $projectLimit = $user->subscription_status === 'trialing'
+            ? 1
+            : $currentPlan?->getLimit('domains.max_active');
+
+        if ($projectLimit !== null && $projectLimit !== -1 && $user->projects()->count() >= $projectLimit) {
+            return back()->with('error', 'You have reached your project limit for the current plan.');
+        }
+
         $googleSeoAccount = $user->connectedAccounts()
             ->google()
             ->service(ConnectedAccount::SERVICE_SEO)

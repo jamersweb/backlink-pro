@@ -72,7 +72,7 @@ export default function ProjectShow({ project, googleStatus }) {
                             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Project Overview</p>
                             <h2 className="mt-2 text-3xl font-semibold text-[#fff7f2]">{project.name}</h2>
                             <p className="mt-3 text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                Yahan se aap project name aur URL manage kar sakte hain, aur neeche se `Connect GA4` aur `Connect GSC` buttons direct use kar sakte hain.
+                                Manage the project name and URL here, then use the Google connection buttons below whenever you need them.
                             </p>
                         </div>
 
