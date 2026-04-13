@@ -57,6 +57,7 @@ use App\Http\Controllers\AuditExportController;
 use App\Http\Controllers\AuditReportController;
 use App\Http\Controllers\WhiteLabelReportController;
 use App\Http\Controllers\GoogleOAuthController;
+use App\Http\Controllers\ProjectController;
 use Inertia\Inertia;
 
 
@@ -236,6 +237,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
     // dashboard stays at /dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('projects', ProjectController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 
     // Audit Report (User Panel)
     Route::prefix('audit-report')->name('audit-report.')->group(function() {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -33,6 +34,7 @@ class GoogleGa4Controller extends Controller
             'ga4_oauth_state' => $state,
             'ga4_oauth_user_id' => $user->id,
             'ga4_oauth_return_url' => $returnUrl,
+            'ga4_oauth_project_id' => $request->query('project_id'),
         ]);
 
         $scopes = [
@@ -123,7 +125,14 @@ class GoogleGa4Controller extends Controller
             }
             $user->save();
 
-            session()->forget(['ga4_oauth_state', 'ga4_oauth_user_id', 'ga4_oauth_return_url']);
+            $projectId = session('ga4_oauth_project_id');
+            if ($projectId) {
+                Project::where('id', $projectId)
+                    ->where('user_id', $user->id)
+                    ->update(['ga4_connected_at' => now()]);
+            }
+
+            session()->forget(['ga4_oauth_state', 'ga4_oauth_user_id', 'ga4_oauth_return_url', 'ga4_oauth_project_id']);
 
             return redirect($returnUrl)->with('success', 'Google Analytics (GA4) connected successfully.');
         } catch (\Exception $e) {

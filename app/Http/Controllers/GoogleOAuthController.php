@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ConnectedAccount;
+use App\Models\Project;
 use App\Services\Google\GoogleSeoClientFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,11 @@ class GoogleOAuthController extends Controller
      */
     public function connect(Request $request)
     {
+        $returnUrl = $request->query('return_url', '/audit-report');
+        if (!is_string($returnUrl) || !str_starts_with($returnUrl, '/')) {
+            $returnUrl = '/audit-report';
+        }
+
         try {
             $client = GoogleSeoClientFactory::create();
 
@@ -23,7 +29,8 @@ class GoogleOAuthController extends Controller
                 'user_id' => Auth::id(),
                 'nonce' => bin2hex(random_bytes(16)),
                 'ts' => now()->timestamp,
-                'return_url' => '/audit-report',
+                'return_url' => $returnUrl,
+                'project_id' => $request->query('project_id'),
             ];
 
             $signedState = base64_encode(json_encode($state));
@@ -39,7 +46,7 @@ class GoogleOAuthController extends Controller
             return redirect($authUrl);
         } catch (\Exception $e) {
             Log::error('Google OAuth connect error', ['error' => $e->getMessage()]);
-            return redirect()->route('audit-report.index')
+            return redirect($returnUrl)
                 ->with('error', 'Failed to connect Google: ' . $e->getMessage());
         }
     }
@@ -51,29 +58,37 @@ class GoogleOAuthController extends Controller
     {
         $code = $request->get('code');
         $error = $request->get('error');
+        $returnUrl = '/audit-report';
+
+        $signedState = session('google_seo_oauth_state');
+        if ($signedState) {
+            $stateFromSession = json_decode(base64_decode($signedState), true);
+            if (is_array($stateFromSession) && !empty($stateFromSession['return_url']) && str_starts_with($stateFromSession['return_url'], '/')) {
+                $returnUrl = $stateFromSession['return_url'];
+            }
+        }
 
         if ($error) {
-            return redirect()->route('audit-report.index')
+            return redirect($returnUrl)
                 ->with('error', 'Google connection failed: ' . $error);
         }
 
         if (!$code) {
-            return redirect()->route('audit-report.index')
+            return redirect($returnUrl)
                 ->with('error', 'No authorization code received');
         }
 
         // Verify state
-        $signedState = session('google_seo_oauth_state');
         $signature = session('google_seo_oauth_signature');
 
         if (!$signedState || !$signature) {
-            return redirect()->route('audit-report.index')
+            return redirect($returnUrl)
                 ->with('error', 'Invalid OAuth state');
         }
 
         $expectedSignature = hash_hmac('sha256', $signedState, config('app.key'));
         if (!hash_equals($expectedSignature, $signature)) {
-            return redirect()->route('audit-report.index')
+            return redirect($returnUrl)
                 ->with('error', 'Invalid OAuth signature');
         }
 
@@ -115,7 +130,19 @@ class GoogleOAuthController extends Controller
 
             session()->forget(['google_seo_oauth_state', 'google_seo_oauth_signature']);
 
-            return redirect()->route('audit-report.index')
+            $returnUrl = $state['return_url'] ?? '/audit-report';
+            if (!is_string($returnUrl) || !str_starts_with($returnUrl, '/')) {
+                $returnUrl = '/audit-report';
+            }
+
+            $projectId = $state['project_id'] ?? null;
+            if ($projectId) {
+                Project::where('id', $projectId)
+                    ->where('user_id', Auth::id())
+                    ->update(['gsc_connected_at' => now()]);
+            }
+
+            return redirect($returnUrl)
                 ->with('success', 'Successfully connected Google Analytics and Search Console!');
         } catch (\Exception $e) {
             Log::error('Google OAuth callback error', [
@@ -123,7 +150,7 @@ class GoogleOAuthController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             
-            return redirect()->route('audit-report.index')
+            return redirect($returnUrl)
                 ->with('error', 'Failed to complete Google connection: ' . $e->getMessage());
         }
     }

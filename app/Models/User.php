@@ -101,6 +101,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Domain::class);
     }
 
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function connectedAccounts()
     {
         return $this->hasMany(ConnectedAccount::class);
@@ -271,6 +276,5 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 }
-
 
 
