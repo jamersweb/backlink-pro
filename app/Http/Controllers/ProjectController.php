@@ -50,10 +50,22 @@ class ProjectController extends Controller
             'project_url' => ['required', 'url', 'max:2048'],
         ]);
 
-        $project = $request->user()->projects()->create($validated);
+        $user = $request->user();
+        $googleSeoAccount = $user->connectedAccounts()
+            ->google()
+            ->service(ConnectedAccount::SERVICE_SEO)
+            ->active()
+            ->latest()
+            ->first();
 
-        return redirect()->route('projects.show', $project)
-            ->with('success', 'Project created successfully.');
+        $user->projects()->create([
+            ...$validated,
+            'ga4_connected_at' => $user->google_connected_at ? now() : null,
+            'gsc_connected_at' => $googleSeoAccount ? now() : null,
+        ]);
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project created and added to your list.');
     }
 
     public function show(Project $project)

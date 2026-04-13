@@ -1,51 +1,88 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import AppLayout from '../../Components/Layout/AppLayout';
-import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
+const DRAFT_STORAGE_KEY = 'bp-project-draft';
+
 export default function ProjectsIndex({ projects = [], googleStatus, storageReady = true }) {
     const { flash } = usePage().props;
+    const [creatorOpen, setCreatorOpen] = useState(false);
+    const [draftBooted, setDraftBooted] = useState(false);
     const form = useForm({
         name: '',
         project_url: '',
     });
 
-    const submit = (e) => {
-        e.preventDefault();
-        form.post('/projects');
+    useEffect(() => {
+        const savedDraft = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (!savedDraft) {
+            return;
+        }
+
+        try {
+            const parsedDraft = JSON.parse(savedDraft);
+            form.setData({
+                name: parsedDraft.name || '',
+                project_url: parsedDraft.project_url || '',
+            });
+
+            if (parsedDraft.name || parsedDraft.project_url) {
+                setCreatorOpen(true);
+            }
+        } catch {
+            window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+
+        setDraftBooted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!draftBooted) {
+            return;
+        }
+
+        window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form.data));
+    }, [draftBooted, form.data]);
+
+    const openCreator = () => {
+        setCreatorOpen(true);
     };
 
-    const summaryCards = [
-        {
-            label: 'Total Projects',
-            value: projects.length,
-            icon: 'bi-kanban',
-            tint: 'from-[#ff8a65]/20 to-transparent',
-        },
-        {
-            label: 'GA4 Ready',
-            value: projects.filter((project) => project.ga4_connected_at).length,
-            icon: 'bi-graph-up-arrow',
-            tint: 'from-[#2dd4bf]/20 to-transparent',
-        },
-        {
-            label: 'GSC Ready',
-            value: projects.filter((project) => project.gsc_connected_at).length,
-            icon: 'bi-search',
-            tint: 'from-[#60a5fa]/20 to-transparent',
-        },
-    ];
+    const closeCreator = () => {
+        setCreatorOpen(false);
+    };
+
+    const saveDraftAndGo = (href) => {
+        window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form.data));
+        window.location.href = href;
+    };
+
+    const submit = (e) => {
+        e.preventDefault();
+        form.post('/projects', {
+            onSuccess: () => {
+                window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+                form.reset();
+                setCreatorOpen(false);
+            },
+        });
+    };
+
+    const hasProjects = projects.length > 0;
+    const ga4ConnectHref = '/auth/google-ga4/redirect?return_url=/projects';
+    const gscConnectHref = '/google-seo/connect?return_url=/projects';
 
     return (
         <AppLayout
             header="Projects"
-            subtitle="Create client-ready projects and connect analytics in one clean workspace"
+            subtitle="Create projects your way, connect Google tools, and keep the list tidy"
             actions={
-                <a href="#project-create" className="bp-topbar-btn-primary">
+                <button type="button" onClick={openCreator} className="bp-topbar-btn-primary">
                     <i className="bi bi-plus-lg"></i>
-                    <span>New Project</span>
-                </a>
+                    <span>Create Project</span>
+                </button>
             }
         >
             <div className="space-y-6">
@@ -61,140 +98,243 @@ export default function ProjectsIndex({ projects = [], googleStatus, storageRead
                     </div>
                 )}
 
+                <section className="overflow-hidden rounded-[32px] border border-[rgba(255,138,101,0.18)] bg-[linear-gradient(135deg,rgba(255,120,82,0.18),rgba(16,11,10,0.98)_34%,rgba(9,9,9,1)_100%)] shadow-[0_28px_90px_rgba(0,0,0,0.35)]">
+                    <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.2fr,0.8fr] lg:px-10 lg:py-10">
+                        <div className="max-w-2xl">
+                            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#ffb697]">Project Workspace</p>
+                            <h2 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-[#fff7f2] sm:text-5xl">
+                                Ek click se project banao, connect karo, aur list mein dekh lo.
+                            </h2>
+                            <p className="mt-4 max-w-xl text-base leading-7 text-[rgba(255,240,232,0.72)]">
+                                Pehle sirf create button. Us ke baad clean create panel khulta hai jahan name, URL, Google Analytics aur Search Console sab ek hi flow mein milta hai.
+                            </p>
+
+                            <div className="mt-7 flex flex-wrap gap-3">
+                                <button
+                                    type="button"
+                                    onClick={openCreator}
+                                    className="inline-flex items-center rounded-2xl bg-[#fff3ec] px-6 py-3 text-sm font-semibold text-[#1c130f] transition hover:bg-white"
+                                >
+                                    <i className="bi bi-plus-lg mr-2"></i>Create Project
+                                </button>
+                                <div className="inline-flex items-center rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-3 text-sm text-[rgba(255,240,232,0.78)]">
+                                    <i className="bi bi-kanban mr-2 text-[var(--admin-primary-light)]"></i>{projects.length} saved projects
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 self-end">
+                            <div className="rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,247,242,0.04)] p-5 backdrop-blur-sm">
+                                <div className="text-xs uppercase tracking-[0.22em] text-[rgba(255,240,232,0.5)]">Connection Status</div>
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-2xl bg-[rgba(255,255,255,0.04)] p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-300">
+                                                <i className="bi bi-graph-up-arrow text-lg"></i>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-semibold text-[#fff7f2]">Google Analytics</div>
+                                                <div className={`mt-1 text-xs ${googleStatus?.ga4_connected ? 'text-emerald-300' : 'text-amber-200'}`}>
+                                                    {googleStatus?.ga4_connected ? 'Connected' : 'Pending'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl bg-[rgba(255,255,255,0.04)] p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/12 text-sky-200">
+                                                <i className="bi bi-search text-lg"></i>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-semibold text-[#fff7f2]">Search Console</div>
+                                                <div className={`mt-1 text-xs ${googleStatus?.seo_connected ? 'text-sky-200' : 'text-amber-200'}`}>
+                                                    {googleStatus?.seo_connected ? 'Connected' : 'Pending'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {googleStatus?.google_email && (
+                                    <p className="mt-4 text-sm text-[rgba(255,240,232,0.66)]">{googleStatus.google_email}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {!storageReady && (
                     <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-100 shadow-lg shadow-amber-950/20">
-                        Projects page ab open ho rahi hai, lekin database migration abhi apply nahi hui. `Create Project` tab kaam karega jab `projects` table create ho jayegi.
+                        Projects ka design ready hai, lekin database migration abhi apply nahi hui. Create action tab enable hogi jab `projects` table ban jayegi.
                     </div>
                 )}
 
-                <Card className="overflow-hidden border border-[rgba(255,110,64,0.18)] bg-[radial-gradient(circle_at_top_left,rgba(255,110,64,0.12),transparent_35%),linear-gradient(180deg,rgba(22,18,18,0.96),rgba(10,10,10,0.98))] shadow-[0_24px_60px_rgba(0,0,0,0.26)]">
-                    <div className="grid gap-6 border-b border-[rgba(255,110,64,0.12)] px-6 py-6 lg:grid-cols-[1.3fr,0.7fr] lg:items-end">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Project Hub</p>
-                            <h2 className="mt-2 text-3xl font-semibold text-[#fff7f2]">Keep every website neatly organized</h2>
-                            <p className="mt-3 max-w-2xl text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                Add a project once, open its detail screen, and connect GA4 plus Search Console without jumping around the dashboard.
-                            </p>
-                        </div>
-
-                        <div className="rounded-3xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.04)] p-5">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Google Workspace</div>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${googleStatus?.ga4_connected ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-400/20 bg-amber-500/10 text-amber-200'}`}>
-                                    <i className="bi bi-graph-up-arrow mr-2"></i>{googleStatus?.ga4_connected ? 'GA4 Connected' : 'GA4 Pending'}
-                                </span>
-                                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${googleStatus?.seo_connected ? 'border-sky-400/20 bg-sky-500/10 text-sky-200' : 'border-amber-400/20 bg-amber-500/10 text-amber-200'}`}>
-                                    <i className="bi bi-search mr-2"></i>{googleStatus?.seo_connected ? 'GSC Connected' : 'GSC Pending'}
-                                </span>
+                {creatorOpen && (
+                    <section className="overflow-hidden rounded-[30px] border border-[rgba(255,138,101,0.2)] bg-[linear-gradient(180deg,rgba(24,16,14,0.98),rgba(10,10,10,1))] shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+                        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[rgba(255,138,101,0.14)] px-6 py-6 lg:px-8">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[#ffb697]">Create Flow</p>
+                                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff7f2]">New project</h3>
+                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.62)]">
+                                    Pehli line mein details, neeche Google connect buttons, aur phir create.
+                                </p>
                             </div>
-                            {googleStatus?.google_email && (
-                                <p className="mt-3 text-sm text-[rgba(255,240,232,0.62)]">{googleStatus.google_email}</p>
-                            )}
+                            <button
+                                type="button"
+                                onClick={closeCreator}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-[rgba(255,240,232,0.78)] transition hover:bg-[rgba(255,255,255,0.08)]"
+                            >
+                                <i className="bi bi-x-lg"></i>
+                            </button>
                         </div>
-                    </div>
 
-                    <div className="grid gap-5 px-6 py-6 md:grid-cols-3">
-                        {summaryCards.map((card) => (
-                            <div key={card.label} className={`rounded-3xl border border-[rgba(255,110,64,0.12)] bg-[linear-gradient(135deg,rgba(255,247,242,0.05),rgba(255,255,255,0.02)),radial-gradient(circle_at_top_left,var(--tw-gradient-stops))] ${card.tint} p-5`}>
-                                <div className="flex items-center justify-between">
+                        <form onSubmit={submit} className="px-6 py-6 lg:px-8 lg:py-8">
+                            <div className="grid gap-5 lg:grid-cols-2">
+                                <Input
+                                    label="Project Name"
+                                    name="name"
+                                    value={form.data.name}
+                                    onChange={(e) => form.setData('name', e.target.value)}
+                                    error={form.errors.name}
+                                    required
+                                    icon={<i className="bi bi-kanban text-[rgba(255,240,232,0.46)]"></i>}
+                                    helpText="Example: XpertBid Growth"
+                                />
+
+                                <Input
+                                    label="Project URL"
+                                    name="project_url"
+                                    type="url"
+                                    value={form.data.project_url}
+                                    onChange={(e) => form.setData('project_url', e.target.value)}
+                                    error={form.errors.project_url}
+                                    required
+                                    icon={<i className="bi bi-globe2 text-[rgba(255,240,232,0.46)]"></i>}
+                                    helpText="Example: https://www.xpertbid.com"
+                                />
+                            </div>
+
+                            <div className="mt-4 rounded-[28px] border border-[rgba(255,138,101,0.14)] bg-[rgba(255,247,242,0.03)] p-4 lg:p-5">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">{card.label}</div>
-                                        <div className="mt-3 text-3xl font-semibold text-[#fff7f2]">{card.value}</div>
+                                        <div className="text-sm font-semibold text-[#fff7f2]">Google Connections</div>
+                                        <div className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">Chaho to create se pehle connect kar lo, phir project list mein ready status ke saath aayega.</div>
                                     </div>
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(255,255,255,0.06)] text-[var(--admin-primary-light)]">
-                                        <i className={`bi ${card.icon} text-xl`}></i>
-                                    </div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[rgba(255,240,232,0.44)]">Optional</div>
+                                </div>
+
+                                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => saveDraftAndGo(ga4ConnectHref)}
+                                        className="group rounded-[24px] border border-[rgba(16,185,129,0.22)] bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(255,255,255,0.02))] p-5 text-left transition hover:border-[rgba(16,185,129,0.36)] hover:bg-[linear-gradient(135deg,rgba(16,185,129,0.18),rgba(255,255,255,0.03))]"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/12 text-emerald-300">
+                                                <i className="bi bi-graph-up-arrow text-xl"></i>
+                                            </div>
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${googleStatus?.ga4_connected ? 'bg-emerald-500/12 text-emerald-300' : 'bg-amber-500/12 text-amber-200'}`}>
+                                                {googleStatus?.ga4_connected ? 'Connected' : 'Connect'}
+                                            </span>
+                                        </div>
+                                        <h4 className="mt-4 text-lg font-semibold text-[#fff7f2]">Google Analytics</h4>
+                                        <p className="mt-1 text-sm text-[rgba(255,240,232,0.6)]">Traffic aur behavior data connect karein.</p>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => saveDraftAndGo(gscConnectHref)}
+                                        className="group rounded-[24px] border border-[rgba(96,165,250,0.22)] bg-[linear-gradient(135deg,rgba(96,165,250,0.12),rgba(255,255,255,0.02))] p-5 text-left transition hover:border-[rgba(96,165,250,0.36)] hover:bg-[linear-gradient(135deg,rgba(96,165,250,0.18),rgba(255,255,255,0.03))]"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/12 text-sky-200">
+                                                <i className="bi bi-search text-xl"></i>
+                                            </div>
+                                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${googleStatus?.seo_connected ? 'bg-sky-500/12 text-sky-200' : 'bg-amber-500/12 text-amber-200'}`}>
+                                                {googleStatus?.seo_connected ? 'Connected' : 'Connect'}
+                                            </span>
+                                        </div>
+                                        <h4 className="mt-4 text-lg font-semibold text-[#fff7f2]">Google Search Console</h4>
+                                        <p className="mt-1 text-sm text-[rgba(255,240,232,0.6)]">Search visibility aur keywords connect karein.</p>
+                                    </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </Card>
 
-                <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-                    <Card id="project-create" className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
-                        <div className="mb-6">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">New Project</p>
-                            <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Add project details</h3>
-                            <p className="mt-2 text-sm text-[rgba(255,240,232,0.62)]">Project page par name, URL, GA4 aur GSC actions ready milenge.</p>
-                        </div>
-
-                        <form onSubmit={submit} className="space-y-2">
-                            <Input
-                                label="Project Name"
-                                name="name"
-                                value={form.data.name}
-                                onChange={(e) => form.setData('name', e.target.value)}
-                                error={form.errors.name}
-                                required
-                                icon={<i className="bi bi-kanban text-[rgba(255,240,232,0.46)]"></i>}
-                                helpText="Example: Alpha SEO Growth"
-                            />
-
-                            <Input
-                                label="Project URL"
-                                name="project_url"
-                                type="url"
-                                value={form.data.project_url}
-                                onChange={(e) => form.setData('project_url', e.target.value)}
-                                error={form.errors.project_url}
-                                required
-                                icon={<i className="bi bi-globe2 text-[rgba(255,240,232,0.46)]"></i>}
-                                helpText="Full website URL enter karein, jaise https://example.com"
-                            />
-
-                            <div className="border-t border-[rgba(255,110,64,0.12)] pt-5">
-                                <Button type="submit" variant="primary" size="lg" disabled={form.processing || !storageReady} className="w-full rounded-2xl">
+                            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(255,138,101,0.14)] pt-6">
+                                <p className="text-sm text-[rgba(255,240,232,0.56)]">
+                                    Create karte hi project neeche list mein aa jayega.
+                                </p>
+                                <Button type="submit" variant="primary" size="lg" disabled={form.processing || !storageReady} className="rounded-2xl px-8">
                                     {form.processing ? 'Creating Project...' : <><i className="bi bi-stars mr-2"></i>Create Project</>}
                                 </Button>
                             </div>
                         </form>
-                    </Card>
+                    </section>
+                )}
 
-                    <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
-                        <div className="mb-6 flex items-center justify-between gap-3">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[rgba(255,240,232,0.58)]">Saved Projects</p>
-                                <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Your project list</h3>
-                            </div>
-                            <div className="rounded-full border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] px-3 py-1 text-xs font-semibold text-[rgba(255,240,232,0.72)]">
-                                {projects.length} Items
-                            </div>
+                <section className="overflow-hidden rounded-[30px] border border-[rgba(255,138,101,0.16)] bg-[linear-gradient(180deg,rgba(18,13,12,0.96),rgba(10,10,10,1))] shadow-[0_18px_60px_rgba(0,0,0,0.2)]">
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[rgba(255,138,101,0.12)] px-6 py-6 lg:px-8">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[rgba(255,240,232,0.5)]">Projects List</p>
+                            <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#fff7f2]">Saved projects</h3>
                         </div>
+                        <button
+                            type="button"
+                            onClick={openCreator}
+                            className="inline-flex items-center rounded-2xl border border-[rgba(255,138,101,0.18)] bg-[rgba(255,247,242,0.04)] px-5 py-3 text-sm font-semibold text-[#fff7f2] transition hover:bg-[rgba(255,138,101,0.1)]"
+                        >
+                            <i className="bi bi-plus-lg mr-2"></i>New Project
+                        </button>
+                    </div>
 
-                        <div className="space-y-4">
-                            {projects.length > 0 ? projects.map((project) => (
-                                <Link
-                                    key={project.id}
-                                    href={`/projects/${project.id}`}
-                                    className="block rounded-3xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-5 transition-all hover:border-[rgba(255,110,64,0.26)] hover:bg-[rgba(255,110,64,0.06)]"
-                                >
-                                    <div className="flex flex-wrap items-start justify-between gap-4">
-                                        <div>
-                                            <h4 className="text-lg font-semibold text-[#fff7f2]">{project.name}</h4>
-                                            <p className="mt-1 text-sm text-[rgba(255,240,232,0.58)]">{project.project_url}</p>
+                    <div className="px-6 py-6 lg:px-8 lg:py-8">
+                        {hasProjects ? (
+                            <div className="grid gap-4">
+                                {projects.map((project) => (
+                                    <Link
+                                        key={project.id}
+                                        href={`/projects/${project.id}`}
+                                        className="block rounded-[26px] border border-[rgba(255,138,101,0.12)] bg-[linear-gradient(135deg,rgba(255,247,242,0.04),rgba(255,255,255,0.02))] p-5 transition hover:border-[rgba(255,138,101,0.26)] hover:translate-y-[-1px]"
+                                    >
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div className="min-w-0">
+                                                <h4 className="truncate text-xl font-semibold text-[#fff7f2]">{project.name}</h4>
+                                                <p className="mt-2 truncate text-sm text-[rgba(255,240,232,0.6)]">{project.project_url}</p>
+                                                <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.42)]">{project.host || 'No host detected'}</p>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${project.ga4_connected_at ? 'bg-emerald-500/12 text-emerald-300' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,240,232,0.68)]'}`}>
+                                                    Analytics
+                                                </span>
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${project.gsc_connected_at ? 'bg-sky-500/12 text-sky-200' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,240,232,0.68)]'}`}>
+                                                    Search Console
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${project.ga4_connected_at ? 'bg-emerald-500/10 text-emerald-300' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,240,232,0.66)]'}`}>GA4</span>
-                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${project.gsc_connected_at ? 'bg-sky-500/10 text-sky-200' : 'bg-[rgba(255,255,255,0.06)] text-[rgba(255,240,232,0.66)]'}`}>GSC</span>
-                                        </div>
-                                    </div>
-                                    <div className="mt-5 flex items-center justify-between text-sm">
-                                        <span className="text-[rgba(255,240,232,0.48)]">{project.host || 'No host detected'}</span>
-                                        <span className="font-semibold text-[var(--admin-primary-light)]">Open Project <i className="bi bi-arrow-right-short text-base align-middle"></i></span>
-                                    </div>
-                                </Link>
-                            )) : (
-                                <div className="rounded-3xl border border-dashed border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)] px-6 py-10 text-center">
-                                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(255,110,64,0.12)] text-[var(--admin-primary-light)]">
-                                        <i className="bi bi-kanban text-2xl"></i>
-                                    </div>
-                                    <h4 className="mt-5 text-xl font-semibold text-[#fff7f2]">No project added yet</h4>
-                                    <p className="mt-2 text-sm text-[rgba(255,240,232,0.58)]">Pehla project create karein aur phir us ke andar GA4 aur GSC connect karein.</p>
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[28px] border border-dashed border-[rgba(255,138,101,0.16)] bg-[radial-gradient(circle_at_top,rgba(255,138,101,0.08),transparent_42%)] px-6 text-center">
+                                <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-[rgba(255,138,101,0.14)] text-[var(--admin-primary-light)]">
+                                    <i className="bi bi-plus-square text-3xl"></i>
                                 </div>
-                            )}
-                        </div>
-                    </Card>
-                </div>
+                                <h4 className="mt-6 text-2xl font-semibold text-[#fff7f2]">Abhi koi project list mein nahi hai</h4>
+                                <p className="mt-3 max-w-md text-sm leading-6 text-[rgba(255,240,232,0.58)]">
+                                    Upar `Create Project` par click karein, details fill karein, Google connect karein aur project ko yahin list mein add kar dein.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={openCreator}
+                                    className="mt-6 inline-flex items-center rounded-2xl bg-[#fff3ec] px-6 py-3 text-sm font-semibold text-[#1c130f] transition hover:bg-white"
+                                >
+                                    <i className="bi bi-plus-lg mr-2"></i>Create Your First Project
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </section>
             </div>
         </AppLayout>
     );
