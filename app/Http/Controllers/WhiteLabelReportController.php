@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -81,7 +82,7 @@ class WhiteLabelReportController extends Controller
     public function update(UpdateWhiteLabelSettingsRequest $request): RedirectResponse
     {
         $organization = $this->requireOrganization($request);
-        $this->authorize('view', $organization);
+        Gate::authorize('view', $organization);
 
         $branding = $organization->brandingProfile ?? BrandingProfile::create([
             'organization_id' => $organization->id,
@@ -126,7 +127,7 @@ class WhiteLabelReportController extends Controller
     public function storeProfile(UpsertWhiteLabelReportProfileRequest $request): RedirectResponse
     {
         $organization = $this->requireOrganization($request);
-        $this->authorize('view', $organization);
+        Gate::authorize('view', $organization);
 
         $validated = $request->validated();
         $domain = $this->resolveOwnedDomain($validated['domain_id'] ?? null);
@@ -205,7 +206,7 @@ class WhiteLabelReportController extends Controller
     ): Response {
         $organization = $this->resolveOrganization($request);
         if ($organization) {
-            $this->authorize('view', $organization);
+            Gate::authorize('view', $organization);
         }
 
         $profiles = collect();
