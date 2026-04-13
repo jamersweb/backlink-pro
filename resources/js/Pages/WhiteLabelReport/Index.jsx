@@ -463,7 +463,7 @@ export default function WhiteLabelReportIndex({
                                                             {active && <i className="bi bi-check2-circle text-[#ff8d64]"></i>}
                                                         </div>
                                                         <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.56)]">
-                                                            Report me last {days} days ka live GA4 aur Search Console data include hoga.
+                                                            The report will include live GA4 and Search Console data from the last {days} days.
                                                         </p>
                                                     </button>
                                                 );

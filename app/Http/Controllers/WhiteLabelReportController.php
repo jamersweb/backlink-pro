@@ -52,7 +52,7 @@ class WhiteLabelReportController extends Controller
     {
         $organization = $this->resolveOrganization($request);
         if ($organization) {
-            $this->authorize('manage', $organization);
+            $this->authorize('view', $organization);
         }
 
         $branding = $organization?->brandingProfile;
@@ -102,7 +102,7 @@ class WhiteLabelReportController extends Controller
             return back()->withErrors(['organization' => 'Create or join a workspace before saving white label settings.']);
         }
 
-        $this->authorize('manage', $organization);
+        $this->authorize('view', $organization);
 
         $branding = $organization->brandingProfile ?? BrandingProfile::create([
             'organization_id' => $organization->id,
@@ -161,9 +161,7 @@ class WhiteLabelReportController extends Controller
         }
 
         return Organization::query()
-            ->whereHas('users', fn ($query) => $query
-                ->where('user_id', $user->id)
-                ->whereIn('role', ['owner', 'admin']))
+            ->whereHas('users', fn ($query) => $query->where('user_id', $user->id))
             ->orderBy('id')
             ->first();
     }
