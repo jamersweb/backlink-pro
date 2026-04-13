@@ -38,8 +38,7 @@ class AuditReportController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $organization = $user?->organizationUsers()->with('organization.plan')->first()?->organization;
-        $planLimiter = app(PlanLimiter::class);
+        $organization = $this->resolveCurrentOrganization($user?->id);
         
         $googleSeoAccount = ConnectedAccount::where('user_id', $user->id)
             ->where('provider', 'google')
@@ -62,7 +61,7 @@ class AuditReportController extends Controller
             'googleEmail' => $googleSeoAccount?->email,
             'recentAudits' => $recentAudits,
             'lastCompletedAuditId' => $lastCompleted?->id,
-            'canUseWhiteLabel' => $organization ? $planLimiter->canUseWhiteLabel($organization) : false,
+            'canUseWhiteLabel' => $this->canUseWhiteLabelForAudit($organization),
         ]);
     }
 
@@ -99,13 +98,9 @@ class AuditReportController extends Controller
         $normalizedUrl = $this->normalizeUrl($validated['url']);
 
         $orgAllow = [];
-        $org = null;
-        if ($user) {
-            $orgUser = $user->organizationUsers()->first();
-            if ($orgUser) {
-                $org = Organization::query()->find($orgUser->organization_id);
-                $orgAllow = $org?->spelling_allowlist ?? [];
-            }
+        $org = $this->resolveCurrentOrganization($user?->id);
+        if ($org) {
+            $orgAllow = $org->spelling_allowlist ?? [];
         }
         $spellingAllow = array_values(array_unique(array_filter(array_map(
             'strtolower',
@@ -180,7 +175,8 @@ class AuditReportController extends Controller
             'crawl_depth' => 0,
             'started_at' => now(),
             'progress_percent' => 0,
-            'include_white_label_data' => (bool) ($validated['include_white_label_data'] ?? false),
+            'include_white_label_data' => $this->canUseWhiteLabelForAudit($org)
+                && (bool) ($validated['include_white_label_data'] ?? false),
             'crawl_module_flags' => $crawlModuleFlags,
             'spelling_allowlist' => $spellingAllow !== [] ? $spellingAllow : null,
             'custom_source_search_rules' => $customSearchRulesPayload,
@@ -670,5 +666,43 @@ class AuditReportController extends Controller
             static fn (string $key): bool => isset($columns[$key]),
             ARRAY_FILTER_USE_KEY
         );
+    }
+
+    private function resolveCurrentOrganization(?int $userId): ?Organization
+    {
+        if (! $userId) {
+            return null;
+        }
+
+        $ownedOrganization = Organization::query()
+            ->with(['plan', 'brandingProfile'])
+            ->where('owner_user_id', $userId)
+            ->orderBy('id')
+            ->first();
+
+        if ($ownedOrganization) {
+            return $ownedOrganization;
+        }
+
+        return Organization::query()
+            ->with(['plan', 'brandingProfile'])
+            ->whereHas('users', fn ($query) => $query->where('user_id', $userId))
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function canUseWhiteLabelForAudit(?Organization $organization): bool
+    {
+        if (! $organization) {
+            return false;
+        }
+
+        $branding = $organization->brandingProfile;
+
+        if ($branding?->white_label_enabled) {
+            return true;
+        }
+
+        return app(PlanLimiter::class)->canUseWhiteLabel($organization);
     }
 }
