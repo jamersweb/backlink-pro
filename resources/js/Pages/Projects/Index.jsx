@@ -4,7 +4,7 @@ import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
-export default function ProjectsIndex({ projects = [], googleStatus }) {
+export default function ProjectsIndex({ projects = [], googleStatus, storageReady = true }) {
     const { flash } = usePage().props;
     const form = useForm({
         name: '',
@@ -58,6 +58,12 @@ export default function ProjectsIndex({ projects = [], googleStatus }) {
                 {flash?.error && (
                     <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-5 py-4 text-sm text-rose-200 shadow-lg shadow-rose-950/20">
                         {flash.error}
+                    </div>
+                )}
+
+                {!storageReady && (
+                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-100 shadow-lg shadow-amber-950/20">
+                        Projects page ab open ho rahi hai, lekin database migration abhi apply nahi hui. `Create Project` tab kaam karega jab `projects` table create ho jayegi.
                     </div>
                 )}
 
@@ -137,7 +143,7 @@ export default function ProjectsIndex({ projects = [], googleStatus }) {
                             />
 
                             <div className="border-t border-[rgba(255,110,64,0.12)] pt-5">
-                                <Button type="submit" variant="primary" size="lg" disabled={form.processing} className="w-full rounded-2xl">
+                                <Button type="submit" variant="primary" size="lg" disabled={form.processing || !storageReady} className="w-full rounded-2xl">
                                     {form.processing ? 'Creating Project...' : <><i className="bi bi-stars mr-2"></i>Create Project</>}
                                 </Button>
                             </div>

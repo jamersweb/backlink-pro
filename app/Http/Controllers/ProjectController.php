@@ -6,6 +6,7 @@ use App\Models\ConnectedAccount;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class ProjectController extends Controller
@@ -20,21 +21,30 @@ class ProjectController extends Controller
             ->latest()
             ->first();
 
-        return Inertia::render('Projects/Index', [
-            'projects' => $user->projects()
+        $projects = Schema::hasTable('projects')
+            ? $user->projects()
                 ->latest()
                 ->get()
-                ->map(fn (Project $project) => $this->transformProject($project)),
+                ->map(fn (Project $project) => $this->transformProject($project))
+            : collect();
+
+        return Inertia::render('Projects/Index', [
+            'projects' => $projects,
             'googleStatus' => [
                 'seo_connected' => (bool) $googleSeoAccount,
                 'ga4_connected' => (bool) $user->google_connected_at,
                 'google_email' => $user->google_email ?: $googleSeoAccount?->email,
             ],
+            'storageReady' => Schema::hasTable('projects'),
         ]);
     }
 
     public function store(Request $request)
     {
+        if (!Schema::hasTable('projects')) {
+            return back()->with('error', 'Projects storage is not ready yet. Please run the latest migration first.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'project_url' => ['required', 'url', 'max:2048'],
@@ -48,6 +58,11 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
+        if (!Schema::hasTable('projects')) {
+            return redirect()->route('projects.index')
+                ->with('error', 'Projects storage is not ready yet. Please run the latest migration first.');
+        }
+
         abort_unless($project->user_id === Auth::id(), 403);
 
         $user = Auth::user();
@@ -70,6 +85,10 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
+        if (!Schema::hasTable('projects')) {
+            return back()->with('error', 'Projects storage is not ready yet. Please run the latest migration first.');
+        }
+
         abort_unless($project->user_id === Auth::id(), 403);
 
         $validated = $request->validate([
@@ -84,6 +103,11 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
+        if (!Schema::hasTable('projects')) {
+            return redirect()->route('projects.index')
+                ->with('error', 'Projects storage is not ready yet. Please run the latest migration first.');
+        }
+
         abort_unless($project->user_id === Auth::id(), 403);
 
         $project->delete();
