@@ -218,6 +218,14 @@ class Organization extends Model
     }
 
     /**
+     * Get white-label client report profiles for this organization.
+     */
+    public function whiteLabelReportProfiles(): HasMany
+    {
+        return $this->hasMany(WhiteLabelReportProfile::class);
+    }
+
+    /**
      * Get plan model
      */
     public function plan(): BelongsTo

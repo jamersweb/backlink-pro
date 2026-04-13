@@ -531,7 +531,18 @@ Route::middleware(['auth', 'verified'])->group(function(){
 
     // Reports/Analytics
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
-    Route::get('/white-label-report', [WhiteLabelReportController::class, 'index'])->name('white-label-report.index');
+    Route::prefix('label')->name('label.')->group(function () {
+        Route::get('/', [WhiteLabelReportController::class, 'index'])->name('index');
+        Route::put('/branding', [WhiteLabelReportController::class, 'update'])->name('branding.update');
+        Route::get('/reports', [WhiteLabelReportController::class, 'reports'])->name('reports');
+        Route::post('/reports', [WhiteLabelReportController::class, 'storeProfile'])->name('reports.store');
+        Route::put('/reports/{profile}', [WhiteLabelReportController::class, 'updateProfile'])->name('reports.update');
+        Route::delete('/reports/{profile}', [WhiteLabelReportController::class, 'destroyProfile'])->name('reports.destroy');
+        Route::get('/reports/{profile}/preview', [WhiteLabelReportController::class, 'preview'])->name('preview');
+        Route::get('/reports/{profile}/pdf', [WhiteLabelReportController::class, 'pdf'])->name('pdf');
+    });
+
+    Route::get('/white-label-report', [WhiteLabelReportController::class, 'legacyIndex'])->name('white-label-report.index');
     Route::put('/white-label-report', [WhiteLabelReportController::class, 'update'])->name('white-label-report.update');
 
     // Help & Documentation
@@ -741,5 +752,4 @@ Route::get('/test-comment', function () {
 });
 
 // Admin Routes are loaded from routes/admin.php via bootstrap/app.php
-
 

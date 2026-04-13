@@ -17,6 +17,8 @@ class BrandingProfile extends Model
         'accent_color',
         'website',
         'support_email',
+        'support_phone',
+        'company_address',
         'report_footer_text',
         'report_period_days',
         'report_sections_json',

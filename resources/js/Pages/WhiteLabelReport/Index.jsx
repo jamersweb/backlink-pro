@@ -1,15 +1,15 @@
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, usePage } from '@inertiajs/react';
 import AppLayout from '../../Components/Layout/AppLayout';
-import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
+import Card from '../../Components/Shared/Card';
 import Input from '../../Components/Shared/Input';
+import BrandedAuditReportView from './BrandedAuditReportView';
 
 const SECTION_GROUPS = [
     {
         key: 'on_page',
         title: 'On Page SEO',
-        description: 'Choose the main on-page checkpoints you want included in the report.',
         items: [
             { key: 'title_optimization', label: 'Title Optimization' },
             { key: 'meta_descriptions', label: 'Meta Descriptions' },
@@ -21,7 +21,6 @@ const SECTION_GROUPS = [
     {
         key: 'off_page',
         title: 'Off Page SEO',
-        description: 'Control the backlink and authority areas clients should receive.',
         items: [
             { key: 'backlink_quality', label: 'Backlink Quality' },
             { key: 'referring_domains', label: 'Referring Domains' },
@@ -32,7 +31,6 @@ const SECTION_GROUPS = [
     {
         key: 'technical_seo',
         title: 'Technical SEO',
-        description: 'Add the technical checks that should appear in white label delivery.',
         items: [
             { key: 'crawlability', label: 'Crawlability' },
             { key: 'indexability', label: 'Indexability' },
@@ -43,860 +41,594 @@ const SECTION_GROUPS = [
     },
 ];
 
-const cloneReportSections = (sections = {}) => JSON.parse(JSON.stringify(sections));
-
-const DEMO_SCORE_RING = {
-    circumference: 282.7,
-    offset: 19.7,
+const blankReportProfile = {
+    id: null,
+    domain_id: '',
+    client_name: '',
+    client_website: '',
+    report_title: '',
+    reporting_period_start: '',
+    reporting_period_end: '',
+    target_keywords: '',
+    notes: '',
+    recommendations: '',
 };
 
-const DIAGNOSTIC_METRICS = [
-    { label: 'Performance', value: 98, tone: 'emerald' },
-    { label: 'Accessibility', value: 90, tone: 'emerald' },
-    { label: 'Best Practices', value: 75, tone: 'orange' },
-    { label: 'SEO Score', value: 100, tone: 'emerald' },
-];
+const cloneSections = (sections = {}) => JSON.parse(JSON.stringify(sections));
 
-const DEVICE_BREAKDOWN = [
-    {
-        label: 'Mobile',
-        score: 89,
-        speed: '2.8s',
-        stability: '92%',
-        bars: [84, 76, 88],
-        tone: 'bg-[linear-gradient(135deg,#ff5626,#ff764d)]',
-    },
-    {
-        label: 'Desktop',
-        score: 96,
-        speed: '1.4s',
-        stability: '98%',
-        bars: [92, 96, 94],
-        tone: 'bg-[linear-gradient(135deg,#242323,#363434)]',
-    },
-];
+function TabLink({ href, active, icon, label }) {
+    return (
+        <Link
+            href={href}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                active
+                    ? 'bg-[var(--admin-primary)] text-white shadow-lg shadow-[var(--admin-primary)]/20'
+                    : 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,240,232,0.72)] hover:bg-[rgba(255,255,255,0.08)]'
+            }`}
+        >
+            <i className={`bi ${icon}`}></i>
+            {label}
+        </Link>
+    );
+}
 
-const ISSUE_ROWS = [
-    { title: 'Duplicate Meta Descriptions', affected: '1,340', severity: 'critical', action: 'Meta refresh' },
-    { title: 'Large Image Payloads', affected: '42', severity: 'warning', action: 'Compress' },
-    { title: 'Broken Outbound Links', affected: '12', severity: 'medium', action: 'Redirect' },
-];
+function SectionToggle({ title, description, checked, onChange, disabled }) {
+    return (
+        <label className="flex items-start justify-between gap-4 rounded-2xl border border-white/8 bg-[#111111] px-4 py-4">
+            <div>
+                <div className="text-sm font-medium text-[#fff7f2]">{title}</div>
+                {description && <p className="mt-1 text-sm text-[rgba(255,240,232,0.48)]">{description}</p>}
+            </div>
+            <span className="relative mt-1 inline-flex h-7 w-12 flex-shrink-0">
+                <input type="checkbox" checked={checked} onChange={onChange} className="peer sr-only" disabled={disabled} />
+                <span className="absolute inset-0 rounded-full bg-white/10 transition peer-checked:bg-[var(--admin-primary)]"></span>
+                <span className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
+            </span>
+        </label>
+    );
+}
 
-const INSIGHT_CARDS = [
-    {
-        title: 'Semantic Gap Opportunity',
-        body: 'Competitor topics show a 22% faster uplift when supporting entities and FAQ depth are introduced.',
-        tone: 'primary',
-    },
-    {
-        title: 'Natural Growth Detected',
-        body: 'Branded search demand is trending upward, creating a stronger base for off-page amplification.',
-        tone: 'neutral',
-    },
-];
+function TextareaField({ label, value, onChange, error, disabled, rows = 5 }) {
+    return (
+        <div>
+            <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">{label}</label>
+            <textarea
+                value={value}
+                onChange={onChange}
+                rows={rows}
+                disabled={disabled}
+                className="min-h-[140px] w-full rounded-2xl border border-white/8 bg-[#111111] px-4 py-3 text-sm text-[var(--admin-text)] outline-none focus:border-[var(--admin-primary)]"
+            />
+            {error && <p className="mt-2 text-sm text-[#F04438]">{error}</p>}
+        </div>
+    );
+}
 
-const REPORT_PERIOD_OPTIONS = [7, 15, 30];
+function DomainSelect({ domains, value, onChange, error, disabled }) {
+    return (
+        <div className="mb-5">
+            <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Linked Domain</label>
+            <select
+                value={value || ''}
+                onChange={onChange}
+                disabled={disabled}
+                className="h-12 w-full rounded-2xl border border-white/8 bg-[#111111] px-4 text-sm text-[var(--admin-text)] outline-none focus:border-[var(--admin-primary)]"
+            >
+                <option value="">Match from website automatically</option>
+                {domains.map((domain) => (
+                    <option key={domain.id} value={domain.id}>
+                        {domain.name} ({domain.host || domain.url})
+                    </option>
+                ))}
+            </select>
+            {error && <p className="mt-2 text-sm text-[#F04438]">{error}</p>}
+        </div>
+    );
+}
 
 export default function WhiteLabelReportIndex({
     organization = null,
-    settings,
+    activeTab = 'branding',
+    branding,
     defaultSettings,
-    reportHighlights = [],
+    profiles = [],
+    domains = [],
+    selectedProfile = null,
+    previewReport = null,
+    tabLinks = {},
 }) {
-    const { flash } = usePage().props;
+    const { flash, errors } = usePage().props;
     const fileInputRef = useRef(null);
-    const [logoPreviewUrl, setLogoPreviewUrl] = useState(settings.logo_url);
+    const [logoPreview, setLogoPreview] = useState(branding.logo_url);
+    const [editingProfileId, setEditingProfileId] = useState(selectedProfile?.id ?? null);
 
-    const form = useForm({
-        enabled: settings.enabled ?? false,
-        company_name: settings.company_name ?? '',
+    const brandingForm = useForm({
+        enabled: branding.enabled ?? false,
+        company_name: branding.company_name ?? '',
         logo: null,
         remove_logo: false,
-        website: settings.website ?? '',
-        footer_text: settings.footer_text ?? '',
-        report_period_days: settings.report_period_days ?? defaultSettings.report_period_days ?? 30,
-        report_sections: cloneReportSections(settings.report_sections ?? defaultSettings.report_sections),
-        use_custom_cover_title: settings.use_custom_cover_title ?? false,
-        custom_cover_title: settings.custom_cover_title ?? '',
+        primary_color: branding.primary_color ?? defaultSettings.primary_color,
+        secondary_color: branding.secondary_color ?? defaultSettings.secondary_color,
+        website: branding.website ?? '',
+        support_email: branding.support_email ?? '',
+        support_phone: branding.support_phone ?? '',
+        company_address: branding.company_address ?? '',
+        footer_text: branding.footer_text ?? '',
+        report_period_days: branding.report_period_days ?? defaultSettings.report_period_days,
+        report_sections: cloneSections(branding.report_sections ?? defaultSettings.report_sections),
+        use_custom_cover_title: branding.use_custom_cover_title ?? false,
+        custom_cover_title: branding.custom_cover_title ?? '',
     });
 
+    const profileForm = useForm(selectedProfile ?? blankReportProfile);
+
+    useEffect(() => {
+        if (selectedProfile) {
+            profileForm.setData({
+                id: selectedProfile.id,
+                domain_id: selectedProfile.domain_id ?? '',
+                client_name: selectedProfile.client_name ?? '',
+                client_website: selectedProfile.client_website ?? '',
+                report_title: selectedProfile.report_title ?? '',
+                reporting_period_start: selectedProfile.reporting_period_start ?? '',
+                reporting_period_end: selectedProfile.reporting_period_end ?? '',
+                target_keywords: selectedProfile.target_keywords ?? '',
+                notes: selectedProfile.notes ?? '',
+                recommendations: selectedProfile.recommendations ?? '',
+            });
+            setEditingProfileId(selectedProfile.id);
+        }
+    }, [selectedProfile]);
+
     useEffect(() => () => {
-        if (logoPreviewUrl && logoPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(logoPreviewUrl);
+        if (logoPreview && logoPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(logoPreview);
         }
-    }, [logoPreviewUrl]);
+    }, [logoPreview]);
 
-    const saveLocked = !organization;
-    const controlsLocked = form.processing;
-    const previewTitle = form.data.use_custom_cover_title
-        ? form.data.custom_cover_title.trim()
-        : `${form.data.company_name || organization?.name || 'Your Company'} SEO Report`;
-    const previewFooter = form.data.footer_text.trim()
-        || `${form.data.company_name || organization?.name || 'Your company'} client reporting`;
-    const previewWebsite = form.data.website.trim() || 'Website not set yet';
-    const previewPeriodDays = Number(form.data.report_period_days) || 30;
-    const statusHeading = form.data.enabled ? 'White label enabled' : 'Ready for setup';
-    const previewFocusSections = SECTION_GROUPS.map((group) => ({
-        ...group,
-        selectedItems: group.items.filter((item) => form.data.report_sections?.[group.key]?.[item.key]),
-    })).filter((group) => group.selectedItems.length > 0);
+    const hasWorkspace = Boolean(organization);
+    const previewReady = Boolean(previewReport && selectedProfile);
+    const previewBrandName = brandingForm.data.company_name || organization?.name || 'Your Brand';
 
-    const brandingSummary = useMemo(() => (
-        form.data.company_name || organization?.name || 'Your Company'
-    ), [form.data.company_name, organization?.name]);
+    const profileSummary = useMemo(() => {
+        if (!profileForm.data.client_name && !profileForm.data.report_title) {
+            return 'Create a client report profile to generate a branded SEO report preview.';
+        }
 
-    const submit = (event) => {
+        return `${profileForm.data.client_name || 'Client'} | ${profileForm.data.report_title || 'Untitled report'}`;
+    }, [profileForm.data.client_name, profileForm.data.report_title]);
+
+    const updateSectionValue = (groupKey, itemKey, checked) => {
+        brandingForm.setData('report_sections', {
+            ...brandingForm.data.report_sections,
+            [groupKey]: {
+                ...brandingForm.data.report_sections[groupKey],
+                [itemKey]: checked,
+            },
+        });
+    };
+
+    const handleLogoChange = (event) => {
+        const file = event.target.files?.[0] ?? null;
+        brandingForm.setData('logo', file);
+        brandingForm.setData('remove_logo', false);
+
+        if (logoPreview && logoPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(logoPreview);
+        }
+
+        setLogoPreview(file ? URL.createObjectURL(file) : branding.logo_url);
+    };
+
+    const submitBranding = (event) => {
         event.preventDefault();
-
-        if (saveLocked) {
-            return;
-        }
-
-        form.transform((data) => ({
+        brandingForm.transform((data) => ({
             ...data,
             enabled: data.enabled ? 1 : 0,
             remove_logo: data.remove_logo ? 1 : 0,
             use_custom_cover_title: data.use_custom_cover_title ? 1 : 0,
         }));
 
-        form.put('/white-label-report', {
-            forceFormData: form.data.logo instanceof File,
+        brandingForm.put('/label/branding', {
+            forceFormData: brandingForm.data.logo instanceof File,
             preserveScroll: true,
             onSuccess: () => {
-                form.setData('logo', null);
-                form.setData('remove_logo', false);
+                brandingForm.setData('logo', null);
+                brandingForm.setData('remove_logo', false);
             },
         });
     };
 
-    const onLogoChange = (event) => {
-        const file = event.target.files?.[0] ?? null;
-        form.setData('logo', file);
-        form.setData('remove_logo', false);
-
-        if (logoPreviewUrl && logoPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(logoPreviewUrl);
-        }
-
-        setLogoPreviewUrl(file ? URL.createObjectURL(file) : settings.logo_url);
+    const startNewProfile = () => {
+        setEditingProfileId(null);
+        profileForm.setData(blankReportProfile);
+        profileForm.clearErrors();
     };
 
-    const resetToDefaults = () => {
-        form.setData({
-            enabled: defaultSettings.enabled,
-            company_name: defaultSettings.company_name,
-            logo: null,
-            remove_logo: Boolean(settings.logo_url),
-            website: defaultSettings.website,
-            footer_text: defaultSettings.footer_text,
-            report_period_days: defaultSettings.report_period_days,
-            report_sections: cloneReportSections(defaultSettings.report_sections),
-            use_custom_cover_title: defaultSettings.use_custom_cover_title,
-            custom_cover_title: defaultSettings.custom_cover_title,
+    const editProfile = (profile) => {
+        setEditingProfileId(profile.id);
+        profileForm.setData({
+            id: profile.id,
+            domain_id: profile.domain_id ?? '',
+            client_name: profile.client_name ?? '',
+            client_website: profile.client_website ?? '',
+            report_title: profile.report_title ?? '',
+            reporting_period_start: profile.reporting_period_start ?? '',
+            reporting_period_end: profile.reporting_period_end ?? '',
+            target_keywords: profile.target_keywords ?? '',
+            notes: profile.notes ?? '',
+            recommendations: profile.recommendations ?? '',
         });
-        form.clearErrors();
-
-        if (logoPreviewUrl && logoPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(logoPreviewUrl);
-        }
-
-        setLogoPreviewUrl(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        profileForm.clearErrors();
     };
 
-    const removeCurrentLogo = () => {
-        form.setData('logo', null);
-        form.setData('remove_logo', true);
+    const submitProfile = (event) => {
+        event.preventDefault();
 
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+        const payload = {
+            ...profileForm.data,
+            domain_id: profileForm.data.domain_id || null,
+        };
+
+        if (editingProfileId) {
+            profileForm.transform(() => payload);
+            profileForm.put(`/label/reports/${editingProfileId}`, { preserveScroll: true });
+            return;
         }
 
-        if (logoPreviewUrl && logoPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(logoPreviewUrl);
-        }
-
-        setLogoPreviewUrl(null);
+        profileForm.transform(() => payload);
+        profileForm.post('/label/reports', { preserveScroll: true });
     };
 
-    const openLogoPicker = () => {
-        if (!controlsLocked) {
-            fileInputRef.current?.click();
-        }
+    const deleteProfile = (profileId) => {
+        if (!confirm('Delete this client report profile?')) return;
+        router.delete(`/label/reports/${profileId}`, { preserveScroll: true });
     };
 
-    const renderLogoPreview = () => {
-        if (logoPreviewUrl && !form.data.remove_logo) {
-            return (
-                <img
-                    src={logoPreviewUrl}
-                    alt="White label logo preview"
-                    className="h-16 max-w-[220px] rounded-2xl object-contain"
-                />
-            );
-        }
+    const renderBrandingTab = () => (
+        <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
+            <Card className="border border-white/8 bg-[#141414]">
+                <div className="mb-6">
+                    <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[#fff7f2]">Branding Settings</h3>
+                    <p className="mt-2 text-sm text-[rgba(255,240,232,0.58)]">Save the brand identity used across white-label previews and PDF exports.</p>
+                </div>
 
-        return (
-            <div className="rounded-2xl border border-[rgba(255,110,64,0.18)] bg-[rgba(255,247,242,0.04)] px-5 py-4 text-lg font-semibold text-[#fff7f2]">
-                {brandingSummary}
-            </div>
-        );
-    };
+                <form onSubmit={submitBranding} className="space-y-6">
+                    <SectionToggle
+                        title="Enable white-label mode"
+                        description="Turn on saved branding for client-facing report generation."
+                        checked={brandingForm.data.enabled}
+                        onChange={(event) => brandingForm.setData('enabled', event.target.checked)}
+                        disabled={!hasWorkspace || brandingForm.processing}
+                    />
 
-    return (
-        <AppLayout
-            header="White Label Report"
-            subtitle="Manage the branding and section settings that power client-facing SEO report presentation."
-        >
-            <div className="space-y-6">
-                {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-200 shadow-lg shadow-emerald-950/20">
-                        {flash.success}
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <Input label="Brand / Company Name" name="company_name" value={brandingForm.data.company_name} onChange={(e) => brandingForm.setData('company_name', e.target.value)} error={brandingForm.errors.company_name} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
+                        <Input label="Website URL" name="website" type="url" value={brandingForm.data.website} onChange={(e) => brandingForm.setData('website', e.target.value)} error={brandingForm.errors.website} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
+                        <Input label="Primary Color" name="primary_color" value={brandingForm.data.primary_color} onChange={(e) => brandingForm.setData('primary_color', e.target.value)} error={brandingForm.errors.primary_color} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
+                        <Input label="Secondary Color" name="secondary_color" value={brandingForm.data.secondary_color} onChange={(e) => brandingForm.setData('secondary_color', e.target.value)} error={brandingForm.errors.secondary_color} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
+                        <Input label="Support Email" name="support_email" type="email" value={brandingForm.data.support_email} onChange={(e) => brandingForm.setData('support_email', e.target.value)} error={brandingForm.errors.support_email} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
+                        <Input label="Support Phone" name="support_phone" value={brandingForm.data.support_phone} onChange={(e) => brandingForm.setData('support_phone', e.target.value)} error={brandingForm.errors.support_phone} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
                     </div>
-                )}
 
-                {(flash?.error || form.errors.organization || form.errors.plan) && (
-                    <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-5 py-4 text-sm text-rose-200 shadow-lg shadow-rose-950/20">
-                        {flash?.error || form.errors.organization || form.errors.plan}
-                    </div>
-                )}
-
-                <Card className="overflow-hidden border border-[rgba(255,110,64,0.18)] bg-[radial-gradient(circle_at_top_left,rgba(255,110,64,0.12),transparent_30%),linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))] shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-                    <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr] lg:items-center">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Client Reporting</p>
-                            <h2 className="mt-2 text-3xl font-semibold text-[#fff7f2]">Launch branded reports without breaking your dashboard flow</h2>
-                            <p className="mt-3 max-w-2xl text-sm leading-6 text-[rgba(255,240,232,0.68)]">
-                                Keep the existing premium reporting experience, but control how your company appears and which SEO sections are included inside branded report delivery.
-                            </p>
-                            <div className="mt-6 flex flex-wrap gap-3">
-                                <Button
-                                    variant="primary"
-                                    size="lg"
-                                    className="rounded-2xl px-6"
-                                    onClick={() => document.getElementById('white-label-branding-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                                >
-                                    <i className="bi bi-magic mr-2"></i>Start Branding Setup
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    size="lg"
-                                    className="rounded-2xl px-6"
-                                    onClick={() => document.getElementById('white-label-preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                                >
-                                    <i className="bi bi-eye mr-2"></i>Preview Report Theme
-                                </Button>
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Logo Upload</label>
+                        <div className="rounded-2xl border border-dashed border-white/10 bg-[#111111] p-4">
+                            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoChange} />
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    {logoPreview && !brandingForm.data.remove_logo ? (
+                                        <img src={logoPreview} alt="Brand logo preview" className="h-16 max-w-[180px] rounded-2xl object-contain" />
+                                    ) : (
+                                        <div className="rounded-2xl bg-[#1c1c1c] px-4 py-4 text-sm font-semibold text-[#fff7f2]">{previewBrandName}</div>
+                                    )}
+                                    <div className="text-sm text-[rgba(255,240,232,0.52)]">PNG, JPG, or WEBP up to 2MB.</div>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()} disabled={!hasWorkspace || brandingForm.processing}>
+                                        Upload Logo
+                                    </Button>
+                                    {logoPreview && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() => {
+                                                brandingForm.setData('logo', null);
+                                                brandingForm.setData('remove_logo', true);
+                                                setLogoPreview(null);
+                                            }}
+                                            disabled={!hasWorkspace || brandingForm.processing}
+                                        >
+                                            Remove Logo
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
+                            {brandingForm.errors.logo && <p className="mt-3 text-sm text-[#F04438]">{brandingForm.errors.logo}</p>}
                         </div>
+                    </div>
 
-                        <div className="grid gap-4">
-                            <div className="rounded-3xl border border-[rgba(255,110,64,0.18)] bg-[rgba(255,247,242,0.04)] p-5">
-                                <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Brand Status</div>
-                                <div className="mt-3 text-2xl font-semibold text-[#fff7f2]">{statusHeading}</div>
-                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.62)]">
-                                    {organization ? `Workspace: ${organization.name}` : 'Create or join a workspace to unlock brand-level report settings.'}
-                                </p>
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <TextareaField label="Custom Footer Text" value={brandingForm.data.footer_text} onChange={(e) => brandingForm.setData('footer_text', e.target.value)} error={brandingForm.errors.footer_text} disabled={!hasWorkspace || brandingForm.processing} rows={4} />
+                        <TextareaField label="Address / Company Info" value={brandingForm.data.company_address} onChange={(e) => brandingForm.setData('company_address', e.target.value)} error={brandingForm.errors.company_address} disabled={!hasWorkspace || brandingForm.processing} rows={4} />
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <Input label="Default Report Period (days)" name="report_period_days" type="number" min="7" max="30" value={brandingForm.data.report_period_days} onChange={(e) => brandingForm.setData('report_period_days', e.target.value)} error={brandingForm.errors.report_period_days} disabled={!hasWorkspace || brandingForm.processing} className="rounded-2xl border-white/8 bg-[#111111]" />
+                        <Input label="Custom Cover Title" name="custom_cover_title" value={brandingForm.data.custom_cover_title} onChange={(e) => brandingForm.setData('custom_cover_title', e.target.value)} error={brandingForm.errors.custom_cover_title} disabled={!hasWorkspace || brandingForm.processing || !brandingForm.data.use_custom_cover_title} className="rounded-2xl border-white/8 bg-[#111111]" />
+                    </div>
+
+                    <SectionToggle
+                        title="Use custom cover title"
+                        checked={brandingForm.data.use_custom_cover_title}
+                        onChange={(event) => brandingForm.setData('use_custom_cover_title', event.target.checked)}
+                        disabled={!hasWorkspace || brandingForm.processing}
+                    />
+
+                    <div>
+                        <div className="mb-4">
+                            <h4 className="text-lg font-semibold text-[#fff7f2]">SEO Report Structure</h4>
+                            <p className="mt-1 text-sm text-[rgba(255,240,232,0.48)]">Choose which saved sections should be emphasized in generated white-label reports.</p>
+                        </div>
+                        <div className="grid gap-4 lg:grid-cols-3">
+                            {SECTION_GROUPS.map((group) => (
+                                <div key={group.key} className="rounded-2xl border border-white/8 bg-[#111111] p-4">
+                                    <div className="mb-4 text-sm font-semibold text-[#fff7f2]">{group.title}</div>
+                                    <div className="space-y-3">
+                                        {group.items.map((item) => (
+                                            <label key={item.key} className="flex items-center justify-between gap-3 text-sm text-[rgba(255,240,232,0.72)]">
+                                                <span>{item.label}</span>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={Boolean(brandingForm.data.report_sections?.[group.key]?.[item.key])}
+                                                    onChange={(event) => updateSectionValue(group.key, item.key, event.target.checked)}
+                                                    disabled={!hasWorkspace || brandingForm.processing}
+                                                />
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap justify-end gap-3">
+                        <Button type="submit" variant="primary" disabled={!hasWorkspace || brandingForm.processing}>
+                            {brandingForm.processing ? 'Saving...' : 'Save Branding'}
+                        </Button>
+                    </div>
+                </form>
+            </Card>
+
+            <div className="space-y-6">
+                <Card className="border border-white/8 bg-[#141414]">
+                    <h3 className="text-xl font-semibold text-[#fff7f2]">Current Branding Snapshot</h3>
+                    <div className="mt-5 overflow-hidden rounded-[28px]" style={{ background: `linear-gradient(135deg, ${brandingForm.data.primary_color || '#FF5626'}, ${brandingForm.data.secondary_color || '#1C1B1B'})` }}>
+                        <div className="space-y-6 px-6 py-7">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="text-[11px] uppercase tracking-[0.24em] text-white/65">Brand Preview</div>
+                                    <div className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white">{previewBrandName}</div>
+                                </div>
+                                {logoPreview && !brandingForm.data.remove_logo ? (
+                                    <img src={logoPreview} alt="Brand preview logo" className="max-h-16 max-w-[160px] object-contain" />
+                                ) : null}
                             </div>
-                            <div className="rounded-3xl border border-[rgba(255,110,64,0.14)] bg-[linear-gradient(180deg,rgba(255,110,64,0.09),rgba(255,110,64,0.03))] p-5">
-                                <div className="text-xs uppercase tracking-[0.18em] text-[rgba(255,240,232,0.46)]">Use Case</div>
-                                <div className="mt-3 text-lg font-semibold text-[#fff7f2]">Agency-friendly reporting</div>
-                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.62)]">Perfect for sending polished backlinks and SEO updates under your own brand identity.</p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="rounded-2xl bg-white/10 px-4 py-4 text-sm text-white/80">{brandingForm.data.website || 'Website URL will appear here.'}</div>
+                                <div className="rounded-2xl bg-white/10 px-4 py-4 text-sm text-white/80">{brandingForm.data.support_email || 'Support email will appear here.'}</div>
+                            </div>
+                            <div className="rounded-2xl bg-white/10 px-4 py-4 text-sm leading-7 text-white/80">
+                                {brandingForm.data.footer_text || 'Footer branding text will appear here once saved.'}
                             </div>
                         </div>
                     </div>
                 </Card>
 
-                {!organization && (
-                    <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
+                <Card className="border border-white/8 bg-[#141414]">
+                    <h3 className="text-xl font-semibold text-[#fff7f2]">Client Report Profiles</h3>
+                    <p className="mt-2 text-sm text-[rgba(255,240,232,0.54)]">Recent profiles created in the Label section for this user.</p>
+                    <div className="mt-4 space-y-3">
+                        {profiles.length > 0 ? profiles.slice(0, 4).map((profile) => (
+                            <div key={profile.id} className="rounded-2xl border border-white/8 bg-[#111111] px-4 py-4">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <div className="text-sm font-medium text-[#fff7f2]">{profile.client_name}</div>
+                                        <div className="mt-1 text-xs text-[rgba(255,240,232,0.44)]">{profile.report_title}</div>
+                                    </div>
+                                    <Button href={profile.preview_url} variant="ghost" size="sm">Preview</Button>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="rounded-2xl border border-dashed border-white/10 bg-[#111111] px-4 py-6 text-sm text-[rgba(255,240,232,0.50)]">
+                                No client report profiles yet. Switch to Client Reports to create one.
+                            </div>
+                        )}
+                    </div>
+                </Card>
+            </div>
+        </div>
+    );
+
+    const renderReportsTab = () => (
+        <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
+            <Card className="border border-white/8 bg-[#141414]">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[#fff7f2]">Client Reports</h3>
+                        <p className="mt-2 text-sm text-[rgba(255,240,232,0.56)]">Create, edit, preview, and delete white-label report profiles.</p>
+                    </div>
+                    <Button type="button" variant="secondary" onClick={startNewProfile}>New Profile</Button>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                    {profiles.length > 0 ? profiles.map((profile) => (
+                        <div key={profile.id} className={`rounded-2xl border px-4 py-4 ${editingProfileId === profile.id ? 'border-[var(--admin-primary)] bg-[rgba(47,107,255,0.08)]' : 'border-white/8 bg-[#111111]'}`}>
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <div className="text-sm font-medium text-[#fff7f2]">{profile.client_name}</div>
+                                    <div className="mt-1 text-xs text-[rgba(255,240,232,0.44)]">{profile.client_website}</div>
+                                    <div className="mt-2 text-xs text-[rgba(255,240,232,0.44)]">{profile.report_title}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => editProfile(profile)} className="rounded-full bg-white/6 px-3 py-2 text-xs text-[rgba(255,240,232,0.72)]">Edit</button>
+                                    <Link href={profile.preview_url} className="rounded-full bg-white/6 px-3 py-2 text-xs text-[rgba(255,240,232,0.72)]">Preview</Link>
+                                    <button type="button" onClick={() => deleteProfile(profile.id)} className="rounded-full bg-rose-500/10 px-3 py-2 text-xs text-rose-200">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="rounded-2xl border border-dashed border-white/10 bg-[#111111] px-4 py-8 text-sm text-[rgba(255,240,232,0.50)]">
+                            No profiles created yet. Use the form to create your first client report profile.
+                        </div>
+                    )}
+                </div>
+            </Card>
+
+            <Card className="border border-white/8 bg-[#141414]">
+                <div className="mb-6">
+                    <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[#fff7f2]">
+                        {editingProfileId ? 'Edit Client Report Profile' : 'Create Client Report Profile'}
+                    </h3>
+                    <p className="mt-2 text-sm text-[rgba(255,240,232,0.56)]">{profileSummary}</p>
+                </div>
+
+                <form onSubmit={submitProfile} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <Input label="Client Name" name="client_name" value={profileForm.data.client_name} onChange={(e) => profileForm.setData('client_name', e.target.value)} error={profileForm.errors.client_name || errors.client_name} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
+                        <Input label="Client Website / Domain" name="client_website" type="url" value={profileForm.data.client_website} onChange={(e) => profileForm.setData('client_website', e.target.value)} error={profileForm.errors.client_website || errors.client_website} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
+                        <Input label="Report Title" name="report_title" value={profileForm.data.report_title} onChange={(e) => profileForm.setData('report_title', e.target.value)} error={profileForm.errors.report_title || errors.report_title} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
+                        <DomainSelect domains={domains} value={profileForm.data.domain_id} onChange={(e) => profileForm.setData('domain_id', e.target.value)} error={profileForm.errors.domain_id || errors.domain_id} disabled={!hasWorkspace || profileForm.processing} />
+                        <Input label="Reporting Period Start" name="reporting_period_start" type="date" value={profileForm.data.reporting_period_start} onChange={(e) => profileForm.setData('reporting_period_start', e.target.value)} error={profileForm.errors.reporting_period_start || errors.reporting_period_start} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
+                        <Input label="Reporting Period End" name="reporting_period_end" type="date" value={profileForm.data.reporting_period_end} onChange={(e) => profileForm.setData('reporting_period_end', e.target.value)} error={profileForm.errors.reporting_period_end || errors.reporting_period_end} className="rounded-2xl border-white/8 bg-[#111111]" disabled={!hasWorkspace || profileForm.processing} />
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <TextareaField label="Target Keywords" value={profileForm.data.target_keywords} onChange={(e) => profileForm.setData('target_keywords', e.target.value)} error={profileForm.errors.target_keywords || errors.target_keywords} disabled={!hasWorkspace || profileForm.processing} />
+                        <TextareaField label="Notes / Custom Summary" value={profileForm.data.notes} onChange={(e) => profileForm.setData('notes', e.target.value)} error={profileForm.errors.notes || errors.notes} disabled={!hasWorkspace || profileForm.processing} />
+                    </div>
+
+                    <TextareaField label="Recommendations / Next Steps" value={profileForm.data.recommendations} onChange={(e) => profileForm.setData('recommendations', e.target.value)} error={profileForm.errors.recommendations || errors.recommendations} disabled={!hasWorkspace || profileForm.processing} />
+
+                    <div className="flex flex-wrap justify-end gap-3">
+                        {editingProfileId && (
+                            <Button type="button" variant="ghost" onClick={startNewProfile}>
+                                Cancel Edit
+                            </Button>
+                        )}
+                        <Button type="submit" variant="primary" disabled={!hasWorkspace || profileForm.processing}>
+                            {profileForm.processing ? 'Saving...' : editingProfileId ? 'Update Profile' : 'Create Profile'}
+                        </Button>
+                    </div>
+                </form>
+            </Card>
+        </div>
+    );
+
+    const renderPreviewTab = () => (
+        <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[#fff7f2]">Report Preview / Generate Report</h3>
+                    <p className="mt-2 text-sm text-[rgba(255,240,232,0.56)]">Preview the white-label report on-screen and export the current version as PDF.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                    {selectedProfile && (
+                        <>
+                            <Button href="/label/reports" variant="secondary">Manage Profiles</Button>
+                            <Button href={selectedProfile.pdf_url} variant="primary">
+                                <i className="bi bi-download mr-2"></i>Download PDF
+                            </Button>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {profiles.length > 0 && (
+                <Card className="border border-white/8 bg-[#141414]">
+                    <div className="flex flex-wrap gap-3">
+                        {profiles.map((profile) => (
+                            <Link
+                                key={profile.id}
+                                href={profile.preview_url}
+                                className={`rounded-full px-4 py-2 text-sm transition ${selectedProfile?.id === profile.id ? 'bg-[var(--admin-primary)] text-white' : 'bg-[#111111] text-[rgba(255,240,232,0.72)]'}`}
+                            >
+                                {profile.client_name}
+                            </Link>
+                        ))}
+                    </div>
+                </Card>
+            )}
+
+            {previewReady ? (
+                <BrandedAuditReportView report={previewReport} />
+            ) : (
+                <Card className="border border-dashed border-white/10 bg-[#141414]">
+                    <div className="py-12 text-center">
+                        <div className="text-xl font-semibold text-[#fff7f2]">No preview selected yet</div>
+                        <p className="mt-2 text-sm text-[rgba(255,240,232,0.54)]">Create or choose a client report profile to generate the on-screen report preview.</p>
+                        <div className="mt-5">
+                            <Button href="/label/reports" variant="primary">Go To Client Reports</Button>
+                        </div>
+                    </div>
+                </Card>
+            )}
+        </div>
+    );
+
+    return (
+        <AppLayout
+            header="Label"
+            subtitle="Brand your client-facing SEO reports, manage client report profiles, and export polished previews."
+        >
+            <div className="space-y-6">
+                {(flash?.success || flash?.error) && (
+                    <div className={`rounded-2xl px-5 py-4 text-sm ${flash?.success ? 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border border-rose-400/20 bg-rose-500/10 text-rose-200'}`}>
+                        {flash?.success || flash?.error}
+                    </div>
+                )}
+
+                <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(135deg,rgba(255,86,38,0.10),rgba(15,15,15,0.92))]">
+                    <div className="flex flex-wrap items-start justify-between gap-6">
+                        <div className="max-w-3xl">
+                            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">White Label SEO Reports</div>
+                            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#fff7f2]">Everything white-label now lives under Label</h2>
+                            <p className="mt-3 text-sm leading-7 text-[rgba(255,240,232,0.66)]">
+                                Save your brand identity, create client-specific report profiles, preview the report on-screen, and export a PDF using the real SEO data currently available in your account.
+                            </p>
+                        </div>
+                        <div className="rounded-[24px] border border-white/10 bg-[rgba(0,0,0,0.18)] px-5 py-4 text-sm text-[rgba(255,240,232,0.72)]">
+                            <div className="text-[11px] uppercase tracking-[0.2em] text-[rgba(255,240,232,0.42)]">Current Workspace</div>
+                            <div className="mt-2 text-lg font-semibold text-[#fff7f2]">{organization?.name || 'Workspace required'}</div>
+                        </div>
+                    </div>
+                </Card>
+
+                {!hasWorkspace && (
+                    <Card className="border border-[rgba(255,110,64,0.18)] bg-[#141414]">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Workspace Required</p>
-                                <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Create an organization before saving branding</h3>
-                                <p className="mt-2 max-w-2xl text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                    White label settings are stored at the workspace level in this codebase, so you need an organization before branding can be persisted.
+                                <h3 className="text-xl font-semibold text-[#fff7f2]">A workspace is required before using Label</h3>
+                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.58)]">
+                                    Branding and client report profiles are stored against your current workspace so the system can keep them isolated from other users.
                                 </p>
                             </div>
-                            <Button href="/orgs/create" variant="primary" size="lg" className="rounded-2xl px-6">
-                                <i className="bi bi-building-add mr-2"></i>Create Workspace
-                            </Button>
+                            <Button href="/orgs/create" variant="primary">Create Workspace</Button>
                         </div>
                     </Card>
                 )}
 
-                <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-                    <div className="space-y-6">
-                        <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
-                            <div id="white-label-branding-form" className="mb-6">
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Branding Settings</p>
-                                <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Configure your white label identity</h3>
-                                <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                    Everything below saves into workspace report settings and updates the preview panel instantly.
-                                </p>
-                            </div>
-
-                            <form onSubmit={submit} encType="multipart/form-data" className="space-y-6">
-                                <div className="rounded-2xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-5">
-                                    <label className="flex cursor-pointer items-start justify-between gap-4">
-                                        <div>
-                                            <div className="text-sm font-semibold text-[#fff7f2]">Enable White Label</div>
-                                            <p className="mt-1 text-sm leading-6 text-[rgba(255,240,232,0.6)]">Turn on branded report presentation for this workspace.</p>
-                                        </div>
-                                        <span className="relative mt-1 inline-flex h-7 w-12 flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={form.data.enabled}
-                                                onChange={(event) => form.setData('enabled', event.target.checked)}
-                                                className="peer sr-only"
-                                                disabled={controlsLocked}
-                                            />
-                                            <span className="absolute inset-0 rounded-full bg-[rgba(255,255,255,0.12)] transition peer-checked:bg-[var(--admin-primary)]"></span>
-                                            <span className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
-                                        </span>
-                                    </label>
-                                </div>
-
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <Input
-                                        label="Company Name"
-                                        name="company_name"
-                                        value={form.data.company_name}
-                                        onChange={(event) => form.setData('company_name', event.target.value)}
-                                        error={form.errors.company_name}
-                                        className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
-                                        helpText="Shown when no logo is uploaded and used in the preview header."
-                                        disabled={controlsLocked}
-                                    />
-                                    <Input
-                                        label="Website"
-                                        name="website"
-                                        type="url"
-                                        value={form.data.website}
-                                        onChange={(event) => form.setData('website', event.target.value)}
-                                        error={form.errors.website}
-                                        className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
-                                        helpText="Displayed in the footer branding area."
-                                        disabled={controlsLocked}
-                                    />
-                                    <div className="md:col-span-2">
-                                        <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Logo Upload</label>
-                                        <div className="rounded-2xl border border-dashed border-[rgba(255,110,64,0.18)] bg-[rgba(255,247,242,0.03)] p-4">
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={onLogoChange}
-                                                disabled={controlsLocked}
-                                                className="sr-only"
-                                            />
-                                            <div className="flex flex-wrap items-center gap-3">
-                                                <Button
-                                                    type="button"
-                                                    variant="primary"
-                                                    size="sm"
-                                                    className="rounded-2xl px-4"
-                                                    onClick={openLogoPicker}
-                                                    disabled={controlsLocked}
-                                                >
-                                                    <i className="bi bi-images mr-2"></i>Choose Logo From Device
-                                                </Button>
-                                                <span className="text-sm text-[rgba(255,240,232,0.64)]">
-                                                    {form.data.logo?.name || 'Gallery/files will open from your device'}
-                                                </span>
-                                            </div>
-                                            <p className="mt-3 text-xs text-[rgba(255,240,232,0.56)]">Accepted: JPG, PNG, WEBP, SVG up to 2MB. Mobile par ye device gallery open karega.</p>
-                                            {form.errors.logo && <p className="mt-2 text-sm text-[#F04438]">{form.errors.logo}</p>}
-                                            {(logoPreviewUrl || settings.logo_url) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={removeCurrentLogo}
-                                                    disabled={controlsLocked}
-                                                    className="mt-4 text-sm font-medium text-[#ffcfb9] transition hover:text-[#fff7f2]"
-                                                >
-                                                    Remove current logo
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 rounded-3xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-5">
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Report Sections</p>
-                                        <h4 className="mt-2 text-xl font-semibold text-[#fff7f2]">Choose what clients should receive</h4>
-                                        <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.62)]">
-                                            Select the SEO focus areas you want included when branded report delivery is prepared for users.
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(14,11,11,0.72)] p-4">
-                                        <div className="flex flex-wrap items-start justify-between gap-4">
-                                            <div>
-                                                <h5 className="text-lg font-semibold text-[#fff7f2]">Reporting Window</h5>
-                                                <p className="mt-1 text-sm leading-6 text-[rgba(255,240,232,0.58)]">
-                                                    Choose how many days of analytics and search performance data should appear in the client report.
-                                                </p>
-                                            </div>
-                                            <span className="inline-flex rounded-full border border-[rgba(255,110,64,0.16)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
-                                                {previewPeriodDays} days selected
-                                            </span>
-                                        </div>
-                                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                            {REPORT_PERIOD_OPTIONS.map((days) => {
-                                                const active = previewPeriodDays === days;
-
-                                                return (
-                                                    <button
-                                                        key={days}
-                                                        type="button"
-                                                        onClick={() => form.setData('report_period_days', days)}
-                                                        disabled={controlsLocked}
-                                                        className={`rounded-2xl border px-4 py-4 text-left transition ${
-                                                            active
-                                                                ? 'border-[rgba(255,110,64,0.45)] bg-[linear-gradient(135deg,rgba(255,86,38,0.22),rgba(255,118,77,0.08))] shadow-[0_12px_30px_rgba(255,86,38,0.12)]'
-                                                                : 'border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.02)] hover:border-[rgba(255,110,64,0.22)]'
-                                                        } ${controlsLocked ? 'cursor-not-allowed opacity-70' : ''}`}
-                                                    >
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <span className="text-lg font-semibold text-[#fff7f2]">{days} Days</span>
-                                                            {active && <i className="bi bi-check2-circle text-[#ff8d64]"></i>}
-                                                        </div>
-                                                        <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.56)]">
-                                                            The report will include live GA4 and Search Console data from the last {days} days.
-                                                        </p>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        {form.errors.report_period_days && <p className="mt-3 text-sm text-[#F04438]">{form.errors.report_period_days}</p>}
-                                    </div>
-
-                                    <div className="grid gap-4">
-                                        {SECTION_GROUPS.map((group) => (
-                                            <div key={group.key} className="rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(14,11,11,0.72)] p-4">
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div>
-                                                        <h5 className="text-lg font-semibold text-[#fff7f2]">{group.title}</h5>
-                                                        <p className="mt-1 text-sm leading-6 text-[rgba(255,240,232,0.58)]">{group.description}</p>
-                                                    </div>
-                                                    <span className="inline-flex rounded-full border border-[rgba(255,110,64,0.16)] px-3 py-1 text-xs font-semibold text-[#ffcfb9]">
-                                                        {group.items.filter((item) => form.data.report_sections?.[group.key]?.[item.key]).length} selected
-                                                    </span>
-                                                </div>
-                                                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                                                    {group.items.map((item) => (
-                                                        <label
-                                                            key={item.key}
-                                                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-[rgba(255,110,64,0.12)] bg-[rgba(255,247,242,0.02)] px-4 py-3 transition hover:border-[rgba(255,110,64,0.22)]"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={Boolean(form.data.report_sections?.[group.key]?.[item.key])}
-                                                                onChange={(event) => form.setData('report_sections', {
-                                                                    ...form.data.report_sections,
-                                                                    [group.key]: {
-                                                                        ...form.data.report_sections[group.key],
-                                                                        [item.key]: event.target.checked,
-                                                                    },
-                                                                })}
-                                                                className="h-4 w-4 rounded border-[rgba(255,110,64,0.3)] bg-transparent text-[var(--admin-primary)] focus:ring-[var(--admin-primary)]"
-                                                                disabled={controlsLocked}
-                                                            />
-                                                            <span className="text-sm font-medium text-[rgba(255,240,232,0.84)]">{item.label}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-5 lg:grid-cols-[0.8fr,1.2fr]">
-                                    <div className="rounded-2xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-5">
-                                        <label className="flex cursor-pointer items-start justify-between gap-4">
-                                            <div>
-                                                <div className="text-sm font-semibold text-[#fff7f2]">Custom Cover Title</div>
-                                                <p className="mt-1 text-sm leading-6 text-[rgba(255,240,232,0.6)]">Override the default title shown in the report header preview.</p>
-                                            </div>
-                                            <span className="relative mt-1 inline-flex h-7 w-12 flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={form.data.use_custom_cover_title}
-                                                    onChange={(event) => form.setData('use_custom_cover_title', event.target.checked)}
-                                                    className="peer sr-only"
-                                                    disabled={controlsLocked}
-                                                />
-                                                <span className="absolute inset-0 rounded-full bg-[rgba(255,255,255,0.12)] transition peer-checked:bg-[var(--admin-primary)]"></span>
-                                                <span className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white transition peer-checked:translate-x-5"></span>
-                                            </span>
-                                        </label>
-                                    </div>
-
-                                    <Input
-                                        label="Custom Cover Title"
-                                        name="custom_cover_title"
-                                        value={form.data.custom_cover_title}
-                                        onChange={(event) => form.setData('custom_cover_title', event.target.value)}
-                                        error={form.errors.custom_cover_title}
-                                        className="rounded-2xl border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)]"
-                                        helpText="Required when custom cover title is enabled."
-                                        disabled={controlsLocked || !form.data.use_custom_cover_title}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-[var(--admin-text)]">Footer Text</label>
-                                    <textarea
-                                        name="footer_text"
-                                        value={form.data.footer_text}
-                                        onChange={(event) => form.setData('footer_text', event.target.value)}
-                                        rows={4}
-                                        disabled={controlsLocked}
-                                        className="block min-h-[120px] w-full rounded-2xl border border-[rgba(255,110,64,0.16)] bg-[rgba(255,247,242,0.03)] px-4 py-3 text-base text-[var(--admin-text)] placeholder-[var(--admin-text-dim)] transition-all duration-200 focus:border-[#2F6BFF] focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/20 disabled:cursor-not-allowed disabled:opacity-60"
-                                        placeholder="Add a branded footer note for clients."
-                                    />
-                                    {form.errors.footer_text ? (
-                                        <p className="mt-2 text-sm text-[#F04438]">{form.errors.footer_text}</p>
-                                    ) : (
-                                        <p className="mt-2 text-sm text-[var(--admin-text-dim)]">Used in the client branding footer area of the preview.</p>
-                                    )}
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-3 border-t border-[rgba(255,110,64,0.12)] pt-6">
-                                    <Button type="submit" variant="primary" size="lg" disabled={form.processing || saveLocked} className="rounded-2xl px-6">
-                                        {form.processing ? 'Saving Branding...' : <><i className="bi bi-save mr-2"></i>Save Branding Settings</>}
-                                    </Button>
-                                    <Button type="button" variant="secondary" size="lg" disabled={form.processing} className="rounded-2xl px-6" onClick={resetToDefaults}>
-                                        <i className="bi bi-arrow-counterclockwise mr-2"></i>Reset to Default
-                                    </Button>
-                                    <p className="text-sm text-[rgba(255,240,232,0.58)]">Reset restores form defaults locally. Click save to persist those defaults.</p>
-                                </div>
-                            </form>
-                        </Card>
-
-                        <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
-                            <div className="mb-6">
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Highlights</p>
-                                <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">What this section supports</h3>
-                            </div>
-
-                            <div className="grid gap-4">
-                                {reportHighlights.map((item) => (
-                                    <div key={item.title} className="rounded-2xl border border-[rgba(255,110,64,0.14)] bg-[rgba(255,247,242,0.03)] p-5">
-                                        <div className="flex items-start gap-4">
-                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgba(255,110,64,0.14)] text-[#ffcfb9]">
-                                                <i className={`bi ${item.icon}`}></i>
-                                            </div>
-                                            <div>
-                                                <div className="text-lg font-semibold text-[#fff7f2]">{item.title}</div>
-                                                <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.64)]">{item.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    </div>
-
-                    <div className="space-y-6">
-                        <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
-                            <div id="white-label-preview-panel" className="mb-6 flex flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--admin-primary-light)]/80">Live Preview</p>
-                                    <h3 className="mt-2 text-2xl font-semibold text-[#fff7f2]">Preview Report Theme</h3>
-                                    <p className="mt-2 text-sm leading-6 text-[rgba(255,240,232,0.64)]">
-                                        Reflects your current form state before branded report delivery is generated for users.
-                                    </p>
-                                </div>
-                                <span className="inline-flex items-center rounded-full border border-[rgba(255,110,64,0.18)] bg-[rgba(255,110,64,0.12)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#ffcfb9]">
-                                    {form.data.enabled ? 'Enabled' : 'Draft'}
-                                </span>
-                            </div>
-
-                            <div className="overflow-hidden rounded-[28px] bg-[#131313]">
-                                <div className="px-6 py-6 sm:px-8 lg:px-10">
-                                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-5 py-4">
-                                        <div className="flex items-center gap-4">
-                                            {renderLogoPreview()}
-                                            <div>
-                                                <div className="text-lg font-semibold tracking-[-0.02em] text-[#fff7f2]">{brandingSummary}</div>
-                                                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">
-                                                    {previewWebsite}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#ff8d64]">Client SEO Report</div>
-                                            <div className="mt-2 text-sm text-[rgba(255,240,232,0.58)]">{previewTitle}</div>
-                                            <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,240,232,0.34)]">Last {previewPeriodDays} days</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-4 xl:grid-cols-[1.7fr,0.85fr]">
-                                        <div className="relative overflow-hidden rounded-[26px] bg-[#1c1b1b] p-7">
-                                            <div className="absolute inset-y-0 left-0 w-1 bg-[#ff5626]"></div>
-                                            <div className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-[rgba(255,86,38,0.16)] blur-[100px]"></div>
-                                            <div className="relative flex flex-col gap-8 md:flex-row md:items-center">
-                                                <div className="relative h-52 w-52 flex-shrink-0">
-                                                    <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-                                                        <circle cx="50" cy="50" r="45" fill="transparent" stroke="#2a2a2a" strokeWidth="8"></circle>
-                                                        <circle cx="50" cy="50" r="45" fill="transparent" stroke="#ff5626" strokeWidth="8" strokeDasharray={DEMO_SCORE_RING.circumference} strokeDashoffset={DEMO_SCORE_RING.offset} strokeLinecap="round"></circle>
-                                                    </svg>
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                        <span className="text-5xl font-black tracking-[-0.04em] text-[#fff7f2]">93</span>
-                                                        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#ff8d64]">Grade A</span>
-                                                    </div>
-                                                </div>
-                                                <div className="relative z-10 flex-1">
-                                                    <div className="flex flex-wrap items-center gap-4">
-                                                        {renderLogoPreview()}
-                                                        <div>
-                                                            <div className="text-3xl font-bold tracking-[-0.03em] text-[#fff7f2]">Overall Health Score</div>
-                                                            <div className="mt-2 text-sm text-[rgba(255,240,232,0.56)]">Live company identity preview in the report header.</div>
-                                                        </div>
-                                                    </div>
-                                                    <p className="mt-6 max-w-lg text-sm leading-7 text-[rgba(255,240,232,0.58)]">
-                                                        This premium demo block shows how the report opens with strong typography, a cinematic score ring and branded header treatment.
-                                                    </p>
-                                                    <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                                                        <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Crawl Capacity</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">98.2%</span></div>
-                                                        <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Indexability</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">100%</span></div>
-                                                        <div className="rounded-2xl bg-[#201f1f] p-4"><span className="block font-mono text-[10px] uppercase tracking-[0.25em] text-[rgba(255,240,232,0.34)]">Reporting Window</span><span className="mt-2 block text-xl font-bold text-[#fff7f2]">{previewPeriodDays} days</span></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid gap-4">
-                                            <div className="rounded-[24px] bg-[#2a2a2a] p-6"><span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Internal Links</span><div className="mt-3 flex items-center justify-between"><span className="text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">12.4K</span><i className="bi bi-diagram-3-fill text-xl text-[#ff8d64]"></i></div></div>
-                                            <div className="rounded-[24px] bg-[#2a2a2a] p-6"><span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Domain Rating</span><div className="mt-3 flex items-center justify-between"><span className="text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">74.1</span><i className="bi bi-star-fill text-xl text-[#ff8d64]"></i></div></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
-                                        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-                                            <div>
-                                                <h5 className="text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Mobile vs Desktop</h5>
-                                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.48)]">Device comparison block for showing performance snapshots inside the branded demo report.</p>
-                                            </div>
-                                            <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">
-                                                Core Web Vitals
-                                            </div>
-                                        </div>
-                                        <div className="grid gap-4 lg:grid-cols-2">
-                                            {DEVICE_BREAKDOWN.map((device) => (
-                                                <div key={device.label} className="rounded-[24px] bg-[#151414] p-5">
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div>
-                                                            <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">{device.label}</div>
-                                                            <div className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#fff7f2]">{device.score}</div>
-                                                            <div className="mt-1 text-sm text-[rgba(255,240,232,0.52)]">Experience score</div>
-                                                        </div>
-                                                        <div className={`rounded-2xl px-4 py-3 text-right ${device.tone}`}>
-                                                            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,244,238,0.78)]">Load Speed</div>
-                                                            <div className="mt-2 text-2xl font-bold text-[#fff7f2]">{device.speed}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-5 grid grid-cols-3 gap-3">
-                                                        {device.bars.map((value, index) => (
-                                                            <div key={`${device.label}-${index}`} className="rounded-2xl bg-[#201f1f] p-3">
-                                                                <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-[rgba(255,240,232,0.32)]">
-                                                                    {index === 0 ? 'Speed' : index === 1 ? 'UX' : 'SEO'}
-                                                                </div>
-                                                                <div className="mt-3 h-20 rounded-2xl bg-[rgba(255,255,255,0.04)] p-2">
-                                                                    <div className="flex h-full items-end">
-                                                                        <div className="w-full rounded-xl bg-[linear-gradient(180deg,rgba(255,181,161,0.2),rgba(255,86,38,0.88))]" style={{ height: `${value}%` }}></div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#201f1f] px-4 py-3">
-                                                        <span className="text-sm text-[rgba(255,240,232,0.68)]">Layout stability</span>
-                                                        <span className="text-sm font-semibold text-[#fff7f2]">{device.stability}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
-                                        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-                                            <div>
-                                                <h5 className="text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Projected Visibility Growth</h5>
-                                                <p className="mt-2 text-sm text-[rgba(255,240,232,0.48)]">Estimated traffic recovery bars styled like the revamp reference.</p>
-                                            </div>
-                                            <div className="flex gap-4 font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.4)]">
-                                                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#ff5626]"></span>Current</span>
-                                                <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#6b625f]"></span>Projected</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex h-64 items-end gap-2">
-                                            {[40, 44, 43, 55, 58, 61, 76, 84, 92, 100].map((value, index) => (
-                                                <div
-                                                    key={value}
-                                                    className={`flex-1 rounded-t-[4px] ${index < 6 ? 'bg-[#201f1f]' : 'border-t-2 border-[#ff5626]'}`}
-                                                    style={{ height: `${value}%`, backgroundColor: index < 6 ? '#201f1f' : `rgba(255,86,38,${0.18 + (index - 5) * 0.08})` }}
-                                                ></div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr,0.8fr]">
-                                        <div className="rounded-[26px] bg-[#1c1b1b] p-7">
-                                            <div className="mb-8 font-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(255,240,232,0.34)]">Lighthouse Diagnostics</div>
-                                            <div className="grid grid-cols-2 gap-6 xl:grid-cols-4">
-                                                {DIAGNOSTIC_METRICS.map((metric) => (
-                                                    <div key={metric.label} className="text-center">
-                                                        <div className="relative mx-auto mb-4 h-24 w-24">
-                                                            <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
-                                                                <circle cx="18" cy="18" r="16" fill="none" stroke="#2a2a2a" strokeWidth="3"></circle>
-                                                                <circle cx="18" cy="18" r="16" fill="none" stroke={metric.tone === 'orange' ? '#ff5626' : '#22c55e'} strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - metric.value}></circle>
-                                                            </svg>
-                                                            <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-[#fff7f2]">{metric.value}</span>
-                                                        </div>
-                                                        <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[rgba(255,240,232,0.55)]">{metric.label}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="rounded-[26px] bg-[#2a2a2a] p-7">
-                                            <div className="mb-6 font-mono text-[10px] uppercase tracking-[0.32em] text-[rgba(255,240,232,0.34)]">Status Ledger</div>
-                                            <div className="space-y-5">
-                                                {[
-                                                    { label: 'HTTPS Protocol', state: 'Good', tone: '#22c55e' },
-                                                    { label: 'XML Sitemap', state: 'Good', tone: '#22c55e' },
-                                                    { label: 'Robots.txt', state: 'Stable', tone: '#22c55e' },
-                                                    { label: 'Canonical Tags', state: 'Check', tone: '#f59e0b' },
-                                                ].map((item) => (
-                                                    <div key={item.label} className="flex items-center justify-between gap-3">
-                                                        <span className="text-sm text-[rgba(255,240,232,0.72)]">{item.label}</span>
-                                                        <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em]" style={{ color: item.tone }}>
-                                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.tone }}></span>
-                                                            {item.state}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
-                                        <div className="mb-6 flex items-center justify-between gap-3">
-                                            <div>
-                                                <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(255,240,232,0.34)]">Top Issues By Severity</div>
-                                                <div className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Audit issue summary</div>
-                                            </div>
-                                            <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">Demo findings</div>
-                                        </div>
-                                        <div className="overflow-hidden rounded-[20px] bg-[#151414]">
-                                            <div className="grid grid-cols-[1.8fr,0.7fr,0.8fr,0.9fr] gap-3 px-5 py-3 font-mono text-[10px] uppercase tracking-[0.22em] text-[rgba(255,240,232,0.32)]">
-                                                <span>Issue</span><span>Affected</span><span>Severity</span><span>Action</span>
-                                            </div>
-                                            {ISSUE_ROWS.map((row) => (
-                                                <div key={row.title} className="grid grid-cols-[1.8fr,0.7fr,0.8fr,0.9fr] gap-3 border-t border-[rgba(255,255,255,0.04)] px-5 py-4">
-                                                    <div><div className="text-sm font-semibold text-[#fff7f2]">{row.title}</div><div className="mt-1 text-xs text-[rgba(255,240,232,0.42)]">High-quality placeholder explanation for visual report structure.</div></div>
-                                                    <div className="text-sm text-[rgba(255,240,232,0.72)]">{row.affected}</div>
-                                                    <div><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] ${row.severity === 'critical' ? 'bg-[rgba(239,68,68,0.16)] text-[#f87171]' : row.severity === 'warning' ? 'bg-[rgba(245,158,11,0.16)] text-[#fbbf24]' : 'bg-[rgba(96,165,250,0.16)] text-[#93c5fd]'}`}>{row.severity}</span></div>
-                                                    <div className="text-sm text-[#ffb5a1]">{row.action}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                                        {INSIGHT_CARDS.map((card) => (
-                                            <div key={card.title} className={`relative overflow-hidden rounded-[24px] p-6 ${card.tone === 'primary' ? 'bg-[linear-gradient(135deg,#ff5626,#ff764d)] text-[#fff4ee]' : 'bg-[linear-gradient(135deg,#1c1b1b,#222222)] text-[#fff7f2]'}`}>
-                                                <div className="relative">
-                                                    <div className="text-xl font-bold tracking-[-0.03em]">{card.title}</div>
-                                                    <p className={`mt-3 max-w-md text-sm leading-7 ${card.tone === 'primary' ? 'text-[#ffe0d4]' : 'text-[rgba(255,240,232,0.56)]'}`}>{card.body}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {previewFocusSections.length > 0 && (
-                                        <div className="mt-6 grid gap-4">
-                                            {previewFocusSections.map((group) => (
-                                                <div key={group.key} className="rounded-[26px] bg-[#1c1b1b] p-7">
-                                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                                        <div>
-                                                            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(255,240,232,0.34)]">{group.title}</div>
-                                                            <div className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Demo section with live-selected headings</div>
-                                                        </div>
-                                                        <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">{group.selectedItems.length} items</div>
-                                                    </div>
-                                                    <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
-                                                        <div className="rounded-[22px] bg-[#201f1f] p-5">
-                                                            <div className="space-y-3">
-                                                                {group.selectedItems.map((item) => (
-                                                                    <div key={item.key} className="rounded-2xl bg-[#161515] px-4 py-3">
-                                                                        <div className="flex items-center gap-3"><i className="bi bi-check-circle-fill text-[#ff8d64]"></i><span className="text-sm font-medium text-[#fff7f2]">{item.label}</span></div>
-                                                                        <div className="mt-2 h-2.5 rounded-full bg-[rgba(255,255,255,0.06)]"><div className="h-2.5 rounded-full bg-[linear-gradient(90deg,#ff5626,#ff9c7c)]" style={{ width: `${62 + (item.label.length % 5) * 7}%` }}></div></div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        <div className="rounded-[22px] bg-[#201f1f] p-5">
-                                                            <div className="flex h-40 items-end gap-2">
-                                                                {[34, 52, 48, 66, 74, 58].map((value) => (
-                                                                    <div key={value} className="flex-1 rounded-t-[4px] bg-[linear-gradient(180deg,rgba(255,181,161,0.20),rgba(255,86,38,0.75))]" style={{ height: `${value}%` }}></div>
-                                                                ))}
-                                                            </div>
-                                                            <div className="mt-4 space-y-2">
-                                                                <div className="h-3 rounded-full bg-[rgba(255,255,255,0.07)]"></div>
-                                                                <div className="h-3 w-4/5 rounded-full bg-[rgba(255,255,255,0.05)]"></div>
-                                                                <div className="h-3 w-3/5 rounded-full bg-[rgba(255,255,255,0.04)]"></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <div className="mt-6 rounded-[26px] bg-[#1c1b1b] p-7">
-                                        <div className="flex flex-wrap items-end justify-between gap-4">
-                                            <div>
-                                                <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(255,240,232,0.34)]">Report Closing Note</div>
-                                                <div className="mt-2 text-2xl font-bold tracking-[-0.03em] text-[#fff7f2]">Branded ending block with your identity</div>
-                                            </div>
-                                            <div className="rounded-full bg-[rgba(255,86,38,0.10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#ff8d64]">
-                                                Ready for export
-                                            </div>
-                                        </div>
-                                        <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
-                                            <div className="rounded-[22px] bg-[#151414] p-5">
-                                                <div className="text-sm leading-7 text-[rgba(255,240,232,0.60)]">
-                                                    This footer-style report area stays inside the preview card, so the page ends neatly while still showing where your company name, support copy and branded sign-off would appear.
-                                                </div>
-                                                <div className="mt-5 h-px bg-[rgba(255,255,255,0.06)]"></div>
-                                                <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-                                                    <div>
-                                                        <div className="text-base font-semibold text-[#fff7f2]">{brandingSummary}</div>
-                                                        <div className="mt-1 text-sm text-[rgba(255,240,232,0.52)]">{previewFooter}</div>
-                                                    </div>
-                                                    {renderLogoPreview()}
-                                                </div>
-                                            </div>
-                                            <div className="rounded-[22px] bg-[#201f1f] p-5">
-                                                <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[rgba(255,240,232,0.34)]">Delivery Modules</div>
-                                                <div className="mt-4 space-y-3">
-                                                    {['Executive Summary', 'Priority Fixes', 'Section Snapshots', 'Performance Signals'].map((label) => (
-                                                        <div key={label} className="flex items-center justify-between rounded-2xl bg-[#161515] px-4 py-3">
-                                                            <span className="text-sm text-[#fff7f2]">{label}</span>
-                                                            <i className="bi bi-check2-circle text-[#ff8d64]"></i>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
+                <div className="flex flex-wrap gap-3">
+                    <TabLink href={tabLinks.branding || '/label'} active={activeTab === 'branding'} icon="bi-palette" label="Branding Settings" />
+                    <TabLink href={tabLinks.reports || '/label/reports'} active={activeTab === 'reports'} icon="bi-people" label="Client Reports" />
+                    {tabLinks.preview && (
+                        <TabLink href={tabLinks.preview} active={activeTab === 'preview'} icon="bi-file-earmark-text" label="Report Preview" />
+                    )}
                 </div>
+
+                {activeTab === 'branding' && renderBrandingTab()}
+                {activeTab === 'reports' && renderReportsTab()}
+                {activeTab === 'preview' && renderPreviewTab()}
             </div>
         </AppLayout>
     );

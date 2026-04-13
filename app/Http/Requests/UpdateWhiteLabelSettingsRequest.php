@@ -13,12 +13,19 @@ class UpdateWhiteLabelSettingsRequest extends FormRequest
 
     public function rules(): array
     {
+        $hexColor = ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'];
+
         return [
             'enabled' => ['required', 'boolean'],
             'company_name' => ['nullable', 'string', 'max:160'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_logo' => ['nullable', 'boolean'],
             'website' => ['nullable', 'url', 'max:255'],
+            'primary_color' => $hexColor,
+            'secondary_color' => $hexColor,
+            'support_email' => ['nullable', 'email:rfc', 'max:255'],
+            'support_phone' => ['nullable', 'string', 'max:50'],
+            'company_address' => ['nullable', 'string', 'max:1000'],
             'footer_text' => ['nullable', 'string', 'max:1000'],
             'report_period_days' => ['required', 'integer', 'in:7,15,30'],
             'report_sections' => ['required', 'array'],
