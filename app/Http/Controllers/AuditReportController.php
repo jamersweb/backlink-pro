@@ -72,6 +72,7 @@ class AuditReportController extends Controller
             'url' => 'required|url|max:2048',
             'email' => 'nullable|email',
             'send_to_email' => 'boolean',
+            'include_white_label_data' => 'nullable|boolean',
             'js_rendering_enabled' => 'nullable|boolean',
             'near_duplicate_enabled' => 'nullable|boolean',
             'spelling_grammar_enabled' => 'nullable|boolean',
@@ -179,6 +180,7 @@ class AuditReportController extends Controller
             'crawl_depth' => 0,
             'started_at' => now(),
             'progress_percent' => 0,
+            'include_white_label_data' => (bool) ($validated['include_white_label_data'] ?? false),
             'crawl_module_flags' => $crawlModuleFlags,
             'spelling_allowlist' => $spellingAllow !== [] ? $spellingAllow : null,
             'custom_source_search_rules' => $customSearchRulesPayload,
@@ -390,11 +392,16 @@ class AuditReportController extends Controller
             // GSC data
             'gsc' => $kpis['gsc'] ?? null,
             'branding' => $this->formatBrandingForFrontend($audit),
+            'white_label_report' => $this->buildWhiteLabelReport($audit),
         ];
     }
 
     protected function formatBrandingForFrontend(Audit $audit): ?array
     {
+        if (! $audit->include_white_label_data) {
+            return null;
+        }
+
         $branding = $audit->organization?->brandingProfile;
 
         if (! $branding || ! $branding->white_label_enabled) {
@@ -407,10 +414,147 @@ class AuditReportController extends Controller
             'website' => $branding->website ?: $audit->normalized_url,
             'footer_text' => $branding->report_footer_text,
             'logo_url' => $branding->logo_path ? Storage::disk('public')->url($branding->logo_path) : null,
+            'primary_color' => $branding->primary_color,
+            'secondary_color' => $branding->secondary_color,
+            'support_email' => $branding->support_email,
+            'support_phone' => $branding->support_phone,
+            'company_address' => $branding->company_address,
             'report_period_days' => (int) ($branding->report_period_days ?: 30),
             'report_sections' => $branding->report_sections_json ?: [],
             'use_custom_cover_title' => (bool) $branding->use_custom_cover_title,
             'custom_cover_title' => $branding->custom_cover_title,
+        ];
+    }
+
+    protected function buildWhiteLabelReport(Audit $audit): ?array
+    {
+        $branding = $this->formatBrandingForFrontend($audit);
+
+        if (! $branding) {
+            return null;
+        }
+
+        $page = $audit->pages->first();
+        $issues = $audit->issues;
+        $summary = is_array($audit->summary) ? $audit->summary : [];
+        $kpis = is_array($audit->audit_kpis) ? $audit->audit_kpis : [];
+        $gsc = is_array($kpis['gsc'] ?? null) ? $kpis['gsc'] : [];
+        $keywordRows = collect(data_get($gsc, 'top_queries', []))
+            ->filter(fn ($row) => !empty($row['query']))
+            ->take(8)
+            ->map(fn ($row) => [
+                'keyword' => $row['query'],
+                'position' => isset($row['position']) ? round((float) $row['position'], 1) : null,
+                'matched_url' => $row['page'] ?? null,
+            ])
+            ->values()
+            ->all();
+
+        $topIssues = $issues
+            ->sortBy([
+                fn ($issue) => match ($issue->severity ?: $issue->impact) {
+                    'critical', 'high' => 0,
+                    'warning', 'medium' => 1,
+                    default => 2,
+                },
+                fn ($issue) => -1 * ((int) ($issue->score_penalty ?? 0)),
+            ])
+            ->take(6)
+            ->map(fn ($issue) => [
+                'type' => $issue->title ?? $issue->issue_type ?? $issue->code ?? 'SEO Issue',
+                'severity' => $issue->severity ?: match ($issue->impact ?? '') {
+                    'high' => 'critical',
+                    'medium' => 'warning',
+                    default => 'info',
+                },
+                'message' => $issue->message ?? $issue->description ?? $issue->title ?? 'Issue detected during audit.',
+            ])
+            ->values()
+            ->all();
+
+        $recommendations = $issues
+            ->map(fn ($issue) => trim((string) ($issue->recommendation ?: $issue->fix_steps ?: '')))
+            ->filter()
+            ->unique()
+            ->take(6)
+            ->values()
+            ->all();
+
+        if ($recommendations === []) {
+            $recommendations = collect($topIssues)
+                ->pluck('message')
+                ->filter()
+                ->take(4)
+                ->values()
+                ->all();
+        }
+
+        return [
+            'branding' => [
+                'enabled' => true,
+                'brand_name' => $branding['company_name'],
+                'logo_url' => $branding['logo_url'],
+                'primary_color' => $branding['primary_color'] ?: '#FF5626',
+                'secondary_color' => $branding['secondary_color'] ?: '#1C1B1B',
+                'website' => $branding['website'],
+                'support_email' => $branding['support_email'] ?? null,
+                'support_phone' => $branding['support_phone'] ?? null,
+                'company_address' => $branding['company_address'] ?? null,
+                'footer_text' => $branding['footer_text'] ?: 'Thank you for reviewing this white-label SEO report.',
+            ],
+            'profile' => [
+                'client_name' => parse_url($audit->url, PHP_URL_HOST) ?: $audit->url,
+                'client_website' => $audit->url,
+                'report_title' => $branding['custom_cover_title'] ?: 'White-Label SEO Audit Report',
+                'reporting_period_label' => $audit->finished_at
+                    ? $audit->finished_at->format('M j, Y')
+                    : $audit->created_at?->format('M j, Y'),
+            ],
+            'sections' => [
+                'executive_summary' => [
+                    'available' => !empty($summary['overview']) || !empty($summary['summary']) || $topIssues !== [],
+                    'custom_summary' => $summary['overview'] ?? $summary['summary'] ?? null,
+                    'summary_bullets' => collect([
+                        $audit->overall_score !== null ? 'Overall SEO health score: ' . $audit->overall_score : null,
+                        $page ? 'Pages crawled: ' . ((int) ($audit->pages_scanned ?? $audit->pages->count())) : null,
+                        $issues->whereIn('impact', ['high'])->count() > 0 ? 'Critical issues detected: ' . $issues->whereIn('impact', ['high'])->count() : null,
+                    ])->filter()->values()->all(),
+                ],
+                'keyword_overview' => [
+                    'available' => $keywordRows !== [],
+                    'tracked_keywords' => $keywordRows,
+                    'target_keywords' => [],
+                ],
+                'backlink_overview' => [
+                    'available' => false,
+                    'total_backlinks' => null,
+                    'referring_domains' => null,
+                    'top_ref_domains' => [],
+                ],
+                'technical_seo_summary' => [
+                    'available' => true,
+                    'health_score' => $audit->overall_score,
+                    'pages_crawled' => (int) ($audit->pages_scanned ?? $audit->pages->count()),
+                    'issue_counts' => [
+                        'critical' => $issues->where('impact', 'high')->count(),
+                        'warning' => $issues->where('impact', 'medium')->count(),
+                        'info' => $issues->where('impact', 'low')->count(),
+                    ],
+                    'top_issues' => $topIssues,
+                ],
+                'recommendations' => [
+                    'available' => $recommendations !== [],
+                    'items' => $recommendations,
+                ],
+                'footer_branding' => [
+                    'footer_text' => $branding['footer_text'] ?: 'Thank you for reviewing this white-label SEO report.',
+                    'website' => $branding['website'],
+                    'support_email' => $branding['support_email'] ?? null,
+                    'support_phone' => $branding['support_phone'] ?? null,
+                    'company_address' => $branding['company_address'] ?? null,
+                ],
+            ],
+            'generated_at' => optional($audit->finished_at ?? $audit->updated_at ?? $audit->created_at)->toIso8601String(),
         ];
     }
 
@@ -428,6 +572,26 @@ class AuditReportController extends Controller
 
         $auditUi = $this->formatAuditForFrontend($audit);
         $filename = 'seo-audit-' . $audit->id . '-' . date('Y-m-d') . '.pdf';
+
+        if (! empty($auditUi['white_label_report'])) {
+            try {
+                $html = View::make('label.report-pdf', [
+                    'report' => $auditUi['white_label_report'],
+                ])->render();
+
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('A4');
+                if (method_exists($pdf, 'setOption')) {
+                    $pdf->setOption('isRemoteEnabled', true);
+                }
+
+                return $pdf->download('white-label-seo-audit-' . $audit->id . '-' . date('Y-m-d') . '.pdf');
+            } catch (\Throwable $e) {
+                \Log::warning('White-label audit PDF fallback failed', [
+                    'audit_id' => $id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         try {
             $html = View::make('audit.pdf_chromium', [

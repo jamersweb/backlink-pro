@@ -58,6 +58,7 @@ class Audit extends Model
         'gsc_ready_at',
         'crawl_stats',
         'performance_summary',
+        'include_white_label_data',
     ];
 
     protected $casts = [
@@ -80,6 +81,7 @@ class Audit extends Model
         'plan_snapshot' => 'array',
         'is_public' => 'boolean',
         'is_gated' => 'boolean',
+        'include_white_label_data' => 'boolean',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'psi_ready_at' => 'datetime',

@@ -23,8 +23,18 @@ function SectionCard({ title, children, className = '' }) {
     );
 }
 
-export default function BrandedAuditReportView({ report }) {
-    if (!report) {
+function normalizeAuditIntoReport(audit) {
+    if (!audit?.branding?.enabled) {
+        return null;
+    }
+
+    return audit.white_label_report || null;
+}
+
+export default function BrandedAuditReportView({ report = null, audit = null, exportingPdf = false, onExportPdf = null }) {
+    const resolvedReport = report || normalizeAuditIntoReport(audit);
+
+    if (!resolvedReport) {
         return (
             <div className="rounded-[28px] border border-dashed border-white/10 bg-[#141414] p-10 text-center text-[rgba(255,240,232,0.60)]">
                 Select a client report profile to preview the generated white-label SEO report.
@@ -32,7 +42,7 @@ export default function BrandedAuditReportView({ report }) {
         );
     }
 
-    const { branding, profile, sections, generated_at: generatedAt } = report;
+    const { branding, profile, sections, generated_at: generatedAt } = resolvedReport;
     const accent = branding?.primary_color || '#FF5626';
     const secondary = branding?.secondary_color || '#1C1B1B';
 
@@ -65,12 +75,24 @@ export default function BrandedAuditReportView({ report }) {
                         </div>
                     </div>
 
-                    <div className="rounded-[24px] border border-white/15 bg-white/8 px-5 py-5 text-white/85">
-                        {branding.logo_url ? (
-                            <img src={branding.logo_url} alt={`${branding.brand_name} logo`} className="max-h-16 max-w-[200px] object-contain" />
-                        ) : (
-                            <div className="text-xl font-semibold">{branding.brand_name}</div>
+                    <div className="space-y-3">
+                        {typeof onExportPdf === 'function' && (
+                            <button
+                                type="button"
+                                onClick={onExportPdf}
+                                disabled={exportingPdf}
+                                className="w-full rounded-full border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-[#161616] transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                                {exportingPdf ? 'Preparing PDF...' : 'Download PDF'}
+                            </button>
                         )}
+                        <div className="rounded-[24px] border border-white/15 bg-white/8 px-5 py-5 text-white/85">
+                            {branding.logo_url ? (
+                                <img src={branding.logo_url} alt={`${branding.brand_name} logo`} className="max-h-16 max-w-[200px] object-contain" />
+                            ) : (
+                                <div className="text-xl font-semibold">{branding.brand_name}</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </section>

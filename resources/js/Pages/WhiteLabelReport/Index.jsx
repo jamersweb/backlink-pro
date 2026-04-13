@@ -136,7 +136,6 @@ export default function WhiteLabelReportIndex({
     selectedProfile = null,
     previewReport = null,
     profilesTableExists = true,
-    setupWarning = null,
     tabLinks = {},
 }) {
     const { flash, errors } = usePage().props;
@@ -592,12 +591,6 @@ export default function WhiteLabelReportIndex({
                     </div>
                 )}
 
-                {setupWarning && (
-                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
-                        {setupWarning}
-                    </div>
-                )}
-
                 <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(135deg,rgba(255,86,38,0.10),rgba(15,15,15,0.92))]">
                     <div className="flex flex-wrap items-start justify-between gap-6">
                         <div className="max-w-3xl">
@@ -630,8 +623,8 @@ export default function WhiteLabelReportIndex({
 
                 <div className="flex flex-wrap gap-3">
                     <TabLink href={tabLinks.branding || '/label'} active={activeTab === 'branding'} icon="bi-palette" label="Branding Settings" />
-                    <TabLink href={tabLinks.reports || '/label/reports'} active={activeTab === 'reports'} icon="bi-people" label="Client Reports" />
-                    {tabLinks.preview && (
+                    {profilesTableExists && <TabLink href={tabLinks.reports || '/label/reports'} active={activeTab === 'reports'} icon="bi-people" label="Client Reports" />}
+                    {profilesTableExists && tabLinks.preview && (
                         <TabLink href={tabLinks.preview} active={activeTab === 'preview'} icon="bi-file-earmark-text" label="Report Preview" />
                     )}
                 </div>

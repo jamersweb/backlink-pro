@@ -797,7 +797,7 @@ export default function AuditReportView({ audit }) {
     const [exportingPdf, exportPdf] = useExportPdf(audit?.id);
 
     if (audit?.branding?.enabled) {
-        return <BrandedAuditReportView audit={audit} exportingPdf={exportingPdf} onExportPdf={exportPdf} />;
+        return <BrandedAuditReportView report={audit?.white_label_report} audit={audit} exportingPdf={exportingPdf} onExportPdf={exportPdf} />;
     }
 
     const overallScore = audit?.overall_score ?? 0;
