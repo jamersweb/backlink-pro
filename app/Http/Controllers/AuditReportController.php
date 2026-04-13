@@ -398,27 +398,27 @@ class AuditReportController extends Controller
             return null;
         }
 
-        $branding = $audit->organization?->brandingProfile;
-
-        if (! $branding || ! $branding->white_label_enabled) {
+        if (! $audit->organization) {
             return null;
         }
 
+        $branding = $audit->organization?->brandingProfile;
+
         return [
             'enabled' => true,
-            'company_name' => $branding->brand_name ?: ($audit->organization?->name ?? null),
-            'website' => $branding->website ?: $audit->normalized_url,
-            'footer_text' => $branding->report_footer_text,
-            'logo_url' => $branding->logo_path ? Storage::disk('public')->url($branding->logo_path) : null,
-            'primary_color' => $branding->primary_color,
-            'secondary_color' => $branding->secondary_color,
-            'support_email' => $branding->support_email,
-            'support_phone' => $branding->support_phone,
-            'company_address' => $branding->company_address,
-            'report_period_days' => (int) ($branding->report_period_days ?: 30),
-            'report_sections' => $branding->report_sections_json ?: [],
-            'use_custom_cover_title' => (bool) $branding->use_custom_cover_title,
-            'custom_cover_title' => $branding->custom_cover_title,
+            'company_name' => $branding?->brand_name ?: ($audit->organization?->name ?? null),
+            'website' => $branding?->website ?: $audit->normalized_url,
+            'footer_text' => $branding?->report_footer_text ?: 'Prepared for your client using your saved Label branding.',
+            'logo_url' => $branding?->logo_path ? Storage::disk('public')->url($branding->logo_path) : null,
+            'primary_color' => $branding?->primary_color ?: '#FF5626',
+            'secondary_color' => $branding?->secondary_color ?: '#1C1B1B',
+            'support_email' => $branding?->support_email,
+            'support_phone' => $branding?->support_phone,
+            'company_address' => $branding?->company_address,
+            'report_period_days' => (int) ($branding?->report_period_days ?: 30),
+            'report_sections' => $branding?->report_sections_json ?: [],
+            'use_custom_cover_title' => (bool) ($branding?->use_custom_cover_title),
+            'custom_cover_title' => $branding?->custom_cover_title,
         ];
     }
 
@@ -693,16 +693,6 @@ class AuditReportController extends Controller
 
     private function canUseWhiteLabelForAudit(?Organization $organization): bool
     {
-        if (! $organization) {
-            return false;
-        }
-
-        $branding = $organization->brandingProfile;
-
-        if ($branding?->white_label_enabled) {
-            return true;
-        }
-
-        return app(PlanLimiter::class)->canUseWhiteLabel($organization);
+        return (bool) $organization;
     }
 }
