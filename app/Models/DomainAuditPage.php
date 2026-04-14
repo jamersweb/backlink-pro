@@ -12,6 +12,8 @@ class DomainAuditPage extends Model
         'domain_audit_id',
         'url',
         'path',
+        'crawl_depth',
+        'discovered_from_url',
         'status_code',
         'final_url',
         'response_time_ms',
@@ -22,15 +24,18 @@ class DomainAuditPage extends Model
         'robots_meta',
         'h1_count',
         'word_count',
+        'outlinks_count',
         'is_indexable',
         'issues_count',
     ];
 
     protected $casts = [
         'status_code' => 'integer',
+        'crawl_depth' => 'integer',
         'response_time_ms' => 'integer',
         'h1_count' => 'integer',
         'word_count' => 'integer',
+        'outlinks_count' => 'integer',
         'is_indexable' => 'boolean',
         'issues_count' => 'integer',
     ];

@@ -652,6 +652,8 @@ Route::middleware(['auth', 'verified'])->group(function(){
             
             // Rank Tracking
             Route::get('/seo/rankings', [\App\Http\Controllers\RankTrackingController::class, 'index'])->name('seo.rankings.index');
+            Route::post('/seo/rankings', [\App\Http\Controllers\RankTrackingController::class, 'store'])->name('seo.rankings.store');
+            Route::post('/seo/rankings/items/{item}/toggle-save', [\App\Http\Controllers\RankTrackingController::class, 'toggleSave'])->name('seo.rankings.items.toggle-save');
             Route::post('/seo/rank-projects', [\App\Http\Controllers\RankTrackingController::class, 'createProject'])->name('seo.rank-projects.create');
             Route::get('/seo/rank-projects/{project}', [\App\Http\Controllers\RankTrackingController::class, 'showProject'])->name('seo.rank-projects.show');
             Route::post('/seo/rank-projects/{project}/keywords', [\App\Http\Controllers\RankTrackingController::class, 'addKeywords'])->name('seo.rank-projects.keywords');
@@ -701,6 +703,8 @@ Route::middleware(['auth', 'verified'])->group(function(){
             
             // Rank Tracking
             Route::get('/seo/rankings', [\App\Http\Controllers\RankTrackingController::class, 'index'])->name('seo.rankings.index');
+            Route::post('/seo/rankings', [\App\Http\Controllers\RankTrackingController::class, 'store'])->name('seo.rankings.store');
+            Route::post('/seo/rankings/items/{item}/toggle-save', [\App\Http\Controllers\RankTrackingController::class, 'toggleSave'])->name('seo.rankings.items.toggle-save');
             Route::post('/seo/rank-projects', [\App\Http\Controllers\RankTrackingController::class, 'createProject'])->name('seo.rank-projects.create');
             Route::get('/seo/rank-projects/{project}', [\App\Http\Controllers\RankTrackingController::class, 'showProject'])->name('seo.rank-projects.show');
             Route::post('/seo/rank-projects/{project}/keywords', [\App\Http\Controllers\RankTrackingController::class, 'addKeywords'])->name('seo.rank-projects.keywords');

@@ -9,6 +9,11 @@ class UrlNormalizer
      */
     public static function normalize(string $url, string $baseHost): ?string
     {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
         // Parse the URL
         $parsed = parse_url($url);
         
@@ -34,19 +39,14 @@ class UrlNormalizer
             return null;
         }
 
-        // Normalize host (lowercase, remove www.)
+        // Normalize host casing only. Keep www/non-www as provided.
         $host = strtolower($host);
-        if (strpos($host, 'www.') === 0) {
-            $host = substr($host, 4);
-        }
 
-        // Only allow same host
+        // Only allow same host or its www/non-www alternate.
         $baseHostNormalized = strtolower($baseHost);
-        if (strpos($baseHostNormalized, 'www.') === 0) {
-            $baseHostNormalized = substr($baseHostNormalized, 4);
-        }
+        $alternateHost = self::alternateHost($baseHostNormalized);
 
-        if ($host !== $baseHostNormalized) {
+        if ($host !== $baseHostNormalized && $host !== $alternateHost) {
             return null;
         }
 
@@ -92,6 +92,15 @@ class UrlNormalizer
     {
         $normalized = self::normalize($url, $baseHost);
         return $normalized !== null;
+    }
+
+    protected static function alternateHost(string $host): string
+    {
+        if (str_starts_with($host, 'www.')) {
+            return substr($host, 4);
+        }
+
+        return 'www.' . $host;
     }
 }
 

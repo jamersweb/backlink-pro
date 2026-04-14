@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DomainAccess extends Model
 {
+    /**
+     * Legacy table name kept singular in migration.
+     */
+    protected $table = 'domain_access';
+
     protected $fillable = [
         'domain_id',
         'team_id',

@@ -381,6 +381,7 @@ class AuditReportController extends Controller
             
             // PSI shortcuts
             'psi' => \Illuminate\Support\Arr::get($kpis, 'google.pagespeed'),
+            'crux' => \Illuminate\Support\Arr::get($kpis, 'google.crux'),
             
             // GA4 data
             'ga4' => $kpis['ga4'] ?? null,

@@ -106,6 +106,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Project::class);
     }
 
+    public function keywordResearchRuns()
+    {
+        return $this->hasMany(KeywordResearchRun::class);
+    }
+
     public function connectedAccounts()
     {
         return $this->hasMany(ConnectedAccount::class);

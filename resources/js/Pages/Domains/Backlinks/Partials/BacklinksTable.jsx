@@ -34,6 +34,9 @@ export default function BacklinksTable({ backlinks }) {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Target URL</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Anchor</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rel</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quality</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">TLD</th>
                     </tr>
                 </thead>
@@ -58,6 +61,15 @@ export default function BacklinksTable({ backlinks }) {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 {getRelBadge(backlink.rel)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {backlink.risk_score ?? 0}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {backlink.quality_score ?? 0}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {backlink.action_status || 'keep'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {backlink.tld || '-'}

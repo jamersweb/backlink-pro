@@ -150,6 +150,85 @@ class Ga4Service
             throw $e;
         }
     }
+
+    /**
+     * Run top traffic sources report
+     */
+    public function runTopSourcesReport(string $propertyId, \DateTime $startDate, \DateTime $endDate, int $limit = 250): array
+    {
+        try {
+            $request = new \Google_Service_AnalyticsData_RunReportRequest();
+            $request->setDateRanges([
+                new \Google_Service_AnalyticsData_DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ]);
+            $request->setDimensions([
+                new \Google_Service_AnalyticsData_Dimension(['name' => 'sessionSourceMedium']),
+            ]);
+            $request->setMetrics([
+                new \Google_Service_AnalyticsData_Metric(['name' => 'sessions']),
+                new \Google_Service_AnalyticsData_Metric(['name' => 'activeUsers']),
+            ]);
+            $request->setLimit($limit);
+
+            $response = $this->dataService->properties->runReport($propertyId, $request);
+            $rows = $response->getRows();
+
+            $sources = [];
+            foreach ($rows as $row) {
+                $dimensionValues = $row->getDimensionValues();
+                $metricValues = $row->getMetricValues();
+
+                $sources[] = [
+                    'source_medium' => $dimensionValues[0]->getValue(),
+                    'sessions' => (int) $metricValues[0]->getValue(),
+                    'active_users' => (int) $metricValues[1]->getValue(),
+                ];
+            }
+
+            return $sources;
+        } catch (\Exception $e) {
+            Log::warning('GA4 source report using fallback dimension', [
+                'error' => $e->getMessage(),
+                'property_id' => $propertyId,
+            ]);
+
+            $request = new \Google_Service_AnalyticsData_RunReportRequest();
+            $request->setDateRanges([
+                new \Google_Service_AnalyticsData_DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ]);
+            $request->setDimensions([
+                new \Google_Service_AnalyticsData_Dimension(['name' => 'sourceMedium']),
+            ]);
+            $request->setMetrics([
+                new \Google_Service_AnalyticsData_Metric(['name' => 'sessions']),
+                new \Google_Service_AnalyticsData_Metric(['name' => 'activeUsers']),
+            ]);
+            $request->setLimit($limit);
+
+            $response = $this->dataService->properties->runReport($propertyId, $request);
+            $rows = $response->getRows();
+
+            $sources = [];
+            foreach ($rows as $row) {
+                $dimensionValues = $row->getDimensionValues();
+                $metricValues = $row->getMetricValues();
+
+                $sources[] = [
+                    'source_medium' => $dimensionValues[0]->getValue(),
+                    'sessions' => (int) $metricValues[0]->getValue(),
+                    'active_users' => (int) $metricValues[1]->getValue(),
+                ];
+            }
+
+            return $sources;
+        }
+    }
 }
 
 

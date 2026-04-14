@@ -240,4 +240,43 @@ class GoogleClient
 
         return $response->json()['rows'] ?? [];
     }
+
+    /**
+     * Fetch GA4 top traffic sources
+     */
+    public function fetchGa4TopSources(string $propertyId, string $startDate, string $endDate, int $limit = 100): array
+    {
+        $token = $this->getAccessToken();
+
+        $payload = [
+            'dateRanges' => [
+                ['startDate' => $startDate, 'endDate' => $endDate],
+            ],
+            'dimensions' => [
+                ['name' => 'sessionSourceMedium'],
+            ],
+            'metrics' => [
+                ['name' => 'sessions'],
+                ['name' => 'activeUsers'],
+            ],
+            'limit' => $limit,
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->post("https://analyticsdata.googleapis.com/v1beta/properties/{$propertyId}:runReport", $payload);
+
+        if (!$response->successful()) {
+            $payload['dimensions'] = [['name' => 'sourceMedium']];
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$token}",
+            ])->post("https://analyticsdata.googleapis.com/v1beta/properties/{$propertyId}:runReport", $payload);
+        }
+
+        if (!$response->successful()) {
+            throw new \Exception("Failed to fetch GA4 sources: " . $response->body());
+        }
+
+        return $response->json()['rows'] ?? [];
+    }
 }

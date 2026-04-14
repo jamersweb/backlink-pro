@@ -405,7 +405,21 @@ class RunSeoAuditJob implements ShouldQueue
                 return;
             }
 
-            $propertyId = $properties[0]['propertyName'];
+            $selectedPropertyId = data_get($audit->audit_kpis, 'ga4.selected_property_id')
+                ?: data_get($audit->audit_kpis, 'ga4.property_id');
+            $propertyId = $selectedPropertyId ?: ($properties[0]['propertyName'] ?? null);
+            if ($propertyId && !str_starts_with($propertyId, 'properties/')) {
+                $propertyId = 'properties/' . $propertyId;
+            }
+            if (!$propertyId) {
+                $kpis['ga4'] = ['connected' => true, 'message' => 'No GA4 property selected', 'data' => null];
+                return;
+            }
+
+            $selectedProperty = collect($properties)->first(function ($property) use ($propertyId) {
+                return ($property['propertyName'] ?? null) === $propertyId;
+            }) ?: $properties[0];
+
             $endDate = new \DateTime('now');
             $startDate = (clone $endDate)->modify('-' . $this->resolveReportPeriodDays($audit) . ' days');
 
@@ -417,13 +431,21 @@ class RunSeoAuditJob implements ShouldQueue
             } catch (\Exception $e) {
                 Log::warning('GA4 landing pages failed', ['error' => $e->getMessage()]);
             }
+            $topSources = [];
+            try {
+                $topSources = $ga4->runTopSourcesReport($propertyId, $startDate, $endDate, 20);
+            } catch (\Exception $e) {
+                Log::warning('GA4 top sources failed', ['error' => $e->getMessage()]);
+            }
 
             $totalSessions = array_sum(array_column($dailyMetrics, 'sessions'));
             $totalUsers = array_sum(array_column($dailyMetrics, 'total_users'));
 
             $kpis['ga4'] = [
                 'connected' => true,
-                'property' => $properties[0]['displayName'] ?? $propertyId,
+                'property' => $selectedProperty['displayName'] ?? $propertyId,
+                'property_id' => $propertyId,
+                'selected_property_id' => $propertyId,
                 'period' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
                 'summary' => [
                     'total_sessions' => $totalSessions,
@@ -432,6 +454,7 @@ class RunSeoAuditJob implements ShouldQueue
                 ],
                 'daily' => $dailyMetrics,
                 'top_pages' => $landingPages,
+                'top_sources' => $topSources,
             ];
         } catch (\Exception $e) {
             Log::warning('GA4 integration failed, continuing', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);

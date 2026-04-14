@@ -1,21 +1,47 @@
 import { Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AppLayout from '@/Components/Layout/AppLayout';
 import Card from '@/Components/Shared/Card';
 import Button from '@/Components/Shared/Button';
 import AuditSummaryCards from './Partials/AuditSummaryCards';
 import IssuesTable from './Partials/IssuesTable';
 import PagesTable from './Partials/PagesTable';
+import PerformanceTab from './Partials/PerformanceTab';
 
-export default function AuditsShow({ domain, audit, pages, issues, issueTypes, filters }) {
+const TABS = [
+    { id: 'issues', label: 'Issues' },
+    { id: 'pages', label: 'Pages' },
+    { id: 'performance', label: 'Performance' },
+];
+
+export default function AuditsShow({
+    domain,
+    audit,
+    pages,
+    issues,
+    issueTypes = [],
+    issueGroups = [],
+    stats = {},
+    topFixes = [],
+    selectedPage = null,
+    performanceSummary = {},
+    hasPageSpeedApiKey = false,
+    filters,
+}) {
     const [activeTab, setActiveTab] = useState(filters.tab || 'issues');
+
+    const tabCounts = useMemo(() => ({
+        issues: issues?.total ?? issueGroups.reduce((sum, item) => sum + (item.total || 0), 0),
+        pages: pages?.total ?? stats.total_urls_crawled ?? 0,
+        performance: performanceSummary.total_rows ?? (audit.metrics?.length || 0),
+    }), [issues?.total, issueGroups, pages?.total, stats.total_urls_crawled, performanceSummary.total_rows, audit.metrics]);
 
     const handleTabChange = (tab) => {
         setActiveTab(tab);
-        router.get(`/domains/${domain.id}/audits/${audit.id}`, { tab }, { preserveState: true, replace: true });
+        router.get(`/domains/${domain.id}/audits/${audit.id}`, { ...filters, tab }, { preserveState: true, replace: true });
     };
 
-    const getStatusBadge = (status) => {
+    const statusBadge = (status) => {
         const colors = {
             queued: 'bg-gray-100 text-gray-800',
             running: 'bg-blue-100 text-blue-800',
@@ -29,11 +55,8 @@ export default function AuditsShow({ domain, audit, pages, issues, issueTypes, f
         );
     };
 
-    const formatDuration = (startedAt, finishedAt) => {
-        if (!startedAt || !finishedAt) return '-';
-        const start = new Date(startedAt);
-        const end = new Date(finishedAt);
-        const seconds = Math.floor((end - start) / 1000);
+    const formatDuration = (seconds) => {
+        if (!seconds && seconds !== 0) return '-';
         if (seconds < 60) return `${seconds}s`;
         const minutes = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -41,9 +64,8 @@ export default function AuditsShow({ domain, audit, pages, issues, issueTypes, f
     };
 
     return (
-        <AppLayout header="Audit Details">
+        <AppLayout header="Audit Details" subtitle="Technical SEO crawl workspace">
             <div className="space-y-6">
-                {/* Breadcrumb */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Link href="/domains" className="hover:text-gray-900">Domains</Link>
                     <span>/</span>
@@ -54,174 +76,97 @@ export default function AuditsShow({ domain, audit, pages, issues, issueTypes, f
                     <span className="text-gray-900">#{audit.id}</span>
                 </div>
 
-                {/* Header */}
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Audit #{audit.id}</h1>
-                        <div className="flex items-center gap-2 mt-2">
-                            {getStatusBadge(audit.status)}
-                            <span className="text-sm text-gray-500">
-                                Started: {audit.started_at ? new Date(audit.started_at).toLocaleString() : '-'}
-                            </span>
-                            {audit.finished_at && (
-                                <>
-                                    <span className="text-gray-400">•</span>
-                                    <span className="text-sm text-gray-500">
-                                        Duration: {formatDuration(audit.started_at, audit.finished_at)}
-                                    </span>
-                                </>
+                <Card className="border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(20,20,20,0.98),rgba(8,8,8,1))]">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                        <div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <h1 className="text-2xl font-bold text-white">Audit #{audit.id}</h1>
+                                {statusBadge(audit.status)}
+                            </div>
+                            <p className="text-sm text-[rgba(255,255,255,0.65)] mt-2">
+                                Domain: <span className="text-white font-medium">{audit.domain_host || domain.host || domain.name}</span>
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-4 text-xs text-[rgba(255,255,255,0.72)]">
+                                <div>Started: <span className="text-white">{audit.started_at ? new Date(audit.started_at).toLocaleString() : '-'}</span></div>
+                                <div>Finished: <span className="text-white">{audit.finished_at ? new Date(audit.finished_at).toLocaleString() : '-'}</span></div>
+                                <div>Duration: <span className="text-white">{formatDuration(audit.duration_seconds)}</span></div>
+                                <div>Health Score: <span className="text-white">{audit.health_score ?? '-'}</span></div>
+                                <div>Crawl Limit: <span className="text-white">{audit.settings_json?.crawl_limit ?? '-'}</span></div>
+                                <div>Max Depth: <span className="text-white">{audit.settings_json?.max_depth ?? '-'}</span></div>
+                                <div>Include Sitemap: <span className="text-white">{audit.settings_json?.include_sitemap ? 'Yes' : 'No'}</span></div>
+                                <div>Include CWV: <span className="text-white">{audit.settings_json?.include_cwv ? 'Yes' : 'No'}</span></div>
+                            </div>
+                            {audit.status === 'failed' && (
+                                <div className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                                    Crawl failed: {audit.error_message || 'Unexpected failure while processing this audit.'}
+                                </div>
                             )}
                         </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Link href={`/domains/${domain.id}/audits/${audit.id}/export`}>
+                                <Button variant="outline" className="bp-btn-secondary"><i className="bi bi-download"></i> Export CSV</Button>
+                            </Link>
+                            <Link href={`/domains/${domain.id}/audits`}>
+                                <Button variant="outline">Back to Audits</Button>
+                            </Link>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href={`/domains/${domain.id}/audits/${audit.id}/export`}>
-                            <Button variant="outline" className="bp-btn-secondary"><i className="bi bi-download"></i> Export CSV</Button>
-                        </Link>
-                        <Link href={`/domains/${domain.id}/audits`}>
-                            <Button variant="outline">Back to Audits</Button>
-                        </Link>
-                    </div>
-                </div>
+                </Card>
 
-                {/* Summary Cards */}
-                {audit.status === 'completed' && <AuditSummaryCards audit={audit} />}
+                {audit.status === 'completed' && (
+                    <AuditSummaryCards
+                        audit={audit}
+                        stats={stats}
+                        topFixes={topFixes}
+                    />
+                )}
 
-                {/* Tabs */}
                 <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                        {[
-                            { id: 'issues', label: 'Issues' },
-                            { id: 'pages', label: 'Pages' },
-                            { id: 'performance', label: 'Performance' },
-                        ].map((tab) => (
+                    <nav className="-mb-px flex gap-5 overflow-x-auto" aria-label="Tabs">
+                        {TABS.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id)}
-                                className={`
-                                    whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-                                    ${activeTab === tab.id
+                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === tab.id
                                         ? 'border-gray-900 text-gray-900'
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }
-                                `}
+                                }`}
                             >
-                                {tab.label}
+                                {tab.label} <span className="text-xs text-gray-400">({tabCounts[tab.id] ?? 0})</span>
                             </button>
                         ))}
                     </nav>
                 </div>
 
-                {/* Tab Content */}
-                <div className="mt-6">
-                    {activeTab === 'issues' && (
-                        <IssuesTable
-                            audit={audit}
-                            issues={issues}
-                            issueTypes={issueTypes}
-                            filters={filters}
-                        />
-                    )}
+                {activeTab === 'issues' && (
+                    <IssuesTable
+                        audit={audit}
+                        issues={issues}
+                        issueTypes={issueTypes}
+                        issueGroups={issueGroups}
+                        filters={filters}
+                    />
+                )}
 
-                    {activeTab === 'pages' && (
-                        <PagesTable
-                            audit={audit}
-                            pages={pages}
-                            filters={filters}
-                        />
-                    )}
+                {activeTab === 'pages' && (
+                    <PagesTable
+                        audit={audit}
+                        pages={pages}
+                        issueTypes={issueTypes}
+                        selectedPage={selectedPage}
+                        filters={filters}
+                    />
+                )}
 
-                    {activeTab === 'performance' && (
-                        <PerformanceTab audit={audit} />
-                    )}
-                </div>
+                {activeTab === 'performance' && (
+                    <PerformanceTab
+                        audit={audit}
+                        performanceSummary={performanceSummary}
+                        hasPageSpeedApiKey={hasPageSpeedApiKey}
+                    />
+                )}
             </div>
         </AppLayout>
     );
 }
-
-function PerformanceTab({ audit }) {
-    const hasApiKey = audit.metrics && audit.metrics.length > 0;
-    const metrics = audit.metrics || [];
-
-    return (
-        <Card>
-            {!hasApiKey && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md mb-6">
-                    <p className="text-sm text-yellow-800">
-                        <strong>Note:</strong> Core Web Vitals require PAGESPEED_API_KEY to be configured in your .env file.
-                        {audit.settings_json?.include_cwv && (
-                            <span className="block mt-1">This audit was configured to include CWV, but no API key was found.</span>
-                        )}
-                    </p>
-                </div>
-            )}
-
-            {hasApiKey && metrics.length > 0 ? (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">URL</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Strategy</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">LCP</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">CLS</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">INP</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">FCP</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">TTFB</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {metrics.map((metric) => (
-                                <tr key={metric.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4">
-                                        <a href={metric.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm truncate block max-w-md">
-                                            {metric.url}
-                                        </a>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                                        {metric.strategy}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {metric.performance_score !== null ? (
-                                            <span className={`text-lg font-bold ${
-                                                metric.performance_score >= 90 ? 'text-green-600' :
-                                                metric.performance_score >= 50 ? 'text-yellow-600' :
-                                                'text-red-600'
-                                            }`}>
-                                                {metric.performance_score}
-                                            </span>
-                                        ) : (
-                                            <span className="text-gray-400">-</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {metric.lcp_ms ? `${(metric.lcp_ms / 1000).toFixed(2)}s` : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {metric.cls_x1000 ? (metric.cls_x1000 / 1000).toFixed(3) : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {metric.inp_ms ? `${metric.inp_ms}ms` : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {metric.fcp_ms ? `${(metric.fcp_ms / 1000).toFixed(2)}s` : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {metric.ttfb_ms ? `${metric.ttfb_ms}ms` : '-'}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : hasApiKey ? (
-                <div className="text-center py-12 text-gray-500">
-                    No performance metrics available yet. Metrics are fetched after the audit completes.
-                </div>
-            ) : null}
-        </Card>
-    );
-}
-
-

@@ -10,7 +10,7 @@ import AnchorsTable from './Partials/AnchorsTable';
 import DeltasPanel from './Partials/DeltasPanel';
 import FiltersBar from './Partials/FiltersBar';
 
-export default function BacklinksShow({ domain, run, backlinks, refDomains, anchors, uniqueTlds, filters }) {
+export default function BacklinksShow({ domain, run, backlinks, refDomains, anchors, uniqueTlds, filters, deltaDetails }) {
     const [activeTab, setActiveTab] = useState(filters.tab || 'backlinks');
 
     // Auto-refresh if running/queued
@@ -107,7 +107,7 @@ export default function BacklinksShow({ domain, run, backlinks, refDomains, anch
 
                 {/* Deltas Panel */}
                 {run.status === 'completed' && run.delta && (
-                    <DeltasPanel delta={run.delta} />
+                    <DeltasPanel delta={run.delta} deltaDetails={deltaDetails} />
                 )}
 
                 {/* Tabs */}
@@ -163,7 +163,7 @@ export default function BacklinksShow({ domain, run, backlinks, refDomains, anch
                                 <AnchorsTable anchors={anchors} />
                             )}
                             {activeTab === 'deltas' && run.delta && (
-                                <DeltasPanel delta={run.delta} detailed />
+                                <DeltasPanel delta={run.delta} deltaDetails={deltaDetails} detailed />
                             )}
                         </div>
                     </Card>

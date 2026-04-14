@@ -42,4 +42,12 @@ class Ga4Property extends Model
     {
         return $this->hasMany(Ga4PageMetric::class, 'property_id', 'property_id');
     }
+
+    /**
+     * Get source metrics
+     */
+    public function sourceMetrics(): HasMany
+    {
+        return $this->hasMany(Ga4SourceMetric::class, 'property_id', 'property_id');
+    }
 }

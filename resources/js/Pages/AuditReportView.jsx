@@ -124,6 +124,15 @@ const formatBool = (value) => (value === null || value === undefined ? 'N/A' : v
 const formatMetricSeconds = (value) => (value === null || value === undefined || Number.isNaN(value) ? 'N/A' : `${Number(value).toFixed(2)}s`);
 const formatMegabytes = (value) => (value === null || value === undefined ? 'N/A' : `${Number(value).toFixed(2)} MB`);
 const asArray = (value) => (Array.isArray(value) ? value.filter(Boolean) : []);
+const splitFixSteps = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.filter(Boolean).map((step) => String(step).trim()).filter(Boolean);
+    if (typeof value !== 'string') return [];
+    return value
+        .split(/\r?\n|;|•/g)
+        .map((step) => step.trim())
+        .filter(Boolean);
+};
 const normalizePsiMetrics = (run, fallback = {}) => {
     const metrics = run?.kpis || {};
     const source = Object.keys(metrics).length ? metrics : (fallback || {});
@@ -795,6 +804,21 @@ function AuditExtendedModuleSection({ audit, module: mod }) {
 export default function AuditReportView({ audit }) {
     const [activeTab, setActiveTab] = useState('overview');
     const [exportingPdf, exportPdf] = useExportPdf(audit?.id);
+    const [cruxData, setCruxData] = useState(audit?.crux || audit?.kpis?.google?.crux || null);
+    const [cruxLoading, setCruxLoading] = useState(false);
+    const [cruxError, setCruxError] = useState(null);
+    const [gscData, setGscData] = useState(audit?.gsc || null);
+    const [gscProperties, setGscProperties] = useState([]);
+    const [selectedGscSite, setSelectedGscSite] = useState(audit?.gsc?.selected_site_url || audit?.gsc?.site_url || '');
+    const [gscLoading, setGscLoading] = useState(false);
+    const [gscPropertiesLoading, setGscPropertiesLoading] = useState(false);
+    const [gscError, setGscError] = useState(null);
+    const [ga4Data, setGa4Data] = useState(audit?.ga4 || null);
+    const [ga4Properties, setGa4Properties] = useState([]);
+    const [selectedGa4Property, setSelectedGa4Property] = useState(audit?.ga4?.selected_property_id || audit?.ga4?.property_id || '');
+    const [ga4Loading, setGa4Loading] = useState(false);
+    const [ga4PropertiesLoading, setGa4PropertiesLoading] = useState(false);
+    const [ga4Error, setGa4Error] = useState(null);
 
     if (audit?.branding?.enabled) {
         return <BrandedAuditReportView report={audit?.white_label_report} audit={audit} exportingPdf={exportingPdf} onExportPdf={exportPdf} />;
@@ -819,8 +843,8 @@ export default function AuditReportView({ audit }) {
     const techEmail = kpis.tech_email || {};
     const pageData = audit?.page_data || {};
     const psi = audit?.psi || null;
-    const ga4 = audit?.ga4 || null;
-    const gsc = audit?.gsc || null;
+    const ga4 = ga4Data || null;
+    const gsc = gscData || null;
     const categoryScores = audit?.category_scores || {};
     const reportModules = audit?.report_modules?.modules || [];
     const moduleOrder = audit?.report_modules?.module_order || [];
@@ -852,6 +876,292 @@ export default function AuditReportView({ audit }) {
     const mobileOpportunities = asArray(usability.mobile_opportunities);
     const desktopOpportunities = asArray(usability.desktop_opportunities);
     const securityHeaders = asArray(technical.security_headers_list);
+    const gscDaily = asArray(gsc?.daily);
+    const ga4Daily = asArray(ga4?.daily);
+    const gscTrend = gscDaily.map((row, index) => ({
+        id: `gsc-trend-${index}`,
+        date: row.date || 'N/A',
+        clicks: row.clicks ?? 0,
+        impressions: row.impressions ?? 0,
+    }));
+    const ga4Trend = ga4Daily.map((row, index) => ({
+        id: `ga4-trend-${index}`,
+        date: row.date || 'N/A',
+        sessions: row.sessions ?? 0,
+        users: row.total_users ?? row.users ?? 0,
+        engagement_rate: row.engagement_rate ?? 0,
+    }));
+    const gscIndexCoverage = gsc?.index_coverage || {};
+    const gscIndexCoverageSummary = gscIndexCoverage.summary || {};
+    const gscIndexCoverageIssues = asArray(gscIndexCoverage.issues);
+    const cruxEntries = ['mobile', 'desktop'].map((mode) => ({ mode, payload: cruxData?.[mode] || null }));
+    const priorityFixes = useMemo(() => {
+        const severityRank = { critical: 0, warning: 1, info: 2 };
+        const effortRank = { low: 0, medium: 1, high: 2 };
+        return [...issues]
+            .sort((a, b) => {
+                const aSeverity = severityRank[a.severity] ?? 3;
+                const bSeverity = severityRank[b.severity] ?? 3;
+                if (aSeverity !== bSeverity) return aSeverity - bSeverity;
+                const aPenalty = Number(a.score_penalty ?? 0);
+                const bPenalty = Number(b.score_penalty ?? 0);
+                if (aPenalty !== bPenalty) return bPenalty - aPenalty;
+                const aAffected = Number(a.affected_count ?? a.sample_urls?.length ?? 0);
+                const bAffected = Number(b.affected_count ?? b.sample_urls?.length ?? 0);
+                if (aAffected !== bAffected) return bAffected - aAffected;
+                const aEffort = effortRank[a.effort] ?? 3;
+                const bEffort = effortRank[b.effort] ?? 3;
+                return aEffort - bEffort;
+            })
+            .slice(0, 6);
+    }, [issues]);
+
+    const fetchCrux = async () => {
+        if (!audit?.id) return;
+        setCruxLoading(true);
+        setCruxError(null);
+        try {
+            const res = await fetch(`/audit/${audit.id}/crux`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Failed to fetch Core Web Vitals (${res.status})`);
+            }
+            setCruxData(payload?.crux || null);
+        } catch (error) {
+            setCruxError(error instanceof Error ? error.message : 'Unable to fetch Core Web Vitals data.');
+        } finally {
+            setCruxLoading(false);
+        }
+    };
+
+    const runCrux = async () => {
+        if (!audit?.id) return;
+        setCruxLoading(true);
+        setCruxError(null);
+        try {
+            const res = await fetch(`/audit/${audit.id}/crux/run`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Core Web Vitals run failed (${res.status})`);
+            }
+            setCruxData(payload?.crux || null);
+        } catch (error) {
+            setCruxError(error instanceof Error ? error.message : 'Unable to run Core Web Vitals report.');
+        } finally {
+            setCruxLoading(false);
+        }
+    };
+
+    const fetchGscProperties = async () => {
+        if (!audit?.id) return;
+        setGscPropertiesLoading(true);
+        setGscError(null);
+        try {
+            const res = await fetch(`/audit-report/${audit.id}/gsc/properties`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Unable to load Search Console properties (${res.status})`);
+            }
+            setGscProperties(asArray(payload?.sites));
+            if (payload?.selected_site_url) {
+                setSelectedGscSite(payload.selected_site_url);
+            }
+            if (payload?.connected === false) {
+                setGscError(payload?.message || 'Search Console is not connected.');
+            }
+        } catch (error) {
+            setGscError(error instanceof Error ? error.message : 'Unable to load Search Console properties.');
+        } finally {
+            setGscPropertiesLoading(false);
+        }
+    };
+
+    const saveSelectedGscProperty = async () => {
+        if (!audit?.id || !selectedGscSite) return;
+        setGscLoading(true);
+        setGscError(null);
+        try {
+            const res = await fetch(`/audit-report/${audit.id}/gsc/property`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ site_url: selectedGscSite }),
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Unable to select Search Console property (${res.status})`);
+            }
+        } catch (error) {
+            setGscError(error instanceof Error ? error.message : 'Unable to select Search Console property.');
+        } finally {
+            setGscLoading(false);
+        }
+    };
+
+    const syncGscData = async () => {
+        if (!audit?.id) return;
+        setGscLoading(true);
+        setGscError(null);
+        try {
+            const res = await fetch(`/audit-report/${audit.id}/gsc/sync`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ site_url: selectedGscSite || null }),
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Unable to sync Search Console data (${res.status})`);
+            }
+            setGscData(payload?.gsc || null);
+            if (payload?.gsc?.selected_site_url) {
+                setSelectedGscSite(payload.gsc.selected_site_url);
+            }
+        } catch (error) {
+            setGscError(error instanceof Error ? error.message : 'Unable to sync Search Console data.');
+        } finally {
+            setGscLoading(false);
+        }
+    };
+
+    const fetchGa4Properties = async () => {
+        if (!audit?.id) return;
+        setGa4PropertiesLoading(true);
+        setGa4Error(null);
+        try {
+            const res = await fetch(`/audit-report/${audit.id}/ga4/properties`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Unable to load GA4 properties (${res.status})`);
+            }
+            setGa4Properties(asArray(payload?.properties));
+            if (payload?.selected_property_id) {
+                setSelectedGa4Property(payload.selected_property_id);
+            }
+            if (payload?.connected === false) {
+                setGa4Error(payload?.message || 'Google Analytics is not connected.');
+            }
+        } catch (error) {
+            setGa4Error(error instanceof Error ? error.message : 'Unable to load GA4 properties.');
+        } finally {
+            setGa4PropertiesLoading(false);
+        }
+    };
+
+    const saveSelectedGa4Property = async () => {
+        if (!audit?.id || !selectedGa4Property) return;
+        setGa4Loading(true);
+        setGa4Error(null);
+        try {
+            const res = await fetch(`/audit-report/${audit.id}/ga4/property`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ property_id: selectedGa4Property }),
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Unable to select GA4 property (${res.status})`);
+            }
+        } catch (error) {
+            setGa4Error(error instanceof Error ? error.message : 'Unable to select GA4 property.');
+        } finally {
+            setGa4Loading(false);
+        }
+    };
+
+    const syncGa4Data = async () => {
+        if (!audit?.id) return;
+        setGa4Loading(true);
+        setGa4Error(null);
+        try {
+            const res = await fetch(`/audit-report/${audit.id}/ga4/sync`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ property_id: selectedGa4Property || null }),
+            });
+            const payload = await res.json();
+            if (!res.ok) {
+                throw new Error(payload?.error || `Unable to sync GA4 data (${res.status})`);
+            }
+            setGa4Data(payload?.ga4 || null);
+            if (payload?.ga4?.selected_property_id) {
+                setSelectedGa4Property(payload.ga4.selected_property_id);
+            }
+        } catch (error) {
+            setGa4Error(error instanceof Error ? error.message : 'Unable to sync GA4 data.');
+        } finally {
+            setGa4Loading(false);
+        }
+    };
+
+    useEffect(() => {
+        setCruxData(audit?.crux || audit?.kpis?.google?.crux || null);
+    }, [audit?.crux, audit?.kpis]);
+
+    useEffect(() => {
+        setGscData(audit?.gsc || null);
+        setSelectedGscSite(audit?.gsc?.selected_site_url || audit?.gsc?.site_url || '');
+    }, [audit?.gsc]);
+
+    useEffect(() => {
+        setGa4Data(audit?.ga4 || null);
+        setSelectedGa4Property(audit?.ga4?.selected_property_id || audit?.ga4?.property_id || '');
+    }, [audit?.ga4]);
+
+    useEffect(() => {
+        if (activeTab === 'integrations' && gsc?.connected !== false) {
+            fetchGscProperties();
+        }
+        if (activeTab === 'integrations' && ga4?.connected !== false) {
+            fetchGa4Properties();
+        }
+    }, [activeTab]);
 
     return (
         <AppLayout header="Audit Report">
@@ -996,6 +1306,44 @@ export default function AuditReportView({ audit }) {
                                     ]}
                                     emptyText="No issues were stored for this audit."
                                 />
+                                <Card variant="elevated">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h3 className="text-lg font-semibold text-[var(--admin-text)]">Priority Fixes</h3>
+                                        <span className="text-xs text-[var(--admin-text-dim)]">Sorted by impact and score penalty</span>
+                                    </div>
+                                    {priorityFixes.length ? (
+                                        <div className="mt-4 space-y-3">
+                                            {priorityFixes.map((item) => {
+                                                const fixSteps = splitFixSteps(item.fix_steps);
+                                                return (
+                                                    <div key={item.id} className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-2)] p-4">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <IssueBadge severity={item.severity || 'info'} />
+                                                            <p className="text-sm font-semibold text-[var(--admin-text)]">{item.title || item.message || item.issue_type || 'SEO Issue'}</p>
+                                                        </div>
+                                                        <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
+                                                            {item.recommendation || item.description || item.message || 'No recommendation was stored for this issue.'}
+                                                        </p>
+                                                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--admin-text-dim)]">
+                                                            <span>Penalty: {formatNumber(item.score_penalty)}</span>
+                                                            <span>Affected: {formatNumber(item.affected_count)}</span>
+                                                            <span>Effort: {item.effort || 'N/A'}</span>
+                                                        </div>
+                                                        {fixSteps.length ? (
+                                                            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--admin-text)]">
+                                                                {fixSteps.slice(0, 3).map((step, idx) => (
+                                                                    <li key={`${item.id}-step-${idx}`}>{step}</li>
+                                                                ))}
+                                                            </ul>
+                                                        ) : null}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <SectionMessage>No priority fixes generated because no actionable issues were found.</SectionMessage>
+                                    )}
+                                </Card>
                                 <ExtendedModulesInTab audit={audit} modules={extendedModulesByTab.overview} />
                             </>
                         ) : null}
@@ -1100,6 +1448,63 @@ export default function AuditReportView({ audit }) {
 
                         {activeTab === 'performance' ? (
                             <>
+                                <Card variant="elevated">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <h3 className="text-lg font-semibold text-[var(--admin-text)]">Core Web Vitals (CrUX)</h3>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={fetchCrux}
+                                                disabled={cruxLoading}
+                                                className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)] disabled:opacity-60"
+                                            >
+                                                {cruxLoading ? 'Refreshing...' : 'Refresh'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={runCrux}
+                                                disabled={cruxLoading}
+                                                className="rounded-lg bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                                            >
+                                                {cruxLoading ? 'Running...' : 'Run CrUX'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {cruxError ? <SectionMessage>{cruxError}</SectionMessage> : null}
+                                    {cruxEntries.some((entry) => entry.payload) ? (
+                                        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                            {cruxEntries.map(({ mode, payload }) => {
+                                                const kpis = payload?.kpis || {};
+                                                return (
+                                                    <div key={mode} className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-2)] p-4">
+                                                        <div className="mb-3 flex items-center justify-between gap-2">
+                                                            <p className="text-sm font-semibold capitalize text-[var(--admin-text)]">{mode}</p>
+                                                            <span className="text-xs text-[var(--admin-text-dim)]">
+                                                                {payload?.target_type ? `${payload.target_type} level` : 'No target level'}
+                                                            </span>
+                                                        </div>
+                                                        {payload?.status === 'failed' ? (
+                                                            <SectionMessage>{payload?.error || 'CrUX failed for this device profile.'}</SectionMessage>
+                                                        ) : payload?.status === 'no_data' ? (
+                                                            <SectionMessage>No field data available yet for this profile.</SectionMessage>
+                                                        ) : (
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <MetricCard label="LCP (p75)" value={formatMetricSeconds((kpis.lcp_p75_ms ?? NaN) / 1000)} />
+                                                                <MetricCard label="INP (p75)" value={formatMetricSeconds((kpis.inp_p75_ms ?? NaN) / 1000)} />
+                                                                <MetricCard label="CLS (p75)" value={kpis.cls_p75 ?? 'N/A'} />
+                                                                <MetricCard label="TTFB (p75)" value={formatMetricSeconds((kpis.ttfb_p75_ms ?? NaN) / 1000)} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <SectionMessage>
+                                            Core Web Vitals field data is not available yet. Use Run CrUX after API key setup to fetch real-user metrics.
+                                        </SectionMessage>
+                                    )}
+                                </Card>
                                 {psi ? (
                                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                                         {['mobile', 'desktop'].map((mode) => {
@@ -1168,15 +1573,53 @@ export default function AuditReportView({ audit }) {
                                         <h3 className="text-lg font-semibold text-[var(--admin-text)]">Google Analytics 4</h3>
                                         {ga4?.connected === false ? (
                                             <SectionMessage>{ga4.message || 'GA4 is not connected for this audit.'}</SectionMessage>
-                                        ) : ga4?.summary ? (
-                                            <div className="mt-4 grid grid-cols-2 gap-3">
-                                                <MetricCard label="Sessions" value={formatNumber(ga4.summary.total_sessions)} />
-                                                <MetricCard label="Users" value={formatNumber(ga4.summary.total_users)} />
-                                                <MetricCard label="Engagement Rate" value={ga4.summary.avg_engagement_rate !== undefined ? `${ga4.summary.avg_engagement_rate}%` : 'N/A'} />
-                                                <MetricCard label="Period" value={ga4.period || 'N/A'} />
-                                            </div>
                                         ) : (
-                                            <SectionMessage>GA4 data was not captured for this audit.</SectionMessage>
+                                            <div className="mt-4 space-y-4">
+                                                <div className="flex flex-wrap items-end gap-3">
+                                                    <label className="min-w-[240px] flex-1">
+                                                        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--admin-text-dim)]">Property</span>
+                                                        <select
+                                                            value={selectedGa4Property}
+                                                            onChange={(e) => setSelectedGa4Property(e.target.value)}
+                                                            className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-2 text-sm text-[var(--admin-text)]"
+                                                        >
+                                                            <option value="">{ga4PropertiesLoading ? 'Loading properties...' : 'Select property'}</option>
+                                                            {ga4Properties.map((property) => (
+                                                                <option key={property.propertyName} value={property.propertyName}>
+                                                                    {property.displayName || property.propertyName}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={saveSelectedGa4Property}
+                                                        disabled={!selectedGa4Property || ga4Loading}
+                                                        className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)] disabled:opacity-60"
+                                                    >
+                                                        Save Property
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={syncGa4Data}
+                                                        disabled={ga4Loading}
+                                                        className="rounded-lg bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                                                    >
+                                                        {ga4Loading ? 'Syncing...' : 'Sync GA4'}
+                                                    </button>
+                                                </div>
+                                                {ga4Error ? <SectionMessage>{ga4Error}</SectionMessage> : null}
+                                                {ga4?.summary ? (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <MetricCard label="Sessions" value={formatNumber(ga4.summary.total_sessions)} />
+                                                        <MetricCard label="Users" value={formatNumber(ga4.summary.total_users)} />
+                                                        <MetricCard label="Engagement Rate" value={ga4.summary.avg_engagement_rate !== undefined ? `${ga4.summary.avg_engagement_rate}%` : 'N/A'} />
+                                                        <MetricCard label="Period" value={ga4.period || 'N/A'} />
+                                                    </div>
+                                                ) : (
+                                                    <SectionMessage>GA4 data was not captured for this audit.</SectionMessage>
+                                                )}
+                                            </div>
                                         )}
                                     </Card>
 
@@ -1184,15 +1627,53 @@ export default function AuditReportView({ audit }) {
                                         <h3 className="text-lg font-semibold text-[var(--admin-text)]">Google Search Console</h3>
                                         {gsc?.connected === false ? (
                                             <SectionMessage>{gsc.message || 'GSC is not connected for this audit.'}</SectionMessage>
-                                        ) : gsc?.summary ? (
-                                            <div className="mt-4 grid grid-cols-2 gap-3">
-                                                <MetricCard label="Clicks" value={formatNumber(gsc.summary.total_clicks)} />
-                                                <MetricCard label="Impressions" value={formatNumber(gsc.summary.total_impressions)} />
-                                                <MetricCard label="CTR" value={gsc.summary.avg_ctr !== undefined ? `${gsc.summary.avg_ctr}%` : 'N/A'} />
-                                                <MetricCard label="Avg Position" value={formatNumber(gsc.summary.avg_position)} />
-                                            </div>
                                         ) : (
-                                            <SectionMessage>Search Console data was not captured for this audit.</SectionMessage>
+                                            <div className="mt-4 space-y-4">
+                                                <div className="flex flex-wrap items-end gap-3">
+                                                    <label className="min-w-[240px] flex-1">
+                                                        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-[var(--admin-text-dim)]">Property</span>
+                                                        <select
+                                                            value={selectedGscSite}
+                                                            onChange={(e) => setSelectedGscSite(e.target.value)}
+                                                            className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-2 text-sm text-[var(--admin-text)]"
+                                                        >
+                                                            <option value="">{gscPropertiesLoading ? 'Loading properties...' : 'Select property'}</option>
+                                                            {gscProperties.map((site) => (
+                                                                <option key={site.siteUrl} value={site.siteUrl}>
+                                                                    {site.siteUrl}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={saveSelectedGscProperty}
+                                                        disabled={!selectedGscSite || gscLoading}
+                                                        className="rounded-lg border border-[var(--admin-border)] px-3 py-2 text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)] disabled:opacity-60"
+                                                    >
+                                                        Save Property
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={syncGscData}
+                                                        disabled={gscLoading}
+                                                        className="rounded-lg bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                                                    >
+                                                        {gscLoading ? 'Syncing...' : 'Sync GSC'}
+                                                    </button>
+                                                </div>
+                                                {gscError ? <SectionMessage>{gscError}</SectionMessage> : null}
+                                                {gsc?.summary ? (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <MetricCard label="Clicks" value={formatNumber(gsc.summary.total_clicks)} />
+                                                        <MetricCard label="Impressions" value={formatNumber(gsc.summary.total_impressions)} />
+                                                        <MetricCard label="CTR" value={gsc.summary.avg_ctr !== undefined ? `${gsc.summary.avg_ctr}%` : 'N/A'} />
+                                                        <MetricCard label="Avg Position" value={formatNumber(gsc.summary.avg_position)} />
+                                                    </div>
+                                                ) : (
+                                                    <SectionMessage>Search Console data was not captured for this audit.</SectionMessage>
+                                                )}
+                                            </div>
                                         )}
                                     </Card>
                                 </div>
@@ -1201,7 +1682,7 @@ export default function AuditReportView({ audit }) {
                                         title="Top GA4 Pages"
                                         rows={asArray(ga4?.top_pages)}
                                         columns={[
-                                            { key: 'page_path', label: 'Page' },
+                                            { key: 'page_path', label: 'Page', render: (value, row) => value ?? row.landing_page ?? 'N/A' },
                                             { key: 'sessions', label: 'Sessions', render: (value, row) => formatNumber(value ?? row.views) },
                                             { key: 'total_users', label: 'Users', render: (value, row) => formatNumber(value ?? row.active_users) },
                                         ]}
@@ -1216,6 +1697,74 @@ export default function AuditReportView({ audit }) {
                                             { key: 'impressions', label: 'Impressions', render: (value) => formatNumber(value) },
                                             { key: 'position', label: 'Position', render: (value) => formatNumber(value) },
                                         ]}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    <DataTable
+                                        title="Top GA4 Sources"
+                                        rows={asArray(ga4?.top_sources)}
+                                        columns={[
+                                            { key: 'source_medium', label: 'Source / Medium' },
+                                            { key: 'sessions', label: 'Sessions', render: (value) => formatNumber(value) },
+                                            { key: 'active_users', label: 'Users', render: (value) => formatNumber(value) },
+                                        ]}
+                                        emptyText="No source data captured for this audit."
+                                    />
+                                    <DataTable
+                                        title="GA4 Sessions, Users & Engagement Trend"
+                                        rows={ga4Trend}
+                                        columns={[
+                                            { key: 'date', label: 'Date' },
+                                            { key: 'sessions', label: 'Sessions', render: (value) => formatNumber(value) },
+                                            { key: 'users', label: 'Users', render: (value) => formatNumber(value) },
+                                            { key: 'engagement_rate', label: 'Engagement', render: (value) => `${((Number(value) || 0) * 100).toFixed(1)}%` },
+                                        ]}
+                                        emptyText="No GA4 trend data is available for this period."
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    <DataTable
+                                        title="Top GSC Pages"
+                                        rows={asArray(gsc?.top_pages)}
+                                        columns={[
+                                            { key: 'page', label: 'Page URL' },
+                                            { key: 'clicks', label: 'Clicks', render: (value) => formatNumber(value) },
+                                            { key: 'impressions', label: 'Impressions', render: (value) => formatNumber(value) },
+                                            { key: 'position', label: 'Position', render: (value) => formatNumber(value) },
+                                        ]}
+                                    />
+                                    <DataTable
+                                        title="GSC Clicks & Impressions Trend"
+                                        rows={gscTrend}
+                                        columns={[
+                                            { key: 'date', label: 'Date' },
+                                            { key: 'clicks', label: 'Clicks', render: (value) => formatNumber(value) },
+                                            { key: 'impressions', label: 'Impressions', render: (value) => formatNumber(value) },
+                                        ]}
+                                        emptyText="No trend data is available for this period."
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    <Card variant="elevated">
+                                        <h3 className="text-lg font-semibold text-[var(--admin-text)]">Index Coverage Summary</h3>
+                                        <div className="mt-4 grid grid-cols-2 gap-3">
+                                            <MetricCard label="Inspected URLs" value={formatNumber(gscIndexCoverageSummary.inspected_urls)} />
+                                            <MetricCard label="Indexed" value={formatNumber(gscIndexCoverageSummary.indexed)} />
+                                            <MetricCard label="Not Indexed" value={formatNumber(gscIndexCoverageSummary.not_indexed)} />
+                                            <MetricCard label="Errors" value={formatNumber(gscIndexCoverageSummary.errors)} />
+                                        </div>
+                                    </Card>
+                                    <DataTable
+                                        title="Index Coverage & Errors"
+                                        rows={gscIndexCoverageIssues}
+                                        columns={[
+                                            { key: 'url', label: 'URL' },
+                                            { key: 'severity', label: 'Severity' },
+                                            { key: 'coverage_state', label: 'Coverage' },
+                                            { key: 'indexing_state', label: 'Indexing State' },
+                                            { key: 'message', label: 'Status Message' },
+                                        ]}
+                                        emptyText="No index coverage inspection results found. Run a GSC sync."
                                     />
                                 </div>
 

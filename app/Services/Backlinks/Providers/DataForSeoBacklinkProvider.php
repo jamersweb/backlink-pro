@@ -49,8 +49,18 @@ class DataForSeoBacklinkProvider implements BacklinkProviderInterface
             return [
                 'total_backlinks' => $result['backlinks'] ?? 0,
                 'ref_domains' => $result['referring_domains'] ?? 0,
-                'follow' => $result['referring_domains_nofollow'] ?? 0, // Note: DataForSEO may have different structure
-                'nofollow' => $result['referring_domains_nofollow'] ?? 0,
+                // DataForSEO fields vary by endpoint plan/version, so keep this tolerant.
+                'follow' => $this->pickInt($result, [
+                    'backlinks_dofollow',
+                    'referring_domains_dofollow',
+                    'referring_domains_follow',
+                    'dofollow',
+                ]),
+                'nofollow' => $this->pickInt($result, [
+                    'backlinks_nofollow',
+                    'referring_domains_nofollow',
+                    'nofollow',
+                ]),
             ];
         } catch (\Exception $e) {
             Log::error('DataForSEO fetch summary failed', [
@@ -343,6 +353,20 @@ class DataForSeoBacklinkProvider implements BacklinkProviderInterface
         }
 
         return 'generic';
+    }
+
+    /**
+     * Pick first available integer value from a key list.
+     */
+    protected function pickInt(array $payload, array $keys): int
+    {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $payload) && is_numeric($payload[$key])) {
+                return (int) $payload[$key];
+            }
+        }
+
+        return 0;
     }
 }
 

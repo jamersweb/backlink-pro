@@ -68,6 +68,7 @@ class SeoController extends Controller
                     'date' => $metric->date->format('Y-m-d'),
                     'sessions' => $metric->sessions,
                     'users' => $metric->users,
+                    'engagement_rate' => $metric->engagement_rate,
                     'conversions' => $metric->conversions,
                     'revenue' => $metric->revenue,
                 ];
@@ -164,6 +165,32 @@ class SeoController extends Controller
             ->get();
 
         return response()->json($pages);
+    }
+
+    /**
+     * Get GA4 top sources
+     */
+    public function ga4Sources(Organization $organization, Request $request)
+    {
+        $this->authorize('view', $organization);
+
+        $dateRange = $request->input('date_range', '7');
+        $startDate = Carbon::now()->subDays($dateRange)->format('Y-m-d');
+        $endDate = Carbon::today()->format('Y-m-d');
+
+        $sources = \App\Models\Ga4SourceMetric::where('organization_id', $organization->id)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->select(
+                'source_medium',
+                DB::raw('SUM(sessions) as sessions'),
+                DB::raw('SUM(active_users) as active_users')
+            )
+            ->groupBy('source_medium')
+            ->orderByDesc('sessions')
+            ->limit(100)
+            ->get();
+
+        return response()->json($sources);
     }
 
     /**

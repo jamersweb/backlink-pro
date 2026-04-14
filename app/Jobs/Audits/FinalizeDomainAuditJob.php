@@ -18,7 +18,6 @@ class FinalizeDomainAuditJob implements ShouldQueue
 
     public $timeout = 300; // 5 minutes
     public $tries = 1;
-    public $queue = 'audits';
 
     /**
      * Create a new job instance.
@@ -35,8 +34,23 @@ class FinalizeDomainAuditJob implements ShouldQueue
         $audit = DomainAudit::findOrFail($this->auditId);
 
         try {
+            if ($audit->status !== DomainAudit::STATUS_RUNNING) {
+                return;
+            }
+
+            $pending = $audit->pages()->whereNull('status_code')->count();
+            if ($pending > 0) {
+                // Crawl is still expanding/processing; let crawl jobs re-dispatch finalization.
+                return;
+            }
+
             // Aggregate counts
             $pagesCount = $audit->pages()->count();
+            $indexableCount = $audit->pages()->where('is_indexable', true)->count();
+            $nonIndexableCount = max(0, $pagesCount - $indexableCount);
+            $redirectCount = $audit->pages()->whereBetween('status_code', [300, 399])->count();
+            $status404Count = $audit->pages()->where('status_code', 404)->count();
+            $status5xxCount = $audit->pages()->where('status_code', '>=', 500)->count();
             $criticalCount = $audit->issues()->where('severity', 'critical')->count();
             $warningCount = $audit->issues()->where('severity', 'warning')->count();
             $infoCount = $audit->issues()->where('severity', 'info')->count();
@@ -61,7 +75,13 @@ class FinalizeDomainAuditJob implements ShouldQueue
                 'finished_at' => now(),
                 'health_score' => $healthScore,
                 'summary_json' => [
+                    'urls_discovered' => $pagesCount,
                     'pages_crawled' => $pagesCount,
+                    'indexable_urls' => $indexableCount,
+                    'non_indexable_urls' => $nonIndexableCount,
+                    'redirect_urls' => $redirectCount,
+                    'status_404_urls' => $status404Count,
+                    'status_5xx_urls' => $status5xxCount,
                     'issues_critical' => $criticalCount,
                     'issues_warning' => $warningCount,
                     'issues_info' => $infoCount,

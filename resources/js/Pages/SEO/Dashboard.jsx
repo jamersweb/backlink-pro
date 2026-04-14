@@ -31,6 +31,9 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
     const totalSessions = ga4Metrics?.reduce((sum, m) => sum + (m.sessions || 0), 0) || 0;
     const totalUsers = ga4Metrics?.reduce((sum, m) => sum + (m.users || 0), 0) || 0;
     const totalConversions = ga4Metrics?.reduce((sum, m) => sum + (m.conversions || 0), 0) || 0;
+    const avgEngagementRate = ga4Metrics?.length > 0
+        ? (ga4Metrics.reduce((sum, m) => sum + (m.engagement_rate || 0), 0) / ga4Metrics.length) * 100
+        : 0;
 
     // Prepare chart data
     const gscChartData = gscMetrics?.map(m => ({
@@ -45,6 +48,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
         date: m.date,
         sessions: m.sessions,
         users: m.users,
+        engagementRate: Number((((m.engagement_rate || 0) * 100)).toFixed(2)),
         conversions: m.conversions || 0,
     })) || [];
 
@@ -137,6 +141,54 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                     </Card>
                 </div>
 
+                {/* GA4 KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <div className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">GA4 Sessions</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{totalSessions.toLocaleString()}</p>
+                                </div>
+                                <div className="text-3xl"><i className="bi bi-activity"></i></div>
+                            </div>
+                        </div>
+                    </Card>
+                    <Card>
+                        <div className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">GA4 Users</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{totalUsers.toLocaleString()}</p>
+                                </div>
+                                <div className="text-3xl"><i className="bi bi-people"></i></div>
+                            </div>
+                        </div>
+                    </Card>
+                    <Card>
+                        <div className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Engagement Rate</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{avgEngagementRate.toFixed(2)}%</p>
+                                </div>
+                                <div className="text-3xl"><i className="bi bi-graph-up-arrow"></i></div>
+                            </div>
+                        </div>
+                    </Card>
+                    <Card>
+                        <div className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Conversions</p>
+                                    <p className="text-2xl font-bold text-gray-900 mt-1">{totalConversions.toLocaleString()}</p>
+                                </div>
+                                <div className="text-3xl"><i className="bi bi-bullseye"></i></div>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+
                 {/* Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* GSC Chart */}
@@ -167,7 +219,7 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                     {ga4ChartData.length > 0 && (
                         <Card>
                             <div className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">GA4 Sessions & Users</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">GA4 Sessions, Users & Engagement</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <LineChart data={ga4ChartData}>
                                         <CartesianGrid strokeDasharray="3 3" />
@@ -175,11 +227,13 @@ export default function SeoDashboard({ organization, gscMetrics, ga4Metrics, ale
                                             dataKey="date"
                                             tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                         />
-                                        <YAxis />
+                                        <YAxis yAxisId="left" />
+                                        <YAxis yAxisId="right" orientation="right" />
                                         <Tooltip />
                                         <Legend />
-                                        <Line type="monotone" dataKey="sessions" stroke="#8b5cf6" name="Sessions" />
-                                        <Line type="monotone" dataKey="users" stroke="#f59e0b" name="Users" />
+                                        <Line yAxisId="left" type="monotone" dataKey="sessions" stroke="#8b5cf6" name="Sessions" />
+                                        <Line yAxisId="left" type="monotone" dataKey="users" stroke="#f59e0b" name="Users" />
+                                        <Line yAxisId="right" type="monotone" dataKey="engagementRate" stroke="#10b981" name="Engagement %" />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>

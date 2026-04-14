@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Ga4Property;
 use App\Models\Ga4DailyMetric;
 use App\Models\Ga4PageMetric;
+use App\Models\Ga4SourceMetric;
 use App\Models\OauthConnection;
 use App\Services\SEO\GoogleClient;
 use Illuminate\Bus\Queueable;
@@ -42,7 +43,12 @@ class PullGa4DailyJob implements ShouldQueue
             return;
         }
 
-        $properties = Ga4Property::where('organization_id', $this->organizationId)->get();
+        $properties = Ga4Property::where('organization_id', $this->organizationId)
+            ->where('is_active', true)
+            ->get();
+        if ($properties->isEmpty()) {
+            $properties = Ga4Property::where('organization_id', $this->organizationId)->get();
+        }
         if ($properties->isEmpty()) {
             return;
         }
@@ -56,6 +62,9 @@ class PullGa4DailyJob implements ShouldQueue
                 
                 // Pull top pages
                 $this->pullTopPages($client, $property);
+                
+                // Pull top sources
+                $this->pullTopSources($client, $property);
 
             } catch (\Exception $e) {
                 Log::error("GA4 pull failed for property {$property->property_id}", [
@@ -118,6 +127,33 @@ class PullGa4DailyJob implements ShouldQueue
                 'active_users' => $metrics[1]['value'] ?? 0,
                 'conversions' => isset($metrics[2]['value']) ? (int) $metrics[2]['value'] : null,
             ]);
+        }
+    }
+
+    protected function pullTopSources(GoogleClient $client, Ga4Property $property): void
+    {
+        $data = $client->fetchGa4TopSources($property->property_id, $this->date, $this->date, 100);
+
+        foreach ($data as $row) {
+            $dimensions = $row['dimensionValues'] ?? [];
+            $metrics = $row['metricValues'] ?? [];
+            $sourceMedium = $dimensions[0]['value'] ?? null;
+            if (!$sourceMedium) {
+                continue;
+            }
+
+            Ga4SourceMetric::updateOrCreate(
+                [
+                    'organization_id' => $this->organizationId,
+                    'property_id' => $property->property_id,
+                    'date' => $this->date,
+                    'source_medium' => $sourceMedium,
+                ],
+                [
+                    'sessions' => (int) ($metrics[0]['value'] ?? 0),
+                    'active_users' => (int) ($metrics[1]['value'] ?? 0),
+                ]
+            );
         }
     }
 }
