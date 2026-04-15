@@ -58,6 +58,7 @@ use App\Http\Controllers\AuditReportController;
 use App\Http\Controllers\WhiteLabelReportController;
 use App\Http\Controllers\GoogleOAuthController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\IndexCrawlController;
 use Inertia\Inertia;
 
 
@@ -238,6 +239,12 @@ Route::middleware(['auth', 'verified'])->group(function(){
     // dashboard stays at /dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('projects', ProjectController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+
+    // Index & Crawl
+    Route::prefix('index-crawl')->name('index-crawl.')->group(function () {
+        Route::get('/', [IndexCrawlController::class, 'index'])->name('index');
+        Route::post('/domains', [IndexCrawlController::class, 'storeDomain'])->name('domains.store');
+    });
 
     // Audit Report (User Panel)
     Route::prefix('audit-report')->name('audit-report.')->group(function() {

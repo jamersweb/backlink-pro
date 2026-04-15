@@ -25,6 +25,7 @@ class RankTrackingController extends Controller
 
         $user = $request->user();
         $selectedRunId = $request->integer('run');
+        $requestedProjectId = $request->integer('project_id');
 
         $recentRuns = KeywordResearchRun::query()
             ->where('user_id', $user->id)
@@ -51,6 +52,15 @@ class RankTrackingController extends Controller
             ->where('user_id', $user->id)
             ->orderBy('name')
             ->get(['id', 'name']);
+
+        $projectIds = $projects->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $initialProjectId = in_array($requestedProjectId, $projectIds, true)
+            ? $requestedProjectId
+            : null;
+
+        if (!$initialProjectId && $selectedRun?->project_id && in_array($selectedRun->project_id, $projectIds, true)) {
+            $initialProjectId = $selectedRun->project_id;
+        }
 
         return Inertia::render('SEO/Rankings', [
             'organization' => [
@@ -80,6 +90,7 @@ class RankTrackingController extends Controller
                 'context_text' => $selectedRun->context_text,
                 'summary_text' => $selectedRun->summary_text,
                 'result_count' => $selectedRun->result_count,
+                'project_id' => $selectedRun->project_id,
                 'locale_country' => $selectedRun->locale_country,
                 'locale_language' => $selectedRun->locale_language,
                 'created_at' => $selectedRun->created_at?->toIso8601String(),
@@ -99,6 +110,7 @@ class RankTrackingController extends Controller
                     ];
                 }),
             ] : null,
+            'initialProjectId' => $initialProjectId,
         ]);
     }
 

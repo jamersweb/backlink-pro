@@ -3,8 +3,15 @@ import AppLayout from '@/Components/Layout/AppLayout';
 import Card from '@/Components/Shared/Card';
 import Button from '@/Components/Shared/Button';
 
-export default function SeoRankings({ organization, projects = [], recentRuns = [], selectedRun = null }) {
+export default function SeoRankings({
+    organization,
+    projects = [],
+    recentRuns = [],
+    selectedRun = null,
+    initialProjectId = null,
+}) {
     const { flash } = usePage().props;
+    const resolvedInitialProjectId = initialProjectId ?? selectedRun?.project_id ?? '';
 
     const form = useForm({
         input_type: 'keyword',
@@ -12,7 +19,7 @@ export default function SeoRankings({ organization, projects = [], recentRuns = 
         page_url: '',
         locale_country: '',
         locale_language: '',
-        project_id: '',
+        project_id: resolvedInitialProjectId ? String(resolvedInitialProjectId) : '',
     });
 
     const handleSubmit = (e) => {

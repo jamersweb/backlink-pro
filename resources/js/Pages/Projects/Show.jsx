@@ -4,7 +4,7 @@ import Card from '../../Components/Shared/Card';
 import Button from '../../Components/Shared/Button';
 import Input from '../../Components/Shared/Input';
 
-export default function ProjectShow({ project, googleStatus }) {
+export default function ProjectShow({ project, googleStatus, seoContext = null }) {
     const { flash } = usePage().props;
     const form = useForm({
         name: project.name || '',
@@ -140,6 +140,48 @@ export default function ProjectShow({ project, googleStatus }) {
                         </Card>
 
                         <div className="space-y-6">
+                            <Card className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/12 text-violet-200">
+                                            <i className="bi bi-search text-2xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-semibold text-[#fff7f2]">Keyword Research</h3>
+                                            <p className="mt-2 max-w-lg text-sm leading-6 text-[rgba(255,240,232,0.62)]">
+                                                Generate AI keyword ideas using this project context, then save the best keywords for SEO execution.
+                                            </p>
+                                            <p className="mt-3 text-sm font-medium text-[rgba(255,240,232,0.58)]">
+                                                {seoContext?.organization_id
+                                                    ? 'Ready to open with this project pre-selected.'
+                                                    : 'Connect this account to an organization to enable SEO keyword research.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                                        seoContext?.organization_id
+                                            ? 'border-violet-400/20 bg-violet-500/10 text-violet-200'
+                                            : 'border-amber-400/20 bg-amber-500/10 text-amber-200'
+                                    }`}>
+                                        {seoContext?.organization_id ? 'Enabled' : 'Unavailable'}
+                                    </span>
+                                </div>
+
+                                <div className="mt-6 flex flex-wrap gap-3 border-t border-[rgba(255,110,64,0.12)] pt-5">
+                                    {seoContext?.keyword_research_url ? (
+                                        <Button href={seoContext.keyword_research_url} variant="primary" size="lg" className="rounded-2xl px-6">
+                                            <i className="bi bi-stars mr-2"></i>
+                                            Open Keyword Research
+                                        </Button>
+                                    ) : (
+                                        <Button type="button" variant="secondary" size="lg" className="rounded-2xl px-6" disabled>
+                                            <i className="bi bi-lock mr-2"></i>
+                                            Keyword Research Unavailable
+                                        </Button>
+                                    )}
+                                </div>
+                            </Card>
+
                             {integrationCards.map((integration) => (
                                 <Card key={integration.key} className="border border-[rgba(255,110,64,0.18)] bg-[linear-gradient(180deg,rgba(22,18,18,0.94),rgba(10,10,10,0.98))]" variant="ghost">
                                     <div className="flex flex-wrap items-start justify-between gap-4">

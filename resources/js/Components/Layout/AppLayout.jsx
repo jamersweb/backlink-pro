@@ -29,13 +29,14 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
         return () => document.removeEventListener('click', close);
     }, [profileOpen]);
 
-    const isActive = (path) => url === path || url.startsWith(`${path}/`);
+    const isActive = (path) => url === path || url.startsWith(`${path}/`) || url.startsWith(`${path}?`);
 
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', iconActive: 'bi-grid-1x2-fill' },
         { href: '/projects', label: 'Projects', icon: 'bi-kanban', iconActive: 'bi-kanban-fill' },
         { href: '/campaign', label: 'Campaigns', icon: 'bi-megaphone', iconActive: 'bi-megaphone-fill' },
         { href: '/reports', label: 'Reports', icon: 'bi-bar-chart', iconActive: 'bi-bar-chart-fill' },
+        { href: '/index-crawl', label: 'Index & Crawl', icon: 'bi-diagram-3', iconActive: 'bi-diagram-3-fill' },
         { href: '/audit-report', label: 'Audit Report', icon: 'bi-clipboard-check', iconActive: 'bi-clipboard-check-fill' },
         { href: '/label', label: 'Label', icon: 'bi-file-earmark-richtext', iconActive: 'bi-file-earmark-richtext-fill' },
         { href: '/settings', label: 'Settings', icon: 'bi-gear', iconActive: 'bi-gear-fill' },
