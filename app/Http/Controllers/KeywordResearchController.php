@@ -266,6 +266,16 @@ class KeywordResearchController extends Controller
 
     protected function keywordStorageReady(): bool
     {
-        return Schema::hasTable('keyword_research_runs') && Schema::hasTable('keyword_research_items');
+        try {
+            foreach (['keyword_research_runs', 'keyword_research_items'] as $table) {
+                if (!Schema::hasTable($table)) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

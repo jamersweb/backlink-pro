@@ -8,16 +8,33 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('keyword_research_items')) {
+            return;
+        }
+
         Schema::table('keyword_research_items', function (Blueprint $table) {
-            $table->decimal('keyword_density_pct', 5, 2)->nullable()->after('business_relevance_score');
-            $table->unsignedInteger('keyword_traffic')->nullable()->after('keyword_density_pct');
+            if (!Schema::hasColumn('keyword_research_items', 'keyword_density_pct')) {
+                $table->decimal('keyword_density_pct', 5, 2)->nullable()->after('business_relevance_score');
+            }
+            if (!Schema::hasColumn('keyword_research_items', 'keyword_traffic')) {
+                $table->unsignedInteger('keyword_traffic')->nullable()->after('keyword_density_pct');
+            }
         });
     }
 
     public function down(): void
     {
+        if (!Schema::hasTable('keyword_research_items')) {
+            return;
+        }
+
         Schema::table('keyword_research_items', function (Blueprint $table) {
-            $table->dropColumn(['keyword_density_pct', 'keyword_traffic']);
+            if (Schema::hasColumn('keyword_research_items', 'keyword_density_pct')) {
+                $table->dropColumn('keyword_density_pct');
+            }
+            if (Schema::hasColumn('keyword_research_items', 'keyword_traffic')) {
+                $table->dropColumn('keyword_traffic');
+            }
         });
     }
 };
