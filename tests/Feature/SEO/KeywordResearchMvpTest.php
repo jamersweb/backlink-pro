@@ -6,7 +6,6 @@ use App\Models\KeywordResearchItem;
 use App\Models\KeywordResearchRun;
 use App\Models\Organization;
 use App\Models\OrganizationUser;
-use App\Models\Project;
 use App\Models\User;
 use App\Services\AI\LLMClient;
 use App\Services\AI\LLMResponse;
@@ -22,9 +21,7 @@ class KeywordResearchMvpTest extends TestCase
     {
         [$user, $organization] = $this->makeUserWithOrganization();
 
-        $response = $this->actingAs($user)->get(route('orgs.seo.rankings.index', [
-            'organization' => $organization->id,
-        ]));
+        $response = $this->actingAs($user)->get(route('keyword-research.index'));
 
         $response->assertOk();
     }
@@ -34,9 +31,7 @@ class KeywordResearchMvpTest extends TestCase
         [$user, $organization] = $this->makeUserWithOrganization();
         $this->mockAiJsonResponse();
 
-        $response = $this->actingAs($user)->post(route('orgs.seo.rankings.store', [
-            'organization' => $organization->id,
-        ]), [
+        $response = $this->actingAs($user)->post(route('keyword-research.store'), [
             'input_type' => 'keyword',
             'input_text' => 'gym management software',
             'locale_country' => 'PK',
@@ -57,9 +52,7 @@ class KeywordResearchMvpTest extends TestCase
         [$user, $organization] = $this->makeUserWithOrganization();
         $this->mockAiJsonResponse();
 
-        $response = $this->actingAs($user)->post(route('orgs.seo.rankings.store', [
-            'organization' => $organization->id,
-        ]), [
+        $response = $this->actingAs($user)->post(route('keyword-research.store'), [
             'input_type' => 'product',
             'input_text' => 'I provide salon booking software for small businesses',
         ]);
@@ -76,9 +69,7 @@ class KeywordResearchMvpTest extends TestCase
         [$user, $organization] = $this->makeUserWithOrganization();
         $this->mockAiJsonResponse();
 
-        $response = $this->actingAs($user)->post(route('orgs.seo.rankings.store', [
-            'organization' => $organization->id,
-        ]), [
+        $response = $this->actingAs($user)->post(route('keyword-research.store'), [
             'input_type' => 'page',
             'page_url' => 'https://example.com/services/seo',
         ]);
@@ -94,24 +85,16 @@ class KeywordResearchMvpTest extends TestCase
     public function test_keyword_research_run_and_items_are_saved(): void
     {
         [$user, $organization] = $this->makeUserWithOrganization();
-        $project = Project::create([
-            'user_id' => $user->id,
-            'name' => 'Test Project',
-            'project_url' => 'https://example.com',
-        ]);
         $this->mockAiJsonResponse();
 
-        $this->actingAs($user)->post(route('orgs.seo.rankings.store', [
-            'organization' => $organization->id,
-        ]), [
+        $this->actingAs($user)->post(route('keyword-research.store'), [
             'input_type' => 'keyword',
             'input_text' => 'email marketing tools',
-            'project_id' => $project->id,
         ])->assertSessionHasNoErrors();
 
         $run = KeywordResearchRun::query()->where('user_id', $user->id)->first();
         $this->assertNotNull($run);
-        $this->assertSame($project->id, $run->project_id);
+        $this->assertNull($run->project_id);
         $this->assertGreaterThan(0, KeywordResearchItem::query()->where('run_id', $run->id)->count());
     }
 
@@ -120,9 +103,7 @@ class KeywordResearchMvpTest extends TestCase
         [$user, $organization] = $this->makeUserWithOrganization();
         $this->mockAiInvalidResponse();
 
-        $this->actingAs($user)->post(route('orgs.seo.rankings.store', [
-            'organization' => $organization->id,
-        ]), [
+        $this->actingAs($user)->post(route('keyword-research.store'), [
             'input_type' => 'keyword',
             'input_text' => 'local dentist marketing',
         ])->assertSessionHasNoErrors();
@@ -151,8 +132,7 @@ class KeywordResearchMvpTest extends TestCase
             'normalized_keyword' => 'best seo tools',
         ]);
 
-        $this->actingAs($user)->post(route('orgs.seo.rankings.items.toggle-save', [
-            'organization' => $organization->id,
+        $this->actingAs($user)->post(route('keyword-research.items.toggle-save', [
             'item' => $item->id,
         ]))->assertSessionHas('success');
 
@@ -184,13 +164,11 @@ class KeywordResearchMvpTest extends TestCase
             'normalized_keyword' => 'private keyword',
         ]);
 
-        $this->actingAs($other)->get(route('orgs.seo.rankings.index', [
-            'organization' => $organization->id,
+        $this->actingAs($other)->get(route('keyword-research.index', [
             'run' => $run->id,
         ]))->assertNotFound();
 
-        $this->actingAs($other)->post(route('orgs.seo.rankings.items.toggle-save', [
-            'organization' => $organization->id,
+        $this->actingAs($other)->post(route('keyword-research.items.toggle-save', [
             'item' => $item->id,
         ]))->assertForbidden();
     }

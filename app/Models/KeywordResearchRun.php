@@ -10,7 +10,6 @@ class KeywordResearchRun extends Model
 {
     protected $fillable = [
         'user_id',
-        'project_id',
         'input_type',
         'seed_query',
         'seed_url',
@@ -25,11 +24,6 @@ class KeywordResearchRun extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
     }
 
     public function items(): HasMany

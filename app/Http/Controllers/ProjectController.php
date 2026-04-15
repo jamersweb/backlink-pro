@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ConnectedAccount;
 use App\Models\Project;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -115,13 +114,6 @@ class ProjectController extends Controller
             ->active()
             ->latest()
             ->first();
-        $defaultOrganizationId = $this->resolveDefaultOrganizationId($user);
-        $keywordResearchUrl = $defaultOrganizationId
-            ? route('orgs.seo.rankings.index', [
-                'organization' => $defaultOrganizationId,
-                'project_id' => $project->id,
-            ])
-            : null;
 
         return Inertia::render('Projects/Show', [
             'project' => $this->transformProject($project),
@@ -129,10 +121,6 @@ class ProjectController extends Controller
                 'seo_connected' => (bool) $googleSeoAccount,
                 'ga4_connected' => (bool) $user->google_connected_at,
                 'google_email' => $user->google_email ?: $googleSeoAccount?->email,
-            ],
-            'seoContext' => [
-                'organization_id' => $defaultOrganizationId,
-                'keyword_research_url' => $keywordResearchUrl,
             ],
         ]);
     }
@@ -182,14 +170,5 @@ class ProjectController extends Controller
             'created_at' => $project->created_at?->toIso8601String(),
             'updated_at' => $project->updated_at?->toIso8601String(),
         ];
-    }
-
-    protected function resolveDefaultOrganizationId(User $user): ?int
-    {
-        return $user->organizationUsers()
-            ->select('organization_id')
-            ->orderByRaw("CASE role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END")
-            ->orderBy('id')
-            ->value('organization_id');
     }
 }

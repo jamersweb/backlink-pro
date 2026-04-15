@@ -6,6 +6,7 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
     const { url } = usePage();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const keywordResearchHref = '/keyword-research';
 
     useEffect(() => {
         document.body.classList.add('bp-dark-dashboard-page');
@@ -35,7 +36,9 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
         { href: '/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', iconActive: 'bi-grid-1x2-fill' },
         { href: '/projects', label: 'Projects', icon: 'bi-kanban', iconActive: 'bi-kanban-fill' },
         { href: '/campaign', label: 'Campaigns', icon: 'bi-megaphone', iconActive: 'bi-megaphone-fill' },
+        { href: '/backlinks-checker', label: 'Backlinks', icon: 'bi-link-45deg', iconActive: 'bi-link-45deg' },
         { href: '/reports', label: 'Reports', icon: 'bi-bar-chart', iconActive: 'bi-bar-chart-fill' },
+        { href: keywordResearchHref, label: 'Keyword Research', icon: 'bi-search', iconActive: 'bi-search' },
         { href: '/index-crawl', label: 'Index & Crawl', icon: 'bi-diagram-3', iconActive: 'bi-diagram-3-fill' },
         { href: '/audit-report', label: 'Audit Report', icon: 'bi-clipboard-check', iconActive: 'bi-clipboard-check-fill' },
         { href: '/label', label: 'Label', icon: 'bi-file-earmark-richtext', iconActive: 'bi-file-earmark-richtext-fill' },

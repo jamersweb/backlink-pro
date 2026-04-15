@@ -13,6 +13,7 @@ use App\Http\Controllers\GmailOAuthController;
 use App\Http\Controllers\GoogleGa4Controller;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\BacklinkController;
+use App\Http\Controllers\BacklinksCheckerController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\DomainAuditController;
 use App\Http\Controllers\DomainGoogleIntegrationController;
@@ -50,6 +51,7 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationSettingsController;
+use App\Http\Controllers\KeywordResearchController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuditController;
@@ -246,6 +248,14 @@ Route::middleware(['auth', 'verified'])->group(function(){
         Route::post('/domains', [IndexCrawlController::class, 'storeDomain'])->name('domains.store');
     });
 
+    // Standalone Keyword Research
+    Route::prefix('keyword-research')->name('keyword-research.')->group(function () {
+        Route::get('/', [KeywordResearchController::class, 'index'])->name('index');
+        Route::post('/', [KeywordResearchController::class, 'store'])->name('store');
+        Route::post('/items/{item}/toggle-save', [KeywordResearchController::class, 'toggleSave'])->name('items.toggle-save');
+        Route::post('/rank-projects/{project}/keywords', [KeywordResearchController::class, 'addToTracking'])->name('rank-projects.keywords');
+    });
+
     // Audit Report (User Panel)
     Route::prefix('audit-report')->name('audit-report.')->group(function() {
         Route::get('/', [AuditReportController::class, 'index'])->name('index');
@@ -322,6 +332,9 @@ Route::middleware(['auth', 'verified'])->group(function(){
             Route::get('/export', [BacklinkController::class, 'export'])->name('export');
             Route::post('/{id}/recheck', [BacklinkController::class, 'recheck'])->name('recheck');
         });
+
+    // Backlinks Checker hub (domain-first entry point)
+    Route::get('/backlinks-checker', [BacklinksCheckerController::class, 'index'])->name('backlinks-checker.index');
 
     // Domain Management
     Route::resource('domains', DomainController::class);

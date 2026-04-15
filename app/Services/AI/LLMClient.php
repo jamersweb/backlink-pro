@@ -15,7 +15,7 @@ class LLMClient implements LLMClientInterface
     public function __construct()
     {
         $this->provider = config('services.llm.provider', 'openai');
-        $this->apiKey = config('services.llm.api_key') ?? config('services.openai.api_key');
+        $this->apiKey = (string) (config('services.llm.api_key') ?? config('services.openai.api_key') ?? '');
         $this->baseUrl = $this->getBaseUrl();
         $this->model = config('services.llm.model', 'gpt-4o-mini');
     }
@@ -84,6 +84,10 @@ class LLMClient implements LLMClientInterface
      */
     protected function makeOpenAIRequest(string $systemPrompt, string $userPrompt, array $options): array
     {
+        if (trim($this->apiKey) === '') {
+            throw new \Exception('LLM API key is not configured.');
+        }
+
         $url = rtrim($this->baseUrl, '/') . '/chat/completions';
 
         $payload = [

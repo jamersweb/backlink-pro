@@ -81,6 +81,14 @@ return [
         'redirect_uri' => env('GOOGLE_SEO_REDIRECT_URI', env('APP_URL') . '/seo/google/callback'),
     ],
 
+    'google_ads' => [
+        'api_key' => env('GOOGLE_ADS_API_KEY'),
+        'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
+        'customer_id' => env('GOOGLE_ADS_CUSTOMER_ID'),
+        'login_customer_id' => env('GOOGLE_ADS_LOGIN_CUSTOMER_ID'),
+        'access_token' => env('GOOGLE_ADS_ACCESS_TOKEN'),
+    ],
+
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),

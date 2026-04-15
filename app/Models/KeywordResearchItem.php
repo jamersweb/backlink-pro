@@ -18,6 +18,8 @@ class KeywordResearchItem extends Model
         'recommended_content_type',
         'confidence_score',
         'business_relevance_score',
+        'keyword_density_pct',
+        'keyword_traffic',
         'ai_reason',
         'is_saved',
     ];
@@ -25,6 +27,8 @@ class KeywordResearchItem extends Model
     protected $casts = [
         'confidence_score' => 'integer',
         'business_relevance_score' => 'integer',
+        'keyword_density_pct' => 'float',
+        'keyword_traffic' => 'integer',
         'is_saved' => 'boolean',
     ];
 
