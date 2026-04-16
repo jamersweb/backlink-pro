@@ -16,6 +16,7 @@ use App\Models\Lead;
 use App\Jobs\RunSeoAuditJob;
 use App\Jobs\RunCruxJob;
 use App\Services\Billing\PlanLimiter;
+use App\Services\AI\AiFixPlanPresenter;
 use App\Services\SeoAudit\CrawlModuleConfig;
 use App\Services\SeoAudit\CustomAuditRulesValidator;
 use Illuminate\Http\Request;
@@ -524,6 +525,7 @@ class AuditController extends Controller
             }),
             'isOwner' => $audit->isOwnedBy(auth()->user()),
             'shareUrl' => $audit->share_token ? URL::route('audit.show', ['audit' => $audit->id, 'token' => $audit->share_token]) : null,
+            'aiFixPlan' => AiFixPlanPresenter::forAudit($audit),
         ];
 
         if ($request->wantsJson()) {
@@ -574,6 +576,7 @@ class AuditController extends Controller
                 'external_links_count' => $page->external_links_count,
             ] : null,
             'error' => $audit->error,
+            'ai_fix_plan' => AiFixPlanPresenter::forAudit($audit),
         ]);
     }
 

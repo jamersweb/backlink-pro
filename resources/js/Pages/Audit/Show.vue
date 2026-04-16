@@ -181,6 +181,112 @@
             </div>
 
             <section v-if="audit.status === 'completed'" class="details-section">
+                <DashboardCard title="AI Fix Priority Engine" class="ai-fix-priority-card">
+                    <p class="muted mb-3" style="font-size: 0.9rem; line-height: 1.45">
+                        Combines a deterministic score (impact × effort × affected URLs) with an optional AI-generated
+                        fix order and weekly plan. Requires a configured LLM API key and a running queue worker for the
+                        AI layer.
+                    </p>
+                    <div
+                        v-if="!aiFixPlanState?.llm_configured"
+                        class="notice-banner"
+                        style="
+                            padding: 10px 12px;
+                            border-radius: 8px;
+                            background: rgba(251, 191, 36, 0.12);
+                            border: 1px solid rgba(251, 191, 36, 0.35);
+                            font-size: 0.85rem;
+                            margin-bottom: 12px;
+                        "
+                    >
+                        AI plan generation is off: add <code>OPENAI_API_KEY</code> or <code>LLM_API_KEY</code> in
+                        <code>.env</code>. Deterministic ranking below still works.
+                    </div>
+                    <div
+                        v-if="
+                            aiFixPlanState?.llm_configured &&
+                            (aiFixPlanState?.fix_plan_status === 'pending' ||
+                                aiFixPlanState?.fix_plan_status === 'running')
+                        "
+                        class="state-inline muted"
+                        style="margin-bottom: 12px"
+                    >
+                        <span class="ai-pulse" /> Generating AI fix plan… (ensure
+                        <code>php artisan queue:work</code> is running)
+                    </div>
+                    <div
+                        v-if="aiFixPlanState?.fix_plan_status === 'failed'"
+                        class="error-text"
+                        style="color: #b91c1c; font-size: 0.9rem; margin-bottom: 12px"
+                    >
+                        {{ aiFixPlanState.fix_plan_error || 'AI fix plan failed.' }}
+                    </div>
+
+                    <div v-if="aiPriorityFixesNormalized.length" class="mt-2">
+                        <p class="section-label">AI-suggested priority fixes</p>
+                        <ol class="priority-ol" style="padding-left: 1.25rem; margin: 8px 0 0">
+                            <li v-for="(item, idx) in aiPriorityFixesNormalized" :key="'ai-' + idx" style="margin-bottom: 10px">
+                                <div style="font-weight: 600">{{ item.title }}</div>
+                                <div v-if="item.body" class="muted" style="font-size: 0.88rem; margin-top: 4px">
+                                    {{ item.body }}
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div v-if="weekPlanBlocks.length" class="mt-4">
+                        <p class="section-label">Suggested week plan</p>
+                        <div class="table-wrap">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Phase</th>
+                                        <th>Focus</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="row in weekPlanBlocks" :key="row.key">
+                                        <td class="mono">{{ row.label }}</td>
+                                        <td>{{ row.text }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="section-label">Deterministic priority (top issues)</p>
+                        <div class="table-wrap">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Issue</th>
+                                        <th>Impact</th>
+                                        <th>Effort</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="(row, idx) in aiFixPlanState?.deterministic_priorities || []"
+                                        :key="row.code + '-' + idx"
+                                    >
+                                        <td>{{ idx + 1 }}</td>
+                                        <td>{{ row.title || row.code }}</td>
+                                        <td>{{ row.impact }}</td>
+                                        <td>{{ row.effort }}</td>
+                                        <td class="mono">{{ row.priority_score }}</td>
+                                    </tr>
+                                    <tr v-if="!(aiFixPlanState?.deterministic_priorities || []).length">
+                                        <td colspan="5">No issues recorded for this audit.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </DashboardCard>
+
                 <DashboardCard title="Audit KPI Overview">
                     <div class="overview-grid">
                         <div class="overview-main">
@@ -705,7 +811,7 @@
 
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, defineComponent, h } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, defineComponent, h } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import VueApexCharts from 'vue3-apexcharts';
 import axios from 'axios';
@@ -721,11 +827,96 @@ const props = defineProps({
     shareUrl: String,
     google: Object,
     ga4Integration: Object,
+    aiFixPlan: { type: Object, default: () => ({}) },
+});
+
+const aiFixPlanState = ref(props.aiFixPlan || {});
+
+watch(
+    () => props.aiFixPlan,
+    (v) => {
+        if (v) {
+            aiFixPlanState.value = v;
+        }
+    },
+    { deep: true }
+);
+
+const startAiFixPlanPollingIfNeeded = () => {
+    if (props.audit.status !== 'completed') {
+        return;
+    }
+    if (!props.aiFixPlan?.llm_configured) {
+        return;
+    }
+    const st = aiFixPlanState.value?.fix_plan_status ?? props.aiFixPlan?.fix_plan_status;
+    if (st !== 'pending' && st !== 'running') {
+        return;
+    }
+    if (aiFixPlanInterval.value) {
+        return;
+    }
+    pollAiFixPlanStatus();
+    aiFixPlanInterval.value = setInterval(pollAiFixPlanStatus, 6000);
+};
+
+watch(
+    () => [props.audit.status, props.aiFixPlan?.fix_plan_status],
+    () => {
+        startAiFixPlanPollingIfNeeded();
+    },
+    { immediate: true }
+);
+
+const aiPriorityFixesNormalized = computed(() => {
+    const raw = aiFixPlanState.value?.priority_fixes;
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+    return raw.map((item) => {
+        if (typeof item === 'string') {
+            return { title: item, body: '' };
+        }
+        const title =
+            item.title ||
+            item.issue ||
+            item.summary ||
+            item.name ||
+            item.headline ||
+            'Recommendation';
+        const body =
+            item.description ||
+            item.rationale ||
+            item.details ||
+            item.why ||
+            item.actions ||
+            '';
+        return { title, body: typeof body === 'string' ? body : JSON.stringify(body) };
+    });
+});
+
+const weekPlanBlocks = computed(() => {
+    const wp = aiFixPlanState.value?.week_plan;
+    if (!wp || typeof wp !== 'object') {
+        return [];
+    }
+    const rows = [];
+    const keys = Object.keys(wp).sort();
+    for (const key of keys) {
+        const val = wp[key];
+        rows.push({
+            key,
+            label: key.replace(/_/g, ' '),
+            text: typeof val === 'string' ? val : JSON.stringify(val),
+        });
+    }
+    return rows;
 });
 
 // Component tree: Audit/Show.vue -> DashboardCard, MiniStat, ApexDonutChart, ApexRadialGauge, ApexStackedBar, ApexSparkline
 
 const pollingInterval = ref(null);
+const aiFixPlanInterval = ref(null);
 const pagespeedInterval = ref(null);
 const cruxInterval = ref(null);
 const pagespeedLocal = ref(props.google?.pagespeed || null);
@@ -1524,10 +1715,37 @@ const pollStatus = async () => {
             response.data.status !== props.audit.status ||
             response.data.pages_scanned !== props.audit.pages_scanned
         ) {
-            router.reload({ only: ['audit', 'page', 'issues', 'pages', 'links', 'google'] });
+            router.reload({ only: ['audit', 'page', 'issues', 'pages', 'links', 'google', 'aiFixPlan'] });
         }
     } catch (error) {
         console.error('Failed to poll status:', error);
+    }
+};
+
+const pollAiFixPlanStatus = async () => {
+    if (props.audit.status !== 'completed') {
+        return;
+    }
+    const st = aiFixPlanState.value?.fix_plan_status;
+    if (st !== 'pending' && st !== 'running') {
+        return;
+    }
+    try {
+        const url = `/audit/${props.audit.id}/status`;
+        const token = props.shareUrl ? new URL(props.shareUrl).searchParams.get('token') : null;
+        const params = token ? { token } : {};
+        const response = await axios.get(url, { params });
+        const next = response.data?.ai_fix_plan;
+        if (next) {
+            aiFixPlanState.value = next;
+        }
+        const done = next?.fix_plan_status === 'completed' || next?.fix_plan_status === 'failed';
+        if (done && aiFixPlanInterval.value) {
+            clearInterval(aiFixPlanInterval.value);
+            aiFixPlanInterval.value = null;
+        }
+    } catch (error) {
+        console.error('Failed to poll AI fix plan status:', error);
     }
 };
 
@@ -1705,6 +1923,9 @@ onMounted(() => {
 onUnmounted(() => {
     if (pollingInterval.value) {
         clearInterval(pollingInterval.value);
+    }
+    if (aiFixPlanInterval.value) {
+        clearInterval(aiFixPlanInterval.value);
     }
     if (pagespeedInterval.value) {
         clearInterval(pagespeedInterval.value);

@@ -35,6 +35,7 @@ export default function AppLayout({ children, header, subtitle, flush = false, b
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', iconActive: 'bi-grid-1x2-fill' },
         { href: '/projects', label: 'Projects', icon: 'bi-kanban', iconActive: 'bi-kanban-fill' },
+        { href: '/domains', label: 'Websites', icon: 'bi-globe2', iconActive: 'bi-globe2' },
         { href: '/campaign', label: 'Campaigns', icon: 'bi-megaphone', iconActive: 'bi-megaphone-fill' },
         { href: '/backlinks-checker', label: 'Backlinks', icon: 'bi-link-45deg', iconActive: 'bi-link-45deg' },
         { href: '/reports', label: 'Reports', icon: 'bi-bar-chart', iconActive: 'bi-bar-chart-fill' },

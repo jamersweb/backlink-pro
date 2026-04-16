@@ -102,6 +102,8 @@ class RunSeoAuditJob implements ShouldQueue
                 'audit_id' => $audit->id,
                 'score' => $audit->overall_score,
             ]);
+
+            \App\Services\AI\PostAuditAiJobDispatcher::dispatchForAudit($audit->id);
             
         } catch (\Exception $e) {
             Log::error('AuditJob failed', [

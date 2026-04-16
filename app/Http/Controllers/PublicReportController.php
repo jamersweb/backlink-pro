@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Audit;
 use App\Models\ReportAccessToken;
+use App\Services\AI\AiFixPlanPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -109,6 +110,7 @@ class PublicReportController extends Controller
             }),
             'isOwner' => false,
             'shareUrl' => route('public.report.show', $token),
+            'aiFixPlan' => AiFixPlanPresenter::forAudit($audit),
         ]);
     }
 

@@ -46,6 +46,11 @@ class RankTrackingController extends Controller
                 ->first();
         }
 
+        if ($selectedRun) {
+            app(KeywordResearchService::class)->enrichMissingMetricsForRun($selectedRun);
+            $selectedRun->refresh()->load('items');
+        }
+
         $rankProjects = RankProject::query()
             ->where('organization_id', $organization->id)
             ->orderBy('name')
@@ -87,13 +92,32 @@ class RankTrackingController extends Controller
                     return [
                         'id' => $item->id,
                         'keyword' => $item->keyword,
+                        'source' => $item->source,
+                        'pattern_type' => $item->pattern_type,
                         'intent' => $item->intent,
                         'funnel_stage' => $item->funnel_stage,
                         'cluster_name' => $item->cluster_name,
                         'recommended_content_type' => $item->recommended_content_type,
                         'confidence_score' => $item->confidence_score,
                         'business_relevance_score' => $item->business_relevance_score,
+                        'search_volume' => $item->search_volume,
+                        'metrics_provider' => $item->metrics_provider,
+                        'metrics_status' => $item->metrics_status,
+                        'metrics_error' => $item->metrics_error,
+                        'competition_score' => $item->competition_score,
+                        'cpc_value' => $item->cpc_value,
+                        'last_enriched_at' => $item->last_enriched_at?->toIso8601String(),
+                        'keyword_density_pct' => $item->keyword_density_pct,
+                        'density_status' => $item->density_status,
+                        'density_target_url' => $item->density_target_url,
+                        'density_total_words' => $item->density_total_words,
+                        'density_exact_match_count' => $item->density_exact_match_count,
+                        'density_partial_match_count' => $item->density_partial_match_count,
+                        'density_error' => $item->density_error,
+                        'density_analyzed_at' => $item->density_analyzed_at?->toIso8601String(),
+                        'keyword_traffic' => $item->keyword_traffic,
                         'ai_reason' => $item->ai_reason,
+                        'generation_meta_json' => $item->generation_meta_json,
                         'is_saved' => (bool) $item->is_saved,
                     ];
                 }),
@@ -109,8 +133,13 @@ class RankTrackingController extends Controller
             'input_type' => ['required', 'in:keyword,product,page'],
             'input_text' => ['nullable', 'string', 'max:4000'],
             'page_url' => ['nullable', 'url', 'max:2048'],
-            'locale_country' => ['nullable', 'string', 'max:10'],
+            'locale_country' => ['nullable', 'string', 'max:100'],
             'locale_language' => ['nullable', 'string', 'max:10'],
+            'keyword_focuses' => ['nullable', 'array'],
+            'keyword_focuses.*' => ['string', 'max:50'],
+            'primary_intent' => ['nullable', 'string', 'max:50'],
+            'keyword_pattern' => ['nullable', 'string', 'max:50'],
+            'market_scope' => ['nullable', 'string', 'max:50'],
         ]);
 
         $inputType = $validated['input_type'];
@@ -298,7 +327,11 @@ class RankTrackingController extends Controller
             'total_keywords' => $items->count(),
             'unique_clusters' => $items->pluck('cluster_name')->filter()->unique()->count(),
             'informational_keywords' => $items->where('intent', 'informational')->count(),
+            'commercial_keywords' => $items->where('intent', 'commercial')->count(),
+            'transactional_keywords' => $items->where('intent', 'transactional')->count(),
             'commercial_transactional_keywords' => $items->whereIn('intent', ['commercial', 'transactional'])->count(),
+            'local_keywords' => $items->where('intent', 'local')->count(),
+            'question_keywords' => $items->where('pattern_type', 'question')->count(),
             'saved_keywords' => $items->where('is_saved', true)->count(),
         ];
     }

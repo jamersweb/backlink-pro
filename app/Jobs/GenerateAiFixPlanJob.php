@@ -13,6 +13,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class GenerateAiFixPlanJob implements ShouldQueue
 {
@@ -29,6 +30,19 @@ class GenerateAiFixPlanJob implements ShouldQueue
     {
         $audit = Audit::find($this->auditId);
         if (!$audit) {
+            return;
+        }
+
+        if (! Schema::hasTable('ai_generations')) {
+            return;
+        }
+
+        $inflight = AiGeneration::where('audit_id', $audit->id)
+            ->where('type', AiGeneration::TYPE_FIX_PLAN)
+            ->where('status', AiGeneration::STATUS_RUNNING)
+            ->exists();
+
+        if ($inflight) {
             return;
         }
 

@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Models\Audit;
 use App\Models\Campaign;
 use App\Models\BacklinkOpportunity;
+use App\Models\Domain;
+use App\Services\AI\AiFixPlanPresenter;
 use Stripe\Stripe;
 
 class DashboardController extends Controller
@@ -72,6 +75,43 @@ class DashboardController extends Controller
             ->get()
             ->pluck('count', 'type');
 
+        $latestAudit = Audit::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->first();
+
+        $seoDashboard = [
+            'latest_audit' => null,
+            'ai_fix_plan' => null,
+        ];
+
+        if ($latestAudit) {
+            $seoDashboard['latest_audit'] = [
+                'id' => $latestAudit->id,
+                'url' => $latestAudit->url,
+                'status' => $latestAudit->status,
+                'overall_score' => $latestAudit->overall_score,
+                'overall_grade' => $latestAudit->overall_grade,
+                'finished_at' => $latestAudit->finished_at?->toIso8601String(),
+            ];
+            if ($latestAudit->status === Audit::STATUS_COMPLETED) {
+                $seoDashboard['ai_fix_plan'] = AiFixPlanPresenter::forAudit($latestAudit);
+            }
+        }
+
+        $metaEditorDomains = Domain::query()
+            ->where('user_id', $user->id)
+            ->orderBy('name')
+            ->limit(20)
+            ->get()
+            ->map(fn (Domain $d) => [
+                'id' => $d->id,
+                'name' => $d->name,
+                'host' => $d->host,
+                'url' => $d->url,
+            ])
+            ->values();
+
         return Inertia::render('Dashboard', [
             'user' => $user,
             'subscription' => $subscription ? [
@@ -89,6 +129,8 @@ class DashboardController extends Controller
             'recentCampaigns' => $recentCampaigns,
             'dailyBacklinks' => $dailyBacklinks,
             'backlinksByType' => $backlinksByType,
+            'seoDashboard' => $seoDashboard,
+            'metaEditorDomains' => $metaEditorDomains,
         ]);
     }
 }

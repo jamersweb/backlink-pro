@@ -10,12 +10,20 @@ use App\Models\User;
 use App\Services\AI\LLMClient;
 use App\Services\AI\LLMResponse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Mockery;
 use Tests\TestCase;
 
 class KeywordResearchMvpTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Http::fake();
+    }
 
     public function test_authenticated_user_can_open_keyword_page(): void
     {
@@ -61,6 +69,24 @@ class KeywordResearchMvpTest extends TestCase
         $this->assertDatabaseHas('keyword_research_runs', [
             'user_id' => $user->id,
             'input_type' => 'product',
+        ]);
+    }
+
+    public function test_named_country_is_normalized_before_storing_run(): void
+    {
+        [$user, $organization] = $this->makeUserWithOrganization();
+        $this->mockAiJsonResponse();
+
+        $this->actingAs($user)->post(route('keyword-research.store'), [
+            'input_type' => 'keyword',
+            'input_text' => 'gym management software',
+            'locale_country' => 'Pakistan',
+            'locale_language' => 'en',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('keyword_research_runs', [
+            'user_id' => $user->id,
+            'locale_country' => 'PK',
         ]);
     }
 
@@ -177,31 +203,63 @@ class KeywordResearchMvpTest extends TestCase
     {
         $mock = Mockery::mock(LLMClient::class);
         $mock->shouldReceive('generateWithSystemPrompt')
-            ->andReturn(new LLMResponse(json_encode([
-                'summary' => 'High-intent ideas for growth.',
-                'keywords' => [
-                    [
-                        'keyword' => 'gym management software',
-                        'intent' => 'commercial',
-                        'funnel_stage' => 'mofu',
-                        'cluster_name' => 'Software',
-                        'recommended_content_type' => 'landing_page',
-                        'confidence_score' => 82,
-                        'business_relevance_score' => 88,
-                        'ai_reason' => 'Matches the buying intent of users looking for SaaS options.',
+            ->andReturn(
+                new LLMResponse(json_encode([
+                    'summary' => 'High-intent ideas for growth.',
+                    'keywords' => [
+                        [
+                            'keyword' => 'gym management software',
+                            'intent' => 'commercial',
+                            'funnel_stage' => 'mofu',
+                            'cluster_name' => 'Software',
+                            'recommended_content_type' => 'landing_page',
+                            'confidence_score' => 82,
+                            'business_relevance_score' => 88,
+                            'ai_reason' => 'Matches the buying intent of users looking for SaaS options.',
+                        ],
+                        [
+                            'keyword' => 'best gym software pricing',
+                            'intent' => 'transactional',
+                            'funnel_stage' => 'bofu',
+                            'cluster_name' => 'Pricing',
+                            'recommended_content_type' => 'service_page',
+                            'confidence_score' => 79,
+                            'business_relevance_score' => 84,
+                            'ai_reason' => 'Strong purchase-oriented query.',
+                        ],
                     ],
-                    [
-                        'keyword' => 'best gym software pricing',
-                        'intent' => 'transactional',
-                        'funnel_stage' => 'bofu',
-                        'cluster_name' => 'Pricing',
-                        'recommended_content_type' => 'service_page',
-                        'confidence_score' => 79,
-                        'business_relevance_score' => 84,
-                        'ai_reason' => 'Strong purchase-oriented query.',
+                ])),
+                new LLMResponse(json_encode([
+                    'summary' => 'Problem-aware educational ideas.',
+                    'keywords' => [
+                        [
+                            'keyword' => 'how to choose gym management software',
+                            'intent' => 'informational',
+                            'funnel_stage' => 'tofu',
+                            'cluster_name' => 'Education',
+                            'recommended_content_type' => 'blog',
+                            'confidence_score' => 75,
+                            'business_relevance_score' => 78,
+                            'ai_reason' => 'Captures early-stage software evaluation intent.',
+                        ],
                     ],
-                ],
-            ])));
+                ])),
+                new LLMResponse(json_encode([
+                    'summary' => 'Long-tail comparison ideas.',
+                    'keywords' => [
+                        [
+                            'keyword' => 'gym management software for small businesses',
+                            'intent' => 'commercial',
+                            'funnel_stage' => 'mofu',
+                            'cluster_name' => 'Small Business',
+                            'recommended_content_type' => 'landing_page',
+                            'confidence_score' => 77,
+                            'business_relevance_score' => 83,
+                            'ai_reason' => 'Adds a more specific commercial long-tail variation.',
+                        ],
+                    ],
+                ]))
+            );
 
         $this->app->instance(LLMClient::class, $mock);
     }
@@ -210,7 +268,11 @@ class KeywordResearchMvpTest extends TestCase
     {
         $mock = Mockery::mock(LLMClient::class);
         $mock->shouldReceive('generateWithSystemPrompt')
-            ->andReturn(new LLMResponse('not-json-response'));
+            ->andReturn(
+                new LLMResponse('not-json-response'),
+                new LLMResponse('not-json-response'),
+                new LLMResponse('not-json-response')
+            );
 
         $this->app->instance(LLMClient::class, $mock);
     }

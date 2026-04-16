@@ -8,6 +8,7 @@ use App\Models\KeywordResearchRun;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\AI\LLMClient;
+use App\Services\KeywordResearch\Metrics\KeywordMetricsProviderManager;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -15,13 +16,19 @@ use Illuminate\Support\Str;
 class KeywordResearchService
 {
     protected const TARGET_KEYWORD_COUNT = 500;
+    protected const MIN_KEYWORDS_FOR_WORKSPACE = 80;
+    protected const AI_BATCH_KEYWORD_CAP = 220;
+    protected const MIN_WORDS_FOR_DENSITY = 40;
 
     public function __construct(
-        protected LLMClient $llmClient
+        protected LLMClient $llmClient,
+        protected KeywordMetricsProviderManager $keywordMetricsProviderManager
     ) {}
 
     public function generateAndStore(User $user, ?Organization $organization, array $data): KeywordResearchRun
     {
+        $data = $this->normalizeResearchInput($data);
+
         $run = KeywordResearchRun::create([
             'user_id' => $user->id,
             'input_type' => $data['input_type'],
@@ -30,7 +37,7 @@ class KeywordResearchService
             'context_text' => $data['input_text'] ?? null,
             'locale_country' => $data['locale_country'] ?? null,
             'locale_language' => $data['locale_language'] ?? null,
-            'status' => 'completed',
+            'status' => 'generating',
         ]);
 
         $externalKeywordIdeas = $this->fetchExternalKeywordIdeas($data);
@@ -50,7 +57,7 @@ class KeywordResearchService
             $usedFallback = true;
         }
 
-        if (count($items) < self::TARGET_KEYWORD_COUNT) {
+        if (count($items) < self::MIN_KEYWORDS_FOR_WORKSPACE) {
             $items = $this->normalizeItems(array_merge(
                 $mergedKeywords,
                 $this->fallbackResponse($data)['keywords']
@@ -71,6 +78,7 @@ class KeywordResearchService
         }
 
         $run->update([
+            'status' => 'completed',
             'summary_text' => $summary,
             'result_count' => count($items),
         ]);
@@ -87,15 +95,33 @@ class KeywordResearchService
                 'keyword' => $item->keyword,
                 'normalized_keyword' => $item->normalized_keyword,
                 'source' => $item->source,
+                'pattern_type' => $item->pattern_type,
                 'intent' => $item->intent,
                 'funnel_stage' => $item->funnel_stage,
                 'cluster_name' => $item->cluster_name,
                 'recommended_content_type' => $item->recommended_content_type,
                 'confidence_score' => $item->confidence_score,
                 'business_relevance_score' => $item->business_relevance_score,
+                'search_volume' => $item->search_volume,
+                'metrics_provider' => $item->metrics_provider,
+                'metrics_status' => $item->metrics_status,
+                'metrics_error' => $item->metrics_error,
+                'competition_score' => $item->competition_score,
+                'cpc_value' => $item->cpc_value,
+                'trend_json' => $item->trend_json,
+                'provider_response_json' => $item->provider_response_json,
+                'last_enriched_at' => $item->last_enriched_at,
                 'keyword_traffic' => $item->keyword_traffic,
                 'keyword_density_pct' => $item->keyword_density_pct,
+                'density_status' => $item->density_status,
+                'density_target_url' => $item->density_target_url,
+                'density_total_words' => $item->density_total_words,
+                'density_exact_match_count' => $item->density_exact_match_count,
+                'density_partial_match_count' => $item->density_partial_match_count,
+                'density_error' => $item->density_error,
+                'density_analyzed_at' => $item->density_analyzed_at,
                 'ai_reason' => $item->ai_reason,
+                'generation_meta_json' => $item->generation_meta_json,
                 'is_saved' => (bool) $item->is_saved,
             ];
         })->all();
@@ -114,17 +140,106 @@ class KeywordResearchService
                 continue;
             }
 
-            KeywordResearchItem::query()
-                ->where('id', $row['id'])
-                ->update([
-                    'keyword_traffic' => $row['keyword_traffic'] ?? null,
-                    'keyword_density_pct' => $row['keyword_density_pct'] ?? null,
-                ]);
+            $item = KeywordResearchItem::query()->find($row['id']);
+            if (!$item) {
+                continue;
+            }
+
+            $item->update([
+                'pattern_type' => $row['pattern_type'] ?? null,
+                'search_volume' => $row['search_volume'] ?? null,
+                'metrics_provider' => $row['metrics_provider'] ?? null,
+                'metrics_status' => $row['metrics_status'] ?? 'pending',
+                'metrics_error' => $row['metrics_error'] ?? null,
+                'competition_score' => $row['competition_score'] ?? null,
+                'cpc_value' => $row['cpc_value'] ?? null,
+                'trend_json' => $row['trend_json'] ?? null,
+                'provider_response_json' => $row['provider_response_json'] ?? null,
+                'last_enriched_at' => $row['last_enriched_at'] ?? null,
+                'keyword_traffic' => $row['keyword_traffic'] ?? null,
+                'keyword_density_pct' => $row['keyword_density_pct'] ?? null,
+                'density_status' => $row['density_status'] ?? 'not_analyzed',
+                'density_target_url' => $row['density_target_url'] ?? null,
+                'density_total_words' => $row['density_total_words'] ?? null,
+                'density_exact_match_count' => $row['density_exact_match_count'] ?? null,
+                'density_partial_match_count' => $row['density_partial_match_count'] ?? null,
+                'density_error' => $row['density_error'] ?? null,
+                'density_analyzed_at' => $row['density_analyzed_at'] ?? null,
+                'generation_meta_json' => $row['generation_meta_json'] ?? null,
+            ]);
         }
     }
 
     protected function generateWithAi(?Organization $organization, array $data, array $externalKeywordIdeas = []): ?array
     {
+        $batchFocuses = [
+            'commercial, transactional, pricing, and service or software keywords',
+            'informational, question-based, and problem or solution keywords',
+            'comparison, alternatives, versus, local-intent, and long-tail keywords',
+        ];
+        $keywords = [];
+        $seen = [];
+        $summaries = [];
+
+        foreach ($batchFocuses as $batchFocus) {
+            if (count($keywords) >= self::AI_BATCH_KEYWORD_CAP) {
+                break;
+            }
+
+            $decoded = $this->generateAiBatch(
+                $organization,
+                $data,
+                $externalKeywordIdeas,
+                array_keys($seen),
+                $batchFocus
+            );
+
+            if (!$decoded || !is_array($decoded)) {
+                continue;
+            }
+
+            $summary = trim((string) ($decoded['summary'] ?? ''));
+            if ($summary !== '') {
+                $summaries[] = $summary;
+            }
+
+            foreach (($decoded['keywords'] ?? []) as $keywordData) {
+                if (!is_array($keywordData)) {
+                    continue;
+                }
+
+                $keyword = trim((string) ($keywordData['keyword'] ?? ''));
+                $normalizedKeyword = $this->normalizedKeyword($keyword);
+                if ($normalizedKeyword === '' || isset($seen[$normalizedKeyword])) {
+                    continue;
+                }
+
+                $seen[$normalizedKeyword] = true;
+                $keywords[] = $keywordData;
+
+                if (count($keywords) >= self::AI_BATCH_KEYWORD_CAP) {
+                    break;
+                }
+            }
+        }
+
+        if (empty($keywords)) {
+            return null;
+        }
+
+        return [
+            'summary' => collect($summaries)->filter()->unique()->implode(' '),
+            'keywords' => $keywords,
+        ];
+    }
+
+    protected function generateAiBatch(
+        ?Organization $organization,
+        array $data,
+        array $externalKeywordIdeas,
+        array $existingKeywords,
+        string $batchFocus
+    ): ?array {
         $systemPrompt = <<<PROMPT
 You are an SEO keyword research assistant.
 Return strict JSON only with this exact structure:
@@ -144,19 +259,27 @@ Return strict JSON only with this exact structure:
   ]
 }
 Rules:
-- Target 300 to 500 relevant keywords.
+- Target 50 to 80 relevant keywords for this batch.
 - No duplicates or junk.
 - Keep scores between 0 and 100.
 - Keep fields concise and meaningful.
+- Generate natural search queries, not mechanical prefix/suffix permutations.
+- Avoid repeating the same starting or ending words across many rows.
 PROMPT;
 
-        $userPrompt = $this->buildUserPrompt($organization, $data, $externalKeywordIdeas);
+        $userPrompt = $this->buildUserPrompt(
+            $organization,
+            $data,
+            $externalKeywordIdeas,
+            $batchFocus,
+            $existingKeywords
+        );
 
         try {
             $response = $this->llmClient->generateWithSystemPrompt($systemPrompt, $userPrompt, [
                 'json_mode' => true,
                 'temperature' => 0.35,
-                'max_tokens' => 2500,
+                'max_tokens' => 4000,
             ]);
 
             $decoded = $this->decodeJson($response->content);
@@ -174,13 +297,27 @@ PROMPT;
         }
     }
 
-    protected function buildUserPrompt(?Organization $organization, array $data, array $externalKeywordIdeas = []): string
+    protected function buildUserPrompt(
+        ?Organization $organization,
+        array $data,
+        array $externalKeywordIdeas = [],
+        ?string $batchFocus = null,
+        array $existingKeywords = []
+    ): string
     {
         $mode = $data['input_type'];
         $inputText = trim((string) ($data['input_text'] ?? ''));
         $pageUrl = trim((string) ($data['page_url'] ?? ''));
         $country = trim((string) ($data['locale_country'] ?? ''));
         $language = trim((string) ($data['locale_language'] ?? ''));
+        $focuses = collect($data['keyword_focuses'] ?? [])
+            ->map(fn ($focus) => trim((string) $focus))
+            ->filter()
+            ->unique()
+            ->implode(', ');
+        $primaryIntent = trim((string) ($data['primary_intent'] ?? ''));
+        $keywordPattern = trim((string) ($data['keyword_pattern'] ?? ''));
+        $marketScope = trim((string) ($data['market_scope'] ?? ''));
         $organizationName = trim((string) ($organization?->name ?? 'your business'));
         $externalPreview = collect($externalKeywordIdeas)
             ->pluck('keyword')
@@ -189,6 +326,19 @@ PROMPT;
             ->take(80)
             ->implode(', ');
         $externalBlock = $externalPreview !== '' ? "\nExternal keyword signals: {$externalPreview}" : '';
+        $existingKeywordPreview = collect($existingKeywords)
+            ->filter()
+            ->unique()
+            ->take(80)
+            ->implode(', ');
+        $existingKeywordBlock = $existingKeywordPreview !== ''
+            ? "\nAlready generated keywords to avoid repeating: {$existingKeywordPreview}"
+            : '';
+        $focusBlock = $batchFocus ? "\nThis batch should focus on: {$batchFocus}" : '';
+        $userFocusBlock = $focuses !== '' ? "\nUser-selected keyword focus filters: {$focuses}" : '';
+        $primaryIntentBlock = $primaryIntent !== '' ? "\nPreferred primary intent: {$primaryIntent}" : '';
+        $keywordPatternBlock = $keywordPattern !== '' ? "\nPreferred keyword pattern mix: {$keywordPattern}" : '';
+        $marketScopeBlock = $marketScope !== '' ? "\nPreferred market scope: {$marketScope}" : '';
 
         return <<<PROMPT
 Generate keyword ideas for organization "{$organizationName}".
@@ -198,9 +348,17 @@ Page URL (if provided): {$pageUrl}
 Target country: {$country}
 Target language: {$language}
 {$externalBlock}
+{$existingKeywordBlock}
+{$focusBlock}
+{$userFocusBlock}
+{$primaryIntentBlock}
+{$keywordPatternBlock}
+{$marketScopeBlock}
 
 For page mode, infer topic from provided URL and/or page description.
 Return strict JSON only.
+Use the full seed phrase exactly as the semantic anchor when expanding ideas. Do not reduce the query to one center word.
+Mix phrase structures across intents instead of repeating the same prefix/suffix template.
 PROMPT;
     }
 
@@ -208,6 +366,9 @@ PROMPT;
     {
         $normalized = [];
         $seen = [];
+        $acceptedKeywords = [];
+        $leadingFragmentCounts = [];
+        $trailingFragmentCounts = [];
 
         foreach ($keywords as $keywordData) {
             if (!is_array($keywordData)) {
@@ -224,20 +385,56 @@ PROMPT;
                 continue;
             }
 
+            if (!$this->passesKeywordDiversityRules(
+                $keyword,
+                $acceptedKeywords,
+                $leadingFragmentCounts,
+                $trailingFragmentCounts
+            )) {
+                continue;
+            }
+
             $seen[$normalizedKeyword] = true;
+            $acceptedKeywords[] = $keyword;
+            $this->incrementKeywordFragmentCounts($keyword, $leadingFragmentCounts, $trailingFragmentCounts);
+            $searchVolume = $this->normalizeTraffic($keywordData['search_volume'] ?? $keywordData['keyword_traffic'] ?? null);
+            $source = $this->normalizeSource($keywordData['source'] ?? null);
+            $metricsProvider = $this->nullableString($keywordData['metrics_provider'] ?? null)
+                ?? ($source === 'provider_generated' ? $this->metricsProviderFromSource($keywordData['source'] ?? null) : null);
+            $metricsStatus = $this->resolveMetricsStatus($searchVolume, $keywordData['metrics_status'] ?? null, $source, $metricsProvider);
+            $patternType = $this->nullableString($keywordData['pattern_type'] ?? null)
+                ?? $this->inferPatternType($keyword);
             $normalized[] = [
                 'keyword' => $keyword,
                 'normalized_keyword' => $normalizedKeyword,
-                'source' => $this->nullableString($keywordData['source'] ?? null) ?? 'ai',
+                'source' => $source,
+                'pattern_type' => $patternType,
                 'intent' => $this->normalizeIntent($keywordData['intent'] ?? null),
                 'funnel_stage' => $this->normalizeFunnelStage($keywordData['funnel_stage'] ?? null),
                 'cluster_name' => $this->nullableString($keywordData['cluster_name'] ?? null),
                 'recommended_content_type' => $this->normalizeContentType($keywordData['recommended_content_type'] ?? null),
                 'confidence_score' => $this->normalizeScore($keywordData['confidence_score'] ?? null),
                 'business_relevance_score' => $this->normalizeScore($keywordData['business_relevance_score'] ?? null),
-                'keyword_traffic' => $this->normalizeTraffic($keywordData['keyword_traffic'] ?? null),
-                'keyword_density_pct' => $keywordData['keyword_density_pct'] ?? null,
+                'keyword_traffic' => $searchVolume,
+                'search_volume' => $searchVolume,
+                'metrics_provider' => $metricsProvider,
+                'metrics_status' => $metricsStatus,
+                'metrics_error' => $this->nullableString($keywordData['metrics_error'] ?? null),
+                'competition_score' => $this->normalizeScore($keywordData['competition_score'] ?? null),
+                'cpc_value' => $keywordData['cpc_value'] ?? null,
+                'trend_json' => $keywordData['trend_json'] ?? null,
+                'provider_response_json' => $keywordData['provider_response_json'] ?? null,
+                'last_enriched_at' => $keywordData['last_enriched_at'] ?? null,
+                'keyword_density_pct' => null,
+                'density_status' => 'not_analyzed',
+                'density_target_url' => null,
+                'density_total_words' => null,
+                'density_exact_match_count' => null,
+                'density_partial_match_count' => null,
+                'density_error' => null,
+                'density_analyzed_at' => null,
                 'ai_reason' => $this->nullableString($keywordData['ai_reason'] ?? null),
+                'generation_meta_json' => $this->buildGenerationMeta($keywordData, $source, $patternType),
                 'is_saved' => false,
             ];
 
@@ -254,139 +451,99 @@ PROMPT;
         $seed = trim((string) ($this->resolveSeedQuery($data) ?? $data['input_text'] ?? 'keyword'));
         $seed = $seed !== '' ? $seed : 'keyword';
 
-        $prefixes = [
-            'best',
-            'top',
-            'cheap',
-            'affordable',
-            'enterprise',
-            'local',
-            'online',
-            'professional',
-            'trusted',
-            'advanced',
-            'free',
-            'premium',
-            'small business',
-            'beginner',
-            'expert',
-            'b2b',
-            'b2c',
-            'quick',
-            'easy',
-            'complete',
+        $countryContext = strtolower((string) ($data['locale_country'] ?? ''));
+        $localModifier = match ($countryContext) {
+            'pk' => 'in pakistan',
+            'us' => 'in united states',
+            'gb' => 'in united kingdom',
+            default => 'near me',
+        };
+
+        $keywordBuckets = [
+            'commercial' => [
+                "best {$seed}",
+                "{$seed} reviews",
+                "{$seed} alternatives",
+                "{$seed} comparison",
+                "{$seed} for small business",
+                "{$seed} for agencies",
+                "{$seed} for ecommerce",
+                "{$seed} platform",
+                "{$seed} software",
+                "{$seed} tools",
+            ],
+            'transactional' => [
+                "{$seed} pricing",
+                "{$seed} cost",
+                "{$seed} packages",
+                "{$seed} quote",
+                "buy {$seed}",
+                "{$seed} demo",
+                "{$seed} free trial",
+                "{$seed} consultant",
+            ],
+            'informational' => [
+                "what is {$seed}",
+                "how does {$seed} work",
+                "how to choose {$seed}",
+                "{$seed} guide",
+                "{$seed} checklist",
+                "{$seed} examples",
+                "{$seed} use cases",
+            ],
+            'comparison' => [
+                "{$seed} vs competitors",
+                "{$seed} vs in house",
+                "{$seed} comparison guide",
+                "{$seed} alternatives for teams",
+            ],
+            'local' => [
+                "{$seed} {$localModifier}",
+                "{$seed} services {$localModifier}",
+                "local {$seed} experts",
+                "{$seed} agency {$localModifier}",
+            ],
+            'problem_solution' => [
+                "{$seed} for lead generation",
+                "{$seed} for growth marketing",
+                "{$seed} for startups",
+                "{$seed} for enterprise teams",
+                "{$seed} to improve conversions",
+                "{$seed} to reduce manual work",
+            ],
+            'question' => [
+                "is {$seed} worth it",
+                "when should you use {$seed}",
+                "why businesses need {$seed}",
+                "who should use {$seed}",
+            ],
         ];
-
-        $suffixes = [
-            'services',
-            'software',
-            'tools',
-            'platform',
-            'pricing',
-            'cost',
-            'plans',
-            'guide',
-            'tips',
-            'strategy',
-            'checklist',
-            'examples',
-            'agency',
-            'near me',
-            'for startups',
-            'for ecommerce',
-            'for saas',
-            'for doctors',
-            'for real estate',
-            'for education',
-        ];
-
-        $questionStarters = [
-            'how to',
-            'what is',
-            'why use',
-            'when to use',
-            'which is best for',
-            'where to buy',
-            'can I use',
-            'is it worth',
-            'how much does',
-            'how to choose',
-        ];
-
-        $commercialTerms = [
-            'buy',
-            'compare',
-            'review',
-            'alternatives',
-            'vs',
-            'discount',
-            'trial',
-            'demo',
-            'quote',
-            'consultation',
-        ];
-
-        $locations = [
-            'in pakistan',
-            'in lahore',
-            'in karachi',
-            'in islamabad',
-            'in dubai',
-            'in uk',
-            'in usa',
-            'in canada',
-            'in australia',
-            'globally',
-        ];
-
-        $keywords = [$seed];
-
-        foreach ($prefixes as $prefix) {
-            foreach ($suffixes as $suffix) {
-                $keywords[] = trim("{$prefix} {$seed} {$suffix}");
-            }
-            $keywords[] = trim("{$prefix} {$seed}");
-        }
-
-        foreach ($suffixes as $suffix) {
-            $keywords[] = trim("{$seed} {$suffix}");
-        }
-
-        foreach ($questionStarters as $questionStarter) {
-            $keywords[] = trim("{$questionStarter} {$seed}");
-            foreach ($suffixes as $suffix) {
-                $keywords[] = trim("{$questionStarter} {$seed} {$suffix}");
-            }
-        }
-
-        foreach ($commercialTerms as $commercialTerm) {
-            $keywords[] = trim("{$seed} {$commercialTerm}");
-            $keywords[] = trim("{$commercialTerm} {$seed}");
-        }
-
-        foreach ($locations as $location) {
-            $keywords[] = trim("{$seed} {$location}");
-            foreach ($suffixes as $suffix) {
-                $keywords[] = trim("{$seed} {$suffix} {$location}");
-            }
-        }
 
         $items = [];
-        foreach (array_slice(array_unique($keywords), 0, self::TARGET_KEYWORD_COUNT) as $keyword) {
-            $items[] = [
-                'keyword' => $keyword,
-                'intent' => $this->guessIntent($keyword),
-                'funnel_stage' => 'unknown',
-                'cluster_name' => Str::title($seed),
-                'recommended_content_type' => 'unknown',
-                'confidence_score' => 55,
-                'business_relevance_score' => 60,
-                'ai_reason' => 'Generated from fallback keyword pattern rules.',
-            ];
+        foreach ($keywordBuckets as $patternType => $bucketKeywords) {
+            foreach ($bucketKeywords as $keyword) {
+                $items[] = [
+                    'keyword' => $keyword,
+                    'source' => 'fallback_generated',
+                    'pattern_type' => $patternType,
+                    'intent' => $this->guessIntent($keyword),
+                    'funnel_stage' => 'unknown',
+                    'cluster_name' => Str::title($seed),
+                    'recommended_content_type' => $this->recommendedContentTypeForPattern($patternType),
+                    'confidence_score' => 42,
+                    'business_relevance_score' => 48,
+                    'ai_reason' => 'Generated from explicit fallback keyword buckets because provider or AI coverage was insufficient.',
+                    'generation_meta_json' => [
+                        'mode' => 'fallback',
+                        'bucket' => $patternType,
+                        'seed_phrase' => $seed,
+                    ],
+                ];
+            }
         }
 
         return [
-            'summary' => 'Keyword ideas generated with fallback heuristics (extended set).',
+            'summary' => 'Keyword ideas partially filled using fallback keyword buckets because provider or AI coverage was insufficient.',
             'keywords' => $items,
         ];
     }
@@ -876,22 +1033,52 @@ PROMPT;
             ->values()
             ->all();
 
-        $historicalTrafficMap = $this->fetchGoogleAdsHistoricalMetrics($keywords, $data);
+        $metricsResult = $this->keywordMetricsProviderManager->fetch($keywords, $data);
         $densityContext = $this->buildDensityContext($data);
 
-        return array_map(function ($item) use ($historicalTrafficMap, $densityContext) {
+        return array_map(function ($item) use ($metricsResult, $densityContext) {
             $normalized = $this->normalizedKeyword((string) ($item['keyword'] ?? ''));
-            $realTraffic = $this->normalizeTraffic($item['keyword_traffic'] ?? null);
+            $existingSearchVolume = $this->normalizeTraffic($item['search_volume'] ?? $item['keyword_traffic'] ?? null);
+            $metricRow = $normalized !== '' ? ($metricsResult['items'][$normalized] ?? null) : null;
+            $provider = $item['metrics_provider'] ?? $metricsResult['provider'] ?? null;
 
-            if ($realTraffic === null && $normalized !== '' && isset($historicalTrafficMap[$normalized])) {
-                $realTraffic = $historicalTrafficMap[$normalized];
+            if ($existingSearchVolume !== null) {
+                $item['search_volume'] = $existingSearchVolume;
+                $item['keyword_traffic'] = $existingSearchVolume;
+                $item['metrics_provider'] = $provider ?? $this->metricsProviderFromSource($item['source'] ?? null);
+                $item['metrics_status'] = 'completed';
+                $item['metrics_error'] = null;
+            } elseif (is_array($metricRow)) {
+                $item['search_volume'] = $this->normalizeTraffic($metricRow['search_volume'] ?? null);
+                $item['keyword_traffic'] = $item['search_volume'];
+                $item['metrics_provider'] = $metricsResult['provider'] ?? $provider;
+                $item['metrics_status'] = $item['search_volume'] !== null ? 'completed' : 'unavailable';
+                $item['metrics_error'] = $item['search_volume'] !== null ? null : ($metricsResult['error'] ?? 'No keyword metrics were returned.');
+                $item['competition_score'] = $this->normalizeScore($metricRow['competition_score'] ?? null);
+                $item['cpc_value'] = $metricRow['cpc_value'] ?? null;
+                $item['trend_json'] = $metricRow['trend_json'] ?? null;
+                $item['provider_response_json'] = $metricRow['provider_response_json'] ?? null;
+            } else {
+                $item['search_volume'] = null;
+                $item['keyword_traffic'] = null;
+                $item['metrics_provider'] = $metricsResult['provider'] ?? $provider;
+                $item['metrics_status'] = $metricsResult['status'] ?? 'unavailable';
+                $item['metrics_error'] = $metricsResult['error'] ?? null;
             }
 
-            $item['keyword_traffic'] = $realTraffic;
-            $item['keyword_density_pct'] = $this->calculateRealKeywordDensityPercent(
+            $item['last_enriched_at'] = now();
+            $densityAnalysis = $this->analyzeKeywordDensity(
                 (string) ($item['keyword'] ?? ''),
                 $densityContext
             );
+            $item['keyword_density_pct'] = $densityAnalysis['keyword_density_pct'];
+            $item['density_status'] = $densityAnalysis['density_status'];
+            $item['density_target_url'] = $densityAnalysis['density_target_url'];
+            $item['density_total_words'] = $densityAnalysis['density_total_words'];
+            $item['density_exact_match_count'] = $densityAnalysis['density_exact_match_count'];
+            $item['density_partial_match_count'] = $densityAnalysis['density_partial_match_count'];
+            $item['density_error'] = $densityAnalysis['density_error'];
+            $item['density_analyzed_at'] = $densityAnalysis['density_analyzed_at'];
 
             return $item;
         }, $items);
@@ -995,96 +1182,354 @@ PROMPT;
 
     protected function buildDensityContext(array $data): array
     {
-        $parts = [];
-        $inputText = trim((string) ($data['input_text'] ?? ''));
-        if ($inputText !== '') {
-            $parts[] = $inputText;
-        }
-
-        $seed = trim((string) ($data['seed_query'] ?? $this->resolveSeedQuery($data) ?? ''));
-        if ($seed !== '') {
-            $parts[] = $seed;
-        }
-
         $pageUrl = trim((string) ($data['page_url'] ?? ''));
-        if ($pageUrl !== '') {
-            try {
-                $response = Http::timeout(15)->get($pageUrl);
-                if ($response->successful()) {
-                    $parts[] = strip_tags((string) $response->body());
-                }
-            } catch (\Throwable $exception) {
-                // Best effort only.
-            }
+        if ($pageUrl === '') {
+            return [
+                'status' => 'not_analyzed',
+                'error' => 'Density requires a target page URL and fetched page content.',
+                'text' => '',
+                'total_words' => 0,
+                'target_url' => null,
+                'analyzed_at' => null,
+            ];
         }
 
-        $serpapiKey = (string) (Setting::get('serpapi_api_key') ?: env('SERPAPI_API_KEY', ''));
-        if ($serpapiKey !== '' && $seed !== '') {
-            try {
-                $serp = Http::timeout(20)->get('https://serpapi.com/search.json', [
-                    'api_key' => $serpapiKey,
-                    'engine' => 'google',
-                    'q' => $seed,
-                    'hl' => strtolower((string) ($data['locale_language'] ?? 'en')),
-                    'gl' => strtolower((string) ($data['locale_country'] ?? 'pk')),
-                ]);
-
-                if ($serp->successful()) {
-                    foreach (($serp->json('organic_results') ?? []) as $result) {
-                        $parts[] = trim((string) ($result['title'] ?? ''));
-                        $parts[] = trim((string) ($result['snippet'] ?? ''));
-                    }
-                    foreach (($serp->json('related_questions') ?? []) as $question) {
-                        $parts[] = trim((string) ($question['question'] ?? ''));
-                        $parts[] = trim((string) ($question['snippet'] ?? ''));
-                    }
-                }
-            } catch (\Throwable $exception) {
-                // Best effort only.
+        try {
+            $response = Http::timeout(15)->get($pageUrl);
+            if (!$response->successful()) {
+                return [
+                    'status' => 'failed',
+                    'error' => 'Target page content could not be fetched for density analysis.',
+                    'text' => '',
+                    'total_words' => 0,
+                    'target_url' => $pageUrl,
+                    'analyzed_at' => now(),
+                ];
             }
+
+            $corpus = $this->normalizedKeyword(strip_tags((string) $response->body()));
+            $tokens = preg_split('/\s+/', $corpus, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            if (count($tokens) < self::MIN_WORDS_FOR_DENSITY) {
+                return [
+                    'status' => 'failed',
+                    'error' => 'Fetched page content was too thin for density analysis.',
+                    'text' => $corpus,
+                    'total_words' => count($tokens),
+                    'target_url' => $pageUrl,
+                    'analyzed_at' => now(),
+                ];
+            }
+
+            return [
+                'status' => 'completed',
+                'error' => null,
+                'text' => $corpus,
+                'total_words' => count($tokens),
+                'target_url' => $pageUrl,
+                'analyzed_at' => now(),
+            ];
+        } catch (\Throwable $exception) {
+            return [
+                'status' => 'failed',
+                'error' => 'Target page content could not be fetched for density analysis.',
+                'text' => '',
+                'total_words' => 0,
+                'target_url' => $pageUrl,
+                'analyzed_at' => now(),
+            ];
         }
-
-        $corpus = $this->normalizedKeyword(implode(' ', $parts));
-        $tokens = preg_split('/\s+/', $corpus, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        return [
-            'text' => $corpus,
-            'total_words' => count($tokens),
-        ];
     }
 
-    protected function calculateRealKeywordDensityPercent(string $keyword, array $densityContext): ?float
+    protected function analyzeKeywordDensity(string $keyword, array $densityContext): array
     {
-        $corpus = (string) ($densityContext['text'] ?? '');
-        $totalWords = (int) ($densityContext['total_words'] ?? 0);
-        if ($corpus === '' || $totalWords <= 0) {
-            return null;
+        if (($densityContext['status'] ?? 'not_analyzed') !== 'completed') {
+            return [
+                'keyword_density_pct' => null,
+                'density_status' => $densityContext['status'] ?? 'not_analyzed',
+                'density_target_url' => $densityContext['target_url'] ?? null,
+                'density_total_words' => $densityContext['total_words'] ?? null,
+                'density_exact_match_count' => null,
+                'density_partial_match_count' => null,
+                'density_error' => $densityContext['error'] ?? null,
+                'density_analyzed_at' => $densityContext['analyzed_at'] ?? null,
+            ];
         }
 
+        $corpus = (string) ($densityContext['text'] ?? '');
+        $totalWords = (int) ($densityContext['total_words'] ?? 0);
         $normalizedKeyword = $this->normalizedKeyword($keyword);
         if ($normalizedKeyword === '') {
-            return null;
+            return [
+                'keyword_density_pct' => null,
+                'density_status' => 'failed',
+                'density_target_url' => $densityContext['target_url'] ?? null,
+                'density_total_words' => $totalWords,
+                'density_exact_match_count' => null,
+                'density_partial_match_count' => null,
+                'density_error' => 'Keyword could not be normalized for density analysis.',
+                'density_analyzed_at' => $densityContext['analyzed_at'] ?? now(),
+            ];
         }
 
         $phraseWords = preg_split('/\s+/', $normalizedKeyword, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         if (empty($phraseWords)) {
-            return null;
+            return [
+                'keyword_density_pct' => null,
+                'density_status' => 'failed',
+                'density_target_url' => $densityContext['target_url'] ?? null,
+                'density_total_words' => $totalWords,
+                'density_exact_match_count' => null,
+                'density_partial_match_count' => null,
+                'density_error' => 'Keyword phrase was empty after normalization.',
+                'density_analyzed_at' => $densityContext['analyzed_at'] ?? now(),
+            ];
         }
 
         $pattern = '/\b' . preg_quote($normalizedKeyword, '/') . '\b/u';
-        $occurrences = preg_match_all($pattern, $corpus);
-        if ($occurrences === false) {
-            return null;
+        $exactMatches = preg_match_all($pattern, $corpus);
+        if ($exactMatches === false) {
+            return [
+                'keyword_density_pct' => null,
+                'density_status' => 'failed',
+                'density_target_url' => $densityContext['target_url'] ?? null,
+                'density_total_words' => $totalWords,
+                'density_exact_match_count' => null,
+                'density_partial_match_count' => null,
+                'density_error' => 'Keyword phrase matching failed during density analysis.',
+                'density_analyzed_at' => $densityContext['analyzed_at'] ?? now(),
+            ];
         }
 
-        $density = (($occurrences * count($phraseWords)) / $totalWords) * 100;
-        return round($density, 2);
+        $partialMatches = 0;
+        foreach (array_unique($phraseWords) as $phraseWord) {
+            $wordMatches = preg_match_all('/\b' . preg_quote($phraseWord, '/') . '\b/u', $corpus);
+            if ($wordMatches !== false) {
+                $partialMatches += $wordMatches;
+            }
+        }
+
+        return [
+            'keyword_density_pct' => round((($exactMatches * count($phraseWords)) / $totalWords) * 100, 2),
+            'density_status' => 'completed',
+            'density_target_url' => $densityContext['target_url'] ?? null,
+            'density_total_words' => $totalWords,
+            'density_exact_match_count' => $exactMatches,
+            'density_partial_match_count' => $partialMatches,
+            'density_error' => null,
+            'density_analyzed_at' => $densityContext['analyzed_at'] ?? now(),
+        ];
+    }
+
+    protected function normalizeResearchInput(array $data): array
+    {
+        $data['locale_country'] = $this->normalizeCountryCode($data['locale_country'] ?? null);
+        $data['locale_language'] = $this->normalizeLanguageCode($data['locale_language'] ?? null);
+
+        return $data;
     }
 
     protected function nullableString(mixed $value): ?string
     {
         $string = trim((string) $value);
         return $string === '' ? null : $string;
+    }
+
+    protected function normalizeCountryCode(mixed $value): ?string
+    {
+        $country = trim((string) $value);
+        if ($country === '') {
+            return null;
+        }
+
+        $upper = strtoupper($country);
+        if (preg_match('/^[A-Z]{2}$/', $upper) === 1) {
+            return $upper;
+        }
+
+        $normalized = Str::of($country)
+            ->lower()
+            ->ascii()
+            ->replace('&', ' and ')
+            ->replaceMatches('/[^a-z0-9]+/', ' ')
+            ->trim()
+            ->value();
+
+        return [
+            'pakistan' => 'PK',
+            'united states' => 'US',
+            'usa' => 'US',
+            'united kingdom' => 'GB',
+            'uk' => 'GB',
+            'india' => 'IN',
+            'united arab emirates' => 'AE',
+            'uae' => 'AE',
+            'canada' => 'CA',
+            'australia' => 'AU',
+            'saudi arabia' => 'SA',
+            'germany' => 'DE',
+            'france' => 'FR',
+        ][$normalized] ?? $upper;
+    }
+
+    protected function normalizeLanguageCode(mixed $value): ?string
+    {
+        $language = trim((string) $value);
+        if ($language === '') {
+            return null;
+        }
+
+        return strtolower($language);
+    }
+
+    protected function normalizeSource(mixed $value): string
+    {
+        $source = Str::lower(trim((string) $value));
+
+        return match (true) {
+            $source === '', $source === 'ai', $source === 'ai_generated' => 'ai_generated',
+            $source === 'fallback', $source === 'fallback_generated' => 'fallback_generated',
+            default => 'provider_generated',
+        };
+    }
+
+    protected function metricsProviderFromSource(mixed $value): ?string
+    {
+        $source = Str::lower(trim((string) $value));
+
+        return match ($source) {
+            'google_ads' => 'google_ads_keyword_ideas',
+            'dataforseo_google_ads' => 'dataforseo_keyword_ideas',
+            'google_suggest' => 'google_suggest',
+            'serpapi' => 'serpapi',
+            default => null,
+        };
+    }
+
+    protected function resolveMetricsStatus(?int $searchVolume, mixed $status, string $source, ?string $provider): string
+    {
+        $normalizedStatus = Str::lower(trim((string) $status));
+        if ($normalizedStatus !== '') {
+            return $normalizedStatus;
+        }
+
+        if ($searchVolume !== null) {
+            return 'completed';
+        }
+
+        if ($source === 'provider_generated' || $provider !== null) {
+            return 'pending';
+        }
+
+        return 'pending';
+    }
+
+    protected function buildGenerationMeta(array $keywordData, string $source, string $patternType): array
+    {
+        $meta = $keywordData['generation_meta_json'] ?? [];
+        if (!is_array($meta)) {
+            $meta = [];
+        }
+
+        $meta['source'] = $source;
+        $meta['pattern_type'] = $patternType;
+        $meta['original_source'] = trim((string) ($keywordData['source'] ?? $source));
+
+        if (!isset($meta['provider']) && $source === 'provider_generated') {
+            $meta['provider'] = $this->metricsProviderFromSource($keywordData['source'] ?? null);
+        }
+
+        return $meta;
+    }
+
+    protected function inferPatternType(string $keyword): string
+    {
+        $value = Str::lower($keyword);
+
+        return match (true) {
+            Str::startsWith($value, ['what ', 'how ', 'why ', 'when ', 'who ', 'can ', 'is ']) => 'question',
+            Str::contains($value, [' vs ', 'versus', 'alternative', 'alternatives', 'compare', 'comparison']) => 'comparison',
+            Str::contains($value, ['near me', ' in ', 'local']) => 'local',
+            Str::contains($value, ['pricing', 'price', 'cost', 'quote']) => 'pricing',
+            Str::contains($value, ['buy', 'demo', 'trial']) => 'transactional',
+            Str::contains($value, ['service', 'agency', 'consultant']) => 'service',
+            Str::contains($value, ['software', 'platform', 'tool', 'tools']) => 'software',
+            Str::contains($value, ['guide', 'checklist', 'examples', 'tips']) => 'informational',
+            default => 'general',
+        };
+    }
+
+    protected function recommendedContentTypeForPattern(string $patternType): string
+    {
+        return match ($patternType) {
+            'question', 'informational' => 'blog',
+            'local', 'service' => 'service_page',
+            'pricing', 'transactional' => 'landing_page',
+            'comparison' => 'category_page',
+            default => 'unknown',
+        };
+    }
+
+    protected function passesKeywordDiversityRules(
+        string $keyword,
+        array $acceptedKeywords,
+        array $leadingFragmentCounts,
+        array $trailingFragmentCounts
+    ): bool {
+        $tokens = $this->keywordTokens($keyword);
+        if (empty($tokens)) {
+            return false;
+        }
+
+        $leadingFragment = $this->keywordFragment($tokens, true);
+        $trailingFragment = $this->keywordFragment($tokens, false);
+        if (($leadingFragmentCounts[$leadingFragment] ?? 0) >= 10) {
+            return false;
+        }
+        if (($trailingFragmentCounts[$trailingFragment] ?? 0) >= 10) {
+            return false;
+        }
+
+        foreach ($acceptedKeywords as $acceptedKeyword) {
+            $acceptedTokens = $this->keywordTokens($acceptedKeyword);
+            if (empty($acceptedTokens)) {
+                continue;
+            }
+
+            $intersectionCount = count(array_intersect($tokens, $acceptedTokens));
+            $unionCount = count(array_unique(array_merge($tokens, $acceptedTokens)));
+            $overlapRatio = $unionCount > 0 ? $intersectionCount / $unionCount : 0;
+            if ($overlapRatio >= 0.8 && abs(count($tokens) - count($acceptedTokens)) <= 1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    protected function incrementKeywordFragmentCounts(string $keyword, array &$leadingFragmentCounts, array &$trailingFragmentCounts): void
+    {
+        $tokens = $this->keywordTokens($keyword);
+        if (empty($tokens)) {
+            return;
+        }
+
+        $leadingFragment = $this->keywordFragment($tokens, true);
+        $trailingFragment = $this->keywordFragment($tokens, false);
+        $leadingFragmentCounts[$leadingFragment] = ($leadingFragmentCounts[$leadingFragment] ?? 0) + 1;
+        $trailingFragmentCounts[$trailingFragment] = ($trailingFragmentCounts[$trailingFragment] ?? 0) + 1;
+    }
+
+    protected function keywordTokens(string $keyword): array
+    {
+        return preg_split('/\s+/', $this->normalizedKeyword($keyword), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    }
+
+    protected function keywordFragment(array $tokens, bool $leading): string
+    {
+        $slice = $leading ? array_slice($tokens, 0, min(2, count($tokens))) : array_slice($tokens, -min(2, count($tokens)));
+
+        return implode(' ', $slice);
     }
 
     protected function guessIntent(string $keyword): string

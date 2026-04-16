@@ -245,6 +245,8 @@ class RunSeoAuditCoreJob implements ShouldQueue
 
             $this->dispatchEnrichments($audit);
 
+            \App\Services\AI\PostAuditAiJobDispatcher::dispatchForAudit($audit->id);
+
             if ($audit->lead_email) {
                 try {
                     \Illuminate\Support\Facades\Mail::to($audit->lead_email)

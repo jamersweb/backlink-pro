@@ -4,7 +4,17 @@ import AppLayout from '../Components/Layout/AppLayout';
 import Card from '../Components/Shared/Card';
 import { Link } from '@inertiajs/react';
 
-export default function Dashboard({ user, subscription, stats, recentBacklinks, recentCampaigns, dailyBacklinks, backlinksByType }) {
+export default function Dashboard({
+    user,
+    subscription,
+    stats,
+    recentBacklinks,
+    recentCampaigns,
+    dailyBacklinks,
+    backlinksByType,
+    seoDashboard = { latest_audit: null, ai_fix_plan: null },
+    metaEditorDomains = [],
+}) {
     const [chartPeriod, setChartPeriod] = useState(7);
     const [activeTab, setActiveTab] = useState('overview');
     const [trialNow, setTrialNow] = useState(() => Date.now());
@@ -365,8 +375,131 @@ export default function Dashboard({ user, subscription, stats, recentBacklinks, 
      * ✅ Approvals       → bi-check-circle
      */
 
+    const latestAudit = seoDashboard?.latest_audit;
+    const aiFix = seoDashboard?.ai_fix_plan;
+
+    const topPriorityLines = () => {
+        const fixes = Array.isArray(aiFix?.priority_fixes) ? aiFix.priority_fixes : [];
+        const fromAi = fixes.slice(0, 3).map((item, i) => {
+            if (typeof item === 'string') return item;
+            return item.title || item.issue || item.summary || item.name || `Fix ${i + 1}`;
+        });
+        if (fromAi.length > 0) return fromAi;
+        const det = Array.isArray(aiFix?.deterministic_priorities) ? aiFix.deterministic_priorities : [];
+        return det.slice(0, 3).map((row) => row.title || row.code || 'Issue');
+    };
+
     const renderSeoAuditTab = () => (
         <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card>
+                    <div className="p-1">
+                        <div className="flex items-start gap-3 mb-3">
+                            <div className="bp-feature-icon amber flex-shrink-0">
+                                <i className="bi bi-lightning-charge-fill"></i>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">AI Fix Priority Engine</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Prioritized fixes from your latest audit (AI + deterministic ranking). Full detail opens on the
+                                    audit report page.
+                                </p>
+                            </div>
+                        </div>
+                        {!latestAudit && (
+                            <p className="text-sm text-gray-600 mb-4">Run an SEO audit first to generate a fix priority list.</p>
+                        )}
+                        {latestAudit && latestAudit.status !== 'completed' && (
+                            <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4">
+                                Latest audit is <strong>{latestAudit.status}</strong>. Open the report to track progress.
+                            </p>
+                        )}
+                        {latestAudit && latestAudit.status === 'completed' && aiFix?.llm_configured &&
+                            (aiFix.fix_plan_status === 'pending' || aiFix.fix_plan_status === 'running') && (
+                            <p className="text-sm text-blue-800 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-4">
+                                AI fix plan is generating. Ensure <code className="text-xs">php artisan queue:work</code> is running,
+                                then refresh the full report.
+                            </p>
+                        )}
+                        {latestAudit && latestAudit.status === 'completed' && aiFix?.fix_plan_status === 'failed' && (
+                            <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">
+                                {aiFix.fix_plan_error || 'AI fix plan failed. Check logs / API key.'}
+                            </p>
+                        )}
+                        {latestAudit && latestAudit.status === 'completed' && topPriorityLines().length > 0 && (
+                            <ol className="list-decimal pl-5 text-sm text-gray-800 space-y-1 mb-4">
+                                {topPriorityLines().map((line, idx) => (
+                                    <li key={idx}>{line}</li>
+                                ))}
+                            </ol>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                            {latestAudit && (
+                                <Link
+                                    href={`/audit/${latestAudit.id}`}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold"
+                                >
+                                    <i className="bi bi-box-arrow-up-right"></i>
+                                    Open full AI Fix Priority report
+                                </Link>
+                            )}
+                            <Link href="/audit" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-800 text-sm font-medium hover:bg-gray-50">
+                                <i className="bi bi-plus-lg"></i>
+                                New audit
+                            </Link>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card>
+                    <div className="p-1">
+                        <div className="flex items-start gap-3 mb-3">
+                            <div className="bp-feature-icon blue flex-shrink-0">
+                                <i className="bi bi-tags-fill"></i>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Meta Tags &amp; SEO Editor</h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Dashboard-driven editor: page list, title/meta/OG/canonical/robots, snippet preview, publish &
+                                    history — per website (domain).
+                                </p>
+                            </div>
+                        </div>
+                        {metaEditorDomains.length === 0 ? (
+                            <p className="text-sm text-gray-600 mb-4">Add a website (domain) to edit meta tags from the dashboard.</p>
+                        ) : (
+                            <ul className="space-y-2 mb-4">
+                                {metaEditorDomains.slice(0, 5).map((d) => (
+                                    <li key={d.id}>
+                                        <Link
+                                            href={`/domains/${d.id}/meta`}
+                                            className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-2"
+                                        >
+                                            <i className="bi bi-chevron-right"></i>
+                                            {d.name || d.host}
+                                            <span className="text-gray-500 font-normal">({d.host})</span>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                            <Link
+                                href={metaEditorDomains[0] ? `/domains/${metaEditorDomains[0].id}/meta` : '/domains/create'}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold"
+                            >
+                                <i className="bi bi-pencil-square"></i>
+                                {metaEditorDomains[0] ? 'Open Meta Editor' : 'Add domain for Meta Editor'}
+                            </Link>
+                            <Link href="/domains" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-800 text-sm font-medium hover:bg-gray-50">
+                                <i className="bi bi-globe2"></i>
+                                All websites
+                            </Link>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+
             <Card>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">SEO Audit</h2>
                 <p className="text-gray-600 mb-6">Run comprehensive SEO audits for your websites</p>

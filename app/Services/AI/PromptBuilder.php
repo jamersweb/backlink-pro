@@ -171,6 +171,14 @@ class PromptBuilder
     }
 
     /**
+     * Top issues ranked by impact × effort × reach (deterministic; used by AI Fix Priority + UI fallback).
+     */
+    public function prioritizedIssuesForAudit(Audit $audit): array
+    {
+        return $this->getPrioritizedIssues($audit);
+    }
+
+    /**
      * Get prioritized issues (deterministic + AI)
      */
     protected function getPrioritizedIssues(Audit $audit): array
