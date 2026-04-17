@@ -24,7 +24,11 @@ class CleanupOldSeoDataJob implements ShouldQueue
 
     public $timeout = 1800; // 30 minutes
     public $tries = 1;
-    public $queue = 'default';
+
+    public function __construct()
+    {
+        $this->onQueue('default');
+    }
 
     public function handle(): void
     {

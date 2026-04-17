@@ -24,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+        ]);
+
         // Apply security headers to all responses
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         

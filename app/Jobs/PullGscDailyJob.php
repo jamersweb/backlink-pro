@@ -22,12 +22,12 @@ class PullGscDailyJob implements ShouldQueue
 
     public $timeout = 300;
     public $tries = 2;
-    public $queue = 'integrations';
 
     public function __construct(
         public int $organizationId,
         public ?string $date = null
     ) {
+        $this->onQueue('integrations');
         $this->date = $date ?? Carbon::yesterday()->toDateString();
     }
 

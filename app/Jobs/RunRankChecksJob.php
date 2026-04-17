@@ -20,11 +20,12 @@ class RunRankChecksJob implements ShouldQueue
 
     public $timeout = 600;
     public $tries = 2;
-    public $queue = 'rank';
 
     public function __construct(
         public int $projectId
-    ) {}
+    ) {
+        $this->onQueue('rank');
+    }
 
     public function handle(): void
     {

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\Integrations\SyncAuditGa4Job;
 use App\Models\Audit;
 use App\Models\ConnectedAccount;
 use App\Services\Google\Ga4Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class AuditGa4Controller extends Controller
 {
@@ -117,56 +117,20 @@ class AuditGa4Controller extends Controller
             ], 422);
         }
 
-        $endDate = new \DateTime('now');
-        $startDate = (clone $endDate)->modify('-' . $this->resolveReportPeriodDays($audit) . ' days');
+        $kpis = is_array($audit->audit_kpis) ? $audit->audit_kpis : [];
+        $ga = $kpis['ga4'] ?? [];
+        $ga['sync_status'] = 'queued';
+        unset($ga['sync_error']);
+        $kpis['ga4'] = $ga;
+        $audit->audit_kpis = $kpis;
+        $audit->save();
 
-        try {
-            $dailyMetrics = $ga4->runDailyReport($propertyId, $startDate, $endDate);
-            $landingPages = $ga4->runLandingPagesReport($propertyId, $startDate, $endDate, 20);
-            $topSources = $ga4->runTopSourcesReport($propertyId, $startDate, $endDate, 20);
+        SyncAuditGa4Job::dispatch($audit->id, (int) Auth::id(), $validated['property_id'] ?? null);
 
-            $totalSessions = array_sum(array_column($dailyMetrics, 'sessions'));
-            $totalUsers = array_sum(array_column($dailyMetrics, 'total_users'));
-            $avgEngagementRate = ! empty($dailyMetrics)
-                ? round(array_sum(array_column($dailyMetrics, 'engagement_rate')) / count($dailyMetrics) * 100, 1)
-                : 0;
-
-            $ga4Payload = [
-                'connected' => true,
-                'property' => $selectedProperty['displayName'] ?? $propertyId,
-                'property_id' => $propertyId,
-                'selected_property_id' => $propertyId,
-                'period' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
-                'summary' => [
-                    'total_sessions' => $totalSessions,
-                    'total_users' => $totalUsers,
-                    'avg_engagement_rate' => $avgEngagementRate,
-                ],
-                'daily' => $dailyMetrics,
-                'top_pages' => $landingPages,
-                'top_sources' => $topSources,
-            ];
-
-            $kpis = $audit->audit_kpis ?? [];
-            $kpis['ga4'] = $ga4Payload;
-            $audit->audit_kpis = $kpis;
-            $audit->ga4_ready_at = now();
-            $audit->save();
-
-            return response()->json([
-                'ga4' => $ga4Payload,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Audit GA4 sync failed', [
-                'audit_id' => $audit->id,
-                'property_id' => $propertyId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'error' => 'GA4 sync failed: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'queued' => true,
+            'ga4' => $audit->fresh()->audit_kpis['ga4'] ?? $ga,
+        ]);
     }
 
     protected function normalizePropertyId(string $propertyId): string
@@ -195,14 +159,6 @@ class AuditGa4Controller extends Controller
         return Audit::where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
-    }
-
-    protected function resolveReportPeriodDays(Audit $audit): int
-    {
-        $audit->loadMissing('organization.brandingProfile');
-        $days = (int) ($audit->organization?->brandingProfile?->report_period_days ?: 30);
-
-        return in_array($days, [7, 15, 30], true) ? $days : 30;
     }
 }
 

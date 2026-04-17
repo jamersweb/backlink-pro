@@ -19,7 +19,6 @@ class GenerateDomainInsightsJob implements ShouldQueue
 
     public $timeout = 300; // 5 minutes
     public $tries = 2;
-    public $queue = 'insights';
 
     /**
      * Create a new job instance.
@@ -27,7 +26,9 @@ class GenerateDomainInsightsJob implements ShouldQueue
     public function __construct(
         public int $domainId,
         public int $periodDays = 28
-    ) {}
+    ) {
+        $this->onQueue('insights');
+    }
 
     /**
      * Execute the job.

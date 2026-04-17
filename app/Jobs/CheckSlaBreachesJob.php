@@ -13,7 +13,10 @@ class CheckSlaBreachesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'managed_services';
+    public function __construct()
+    {
+        $this->onQueue('managed_services');
+    }
 
     public function handle(SlaChecker $checker): void
     {

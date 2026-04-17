@@ -16,7 +16,10 @@ class StripeWebhookController extends Controller
 {
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $secret = config('services.stripe.secret');
+        if (is_string($secret) && $secret !== '') {
+            Stripe::setApiKey($secret);
+        }
     }
 
     /**
@@ -24,9 +27,15 @@ class StripeWebhookController extends Controller
      */
     public function handleWebhook(Request $request)
     {
+        $endpointSecret = config('services.stripe.webhook_secret');
+        if (!is_string($endpointSecret) || $endpointSecret === '') {
+            Log::warning('Stripe webhook received but STRIPE_WEBHOOK_SECRET (or admin webhook secret) is not configured');
+
+            return response()->json(['error' => 'Webhook not configured'], 503);
+        }
+
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $endpointSecret = config('services.stripe.webhook_secret');
 
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);

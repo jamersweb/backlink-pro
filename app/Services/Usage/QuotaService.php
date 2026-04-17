@@ -23,10 +23,7 @@ class QuotaService
 
         if (!$subscription) {
             // Create default subscription (starter plan)
-            $starterPlan = Plan::where('code', 'starter')->first();
-            if (!$starterPlan) {
-                throw new \Exception('Starter plan not found. Please run PlanSeeder.');
-            }
+            $starterPlan = Plan::starter();
 
             $now = Carbon::now();
             $subscription = UserSubscription::create([

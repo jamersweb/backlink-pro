@@ -176,11 +176,11 @@ class DomainGoogleIntegrationController extends Controller
 
         // Dispatch sync jobs
         if ($integration->gsc_property) {
-            SyncGscDomainJob::dispatch($domain->id);
+            SyncGscDomainJob::dispatch($domain->id)->onQueue('integrations');
         }
 
         if ($integration->ga4_property_id) {
-            SyncGa4DomainJob::dispatch($domain->id);
+            SyncGa4DomainJob::dispatch($domain->id)->onQueue('integrations');
         }
 
         return back()->with('success', 'Sync started. Data will be available shortly.');

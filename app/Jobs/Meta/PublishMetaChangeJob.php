@@ -19,7 +19,6 @@ class PublishMetaChangeJob implements ShouldQueue
 
     public $timeout = 120;
     public $tries = 3;
-    public $queue = 'meta';
 
     /**
      * Calculate the number of seconds to wait before retrying the job.
@@ -34,7 +33,9 @@ class PublishMetaChangeJob implements ShouldQueue
      */
     public function __construct(
         public int $changeId
-    ) {}
+    ) {
+        $this->onQueue('meta');
+    }
 
     /**
      * Execute the job.

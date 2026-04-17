@@ -1782,36 +1782,82 @@ const fetchCrux = async () => {
 const runPagespeed = async () => {
     if (!pagespeedConfigured.value || pagespeedLoading.value) return;
     pagespeedLoading.value = true;
+    let queued = false;
     try {
         const url = `/audit/${props.audit.id}/pagespeed/run`;
         const token = props.shareUrl ? new URL(props.shareUrl).searchParams.get('token') : null;
         const params = token ? { token } : {};
         const response = await axios.post(url, null, { params });
+        queued = Boolean(response.data?.queued);
         if (response.data.pagespeed) {
             pagespeedLocal.value = response.data.pagespeed;
+        }
+        if (queued) {
+            const started = Date.now();
+            const iv = setInterval(async () => {
+                if (Date.now() - started > 120000) {
+                    clearInterval(iv);
+                    pagespeedLoading.value = false;
+                    return;
+                }
+                await fetchPageSpeed();
+                const ps = pagespeedLocal.value;
+                const hasData =
+                    ps &&
+                    ((ps.mobile && Object.keys(ps.mobile).length) || (ps.desktop && Object.keys(ps.desktop).length));
+                if (hasData) {
+                    clearInterval(iv);
+                    pagespeedLoading.value = false;
+                }
+            }, 2500);
         }
     } catch (error) {
         console.error('Failed to run PageSpeed:', error);
     } finally {
-        pagespeedLoading.value = false;
+        if (!queued) {
+            pagespeedLoading.value = false;
+        }
     }
 };
 
 const runCrux = async () => {
     if (!cruxConfigured.value || cruxLoading.value) return;
     cruxLoading.value = true;
+    let queued = false;
     try {
         const url = `/audit/${props.audit.id}/crux/run`;
         const token = props.shareUrl ? new URL(props.shareUrl).searchParams.get('token') : null;
         const params = token ? { token } : {};
         const response = await axios.post(url, null, { params });
+        queued = Boolean(response.data?.queued);
         if (response.data.crux) {
             cruxLocal.value = response.data.crux;
+        }
+        if (queued) {
+            const started = Date.now();
+            const iv = setInterval(async () => {
+                if (Date.now() - started > 120000) {
+                    clearInterval(iv);
+                    cruxLoading.value = false;
+                    return;
+                }
+                await fetchCrux();
+                const cx = cruxLocal.value;
+                const hasData =
+                    cx &&
+                    ((cx.mobile && Object.keys(cx.mobile).length) || (cx.desktop && Object.keys(cx.desktop).length));
+                if (hasData) {
+                    clearInterval(iv);
+                    cruxLoading.value = false;
+                }
+            }, 2500);
         }
     } catch (error) {
         console.error('Failed to run CrUX:', error);
     } finally {
-        cruxLoading.value = false;
+        if (!queued) {
+            cruxLoading.value = false;
+        }
     }
 };
 
@@ -1898,14 +1944,14 @@ onMounted(() => {
     if (props.audit.status === 'queued' || props.audit.status === 'running') {
         pollingInterval.value = setInterval(pollStatus, 2000);
     }
-    if (pagespeedConfigured.value) {
+    if (props.audit.status === 'completed' && pagespeedConfigured.value) {
         fetchPageSpeed();
         pagespeedInterval.value = setInterval(fetchPageSpeed, 10000);
         if (!pagespeedData.value && !pagespeedLoading.value) {
             runPagespeed();
         }
     }
-    if (cruxConfigured.value) {
+    if (props.audit.status === 'completed' && cruxConfigured.value) {
         fetchCrux();
         cruxInterval.value = setInterval(fetchCrux, 15000);
         if (!cruxData.value && !cruxLoading.value) {

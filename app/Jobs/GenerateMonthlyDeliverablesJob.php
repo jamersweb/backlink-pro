@@ -14,12 +14,12 @@ class GenerateMonthlyDeliverablesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $queue = 'managed_services';
-
     public function __construct(
         public int $clientId,
         public string $month
-    ) {}
+    ) {
+        $this->onQueue('managed_services');
+    }
 
     public function handle(DeliverableGenerator $generator): void
     {

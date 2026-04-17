@@ -6,15 +6,13 @@ namespace App\Http\Controllers;
  * MARKETING FLOW SUMMARY (instant report):
  * - Marketing page: POST /audit -> AuditController::store()
  * - Creates Audit with pages_limit=1, crawl_depth=0, share_token
- * - Runs RunSeoAuditJob::dispatchSync($audit->id) so the full audit runs in the same request
- * - Redirects to GET /audit/{audit}?token=... (audit.show) which renders the report
- * - User lands on report page with data already loaded (no polling).
+ * - Marketing `AuditController::store` queues `RunSeoAuditJob`; the public report page polls status.
+ * - Redirects to GET /audit/{audit}?token=... (audit.show) which renders the report.
  *
- * USER AUDIT FLOW (same instant behavior):
+ * USER AUDIT FLOW (authenticated, async):
  * - User form: POST /audit-report -> create() below
- * - Creates Audit (user_id, normalized_url), runs RunSeoAuditJob::dispatchSync (same as marketing)
- * - Redirects to GET /audit-report/{id} (report view page)
- * - Report is rendered on dedicated page only; form page has no report UI.
+ * - Creates Audit (user_id, normalized_url), dispatches RunSeoAuditJob to the queue
+ * - Redirects immediately to GET /audit-report/{id}; the report page polls status until completed/failed.
  */
 
 use App\Models\Audit;
@@ -173,8 +171,8 @@ class AuditReportController extends Controller
             'share_token' => Str::random(32),
             'pages_limit' => 1,
             'crawl_depth' => 0,
-            'started_at' => now(),
             'progress_percent' => 0,
+            'progress_stage' => 'queued',
             'include_white_label_data' => $this->canUseWhiteLabelForAudit($org)
                 && (bool) ($validated['include_white_label_data'] ?? false),
             'crawl_module_flags' => $crawlModuleFlags,
@@ -184,37 +182,13 @@ class AuditReportController extends Controller
             ...$formsAuthPayload,
         ]));
         
-        \Log::info('User audit created', [
+        RunSeoAuditJob::dispatch($audit->id);
+
+        \Log::info('User audit queued for background processing', [
             'audit_id' => $audit->id,
             'url' => $audit->url,
             'user_id' => $user->id,
         ]);
-        
-        // Same as marketing: run audit synchronously so report is ready before redirect (instant report).
-        try {
-            @set_time_limit(120);
-            RunSeoAuditJob::dispatchSync($audit->id);
-        } catch (\Throwable $e) {
-            \Log::error('Audit run failed', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
-            $audit->refresh();
-            if ($audit->status !== Audit::STATUS_COMPLETED) {
-                $audit->status = Audit::STATUS_FAILED;
-                $audit->error = $e->getMessage();
-                $audit->finished_at = now();
-                $audit->save();
-            }
-        }
-
-        // Email after report is stored (do not block display)
-        if ($audit->lead_email && $audit->status === Audit::STATUS_COMPLETED) {
-            try {
-                \Illuminate\Support\Facades\Mail::to($audit->lead_email)
-                    ->queue(new \App\Mail\UserAuditReadyMail($audit->fresh()));
-                \Log::info('Audit email queued', ['audit_id' => $audit->id, 'to' => $audit->lead_email]);
-            } catch (\Exception $mailEx) {
-                \Log::warning('Audit email queue failed', ['audit_id' => $audit->id, 'error' => $mailEx->getMessage()]);
-            }
-        }
 
         // Redirect to dedicated report page (no report on form page).
         if ($request->header('X-Inertia') || $request->wantsJson() === false) {
@@ -224,7 +198,7 @@ class AuditReportController extends Controller
             'success' => true,
             'audit_id' => $audit->id,
             'redirect' => route('audit-report.show', ['id' => $audit->id]),
-            'status' => $audit->fresh()->status,
+            'status' => Audit::STATUS_QUEUED,
         ]);
     }
 
@@ -298,7 +272,7 @@ class AuditReportController extends Controller
 
     protected function formatAuditForFrontend(Audit $audit): array
     {
-        $kpis = $audit->audit_kpis ?? [];
+        $kpis = is_array($audit->audit_kpis) ? $audit->audit_kpis : [];
         $page = $audit->pages->first();
         
         return [
@@ -309,15 +283,16 @@ class AuditReportController extends Controller
             'status' => $audit->status,
             'overall_score' => $audit->overall_score,
             'overall_grade' => $audit->overall_grade,
-            'category_scores' => $audit->category_scores,
-            'category_grades' => $audit->category_grades,
-            'summary' => $audit->summary,
+            'category_scores' => is_array($audit->category_scores) ? $audit->category_scores : [],
+            'category_grades' => is_array($audit->category_grades) ? $audit->category_grades : [],
+            'summary' => is_array($audit->summary) ? $audit->summary : [],
             'share_token' => $audit->share_token,
             'created_at' => $audit->created_at?->toIso8601String(),
             'started_at' => $audit->started_at?->toIso8601String(),
             'finished_at' => $audit->finished_at?->toIso8601String(),
             'error' => $audit->error,
-            'progress_percent' => $audit->progress_percent,
+            'progress_percent' => $audit->progress_percent ?? 0,
+            'progress_stage' => $audit->progress_stage,
             'crawl_module_flags' => $audit->crawl_module_flags ?? [],
             'report_modules' => $audit->report_modules ?? null,
             'psi_ready_at' => optional($audit->psi_ready_at)->toIso8601String(),
@@ -560,6 +535,10 @@ class AuditReportController extends Controller
         $audit = Audit::with(['pages', 'issues'])
             ->where('user_id', Auth::id())
             ->findOrFail($id);
+
+        if ($audit->status !== Audit::STATUS_COMPLETED) {
+            abort(409, 'Report is not ready yet.');
+        }
 
         $page = $audit->pages()->first();
         $issues = $audit->issues()

@@ -23,9 +23,15 @@ class SettingsController extends Controller
         ];
 
         $stripeSettings = [
-            'stripe_key' => Setting::get('stripe_key', config('services.stripe.key', '')),
-            'stripe_secret' => Setting::get('stripe_secret', config('services.stripe.secret', '')),
-            'stripe_webhook_secret' => Setting::get('stripe_webhook_secret', config('services.stripe.webhook_secret', '')),
+            'stripe_key' => Setting::get('stripe_key')
+                ?: Setting::get('stripe_stripe_key')
+                ?: config('services.stripe.key', ''),
+            'stripe_secret' => Setting::get('stripe_secret')
+                ?: Setting::get('stripe_stripe_secret')
+                ?: config('services.stripe.secret', ''),
+            'stripe_webhook_secret' => Setting::get('stripe_webhook_secret')
+                ?: Setting::get('stripe_stripe_webhook_secret')
+                ?: config('services.stripe.webhook_secret', ''),
             'stripe_enabled' => Setting::get('stripe_enabled', true),
         ];
 
@@ -65,7 +71,7 @@ class SettingsController extends Controller
         $data = $request->except(['group', '_method', '_token']);
 
         foreach ($data as $key => $value) {
-            $fullKey = $group . '_' . $key;
+            $fullKey = $this->storageKeyForSettingGroup($group, $key);
 
             // Determine if this should be encrypted (passwords, secrets, keys)
             $encrypt = in_array($key, [
@@ -85,6 +91,23 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', ucfirst($group) . ' settings updated successfully.');
+    }
+
+    /**
+     * Build the settings row key. Avoids double prefixes (e.g. stripe_stripe_key)
+     * when the form field already includes the group name (stripe_key, google_client_id).
+     */
+    protected function storageKeyForSettingGroup(string $group, string $key): string
+    {
+        if ($group === 'api') {
+            return $group.'_'.$key;
+        }
+
+        if (str_starts_with($key, $group.'_')) {
+            return $key;
+        }
+
+        return $group.'_'.$key;
     }
 
     protected function getType(string $key): string
@@ -112,8 +135,8 @@ class SettingsController extends Controller
         try {
             switch ($service) {
                 case 'stripe':
-                    $key = Setting::get('stripe_key');
-                    $secret = Setting::get('stripe_secret');
+                    $key = Setting::get('stripe_key') ?: Setting::get('stripe_stripe_key');
+                    $secret = Setting::get('stripe_secret') ?: Setting::get('stripe_stripe_secret');
                     if (!$key || !$secret) {
                         return response()->json(['success' => false, 'message' => 'Stripe keys not configured', 'service' => 'stripe']);
                     }

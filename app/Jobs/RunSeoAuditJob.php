@@ -40,7 +40,9 @@ class RunSeoAuditJob implements ShouldQueue
 
     public function __construct(
         public int $auditId
-    ) {}
+    ) {
+        $this->onQueue('audits');
+    }
 
     public function handle(): void
     {
@@ -53,6 +55,9 @@ class RunSeoAuditJob implements ShouldQueue
         }
 
         $audit->status = Audit::STATUS_RUNNING;
+        if (! $audit->started_at) {
+            $audit->started_at = now();
+        }
         $audit->progress_percent = 5;
         $audit->progress_stage = 'starting';
         $audit->save();

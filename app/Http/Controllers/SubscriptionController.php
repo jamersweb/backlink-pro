@@ -259,6 +259,10 @@ class SubscriptionController extends Controller
         $interval = $request->get('interval', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
 
         try {
+            if (!config('services.stripe.enabled', true)) {
+                return back()->with('error', 'Online payments are temporarily unavailable. Please contact support.');
+            }
+
             // Paid plans must always require a valid Stripe configuration.
             if (!config('services.stripe.secret')) {
                 return back()->with('error', 'Payment processing is not configured. Please contact support.');

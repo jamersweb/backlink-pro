@@ -18,7 +18,6 @@ class RunLighthouseJob implements ShouldQueue
 
     public $timeout = 180; // 3 minutes per Lighthouse run
     public $tries = 1;
-    public $queue = 'lighthouse';
 
     /**
      * Create a new job instance.
@@ -27,7 +26,9 @@ class RunLighthouseJob implements ShouldQueue
         public int $auditId,
         public int $pageId,
         public string $preset // 'mobile' or 'desktop'
-    ) {}
+    ) {
+        $this->onQueue('lighthouse');
+    }
 
     /**
      * Execute the job.

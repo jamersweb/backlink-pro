@@ -129,24 +129,11 @@ class RegisterController extends Controller
             'share_token' => Str::random(32),
             'pages_limit' => 1,
             'crawl_depth' => 0,
-            'started_at' => now(),
             'progress_percent' => 0,
+            'progress_stage' => 'queued',
         ]);
 
-        try {
-            @set_time_limit(120);
-            RunSeoAuditJob::dispatchSync($audit->id);
-        } catch (\Throwable $e) {
-            \Log::error('Onboarding audit run failed', ['audit_id' => $audit->id, 'error' => $e->getMessage()]);
-            $audit->refresh();
-
-            if ($audit->status !== Audit::STATUS_COMPLETED) {
-                $audit->status = Audit::STATUS_FAILED;
-                $audit->error = $e->getMessage();
-                $audit->finished_at = now();
-                $audit->save();
-            }
-        }
+        RunSeoAuditJob::dispatch($audit->id);
 
         return $audit->fresh();
     }

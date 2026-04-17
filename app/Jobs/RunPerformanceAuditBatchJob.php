@@ -17,14 +17,15 @@ class RunPerformanceAuditBatchJob implements ShouldQueue
 
     public $timeout = 600;
     public $tries = 1;
-    public $queue = 'lighthouse'; // Use dedicated queue for Lighthouse jobs
 
     /**
      * Create a new job instance.
      */
     public function __construct(
         public int $auditId
-    ) {}
+    ) {
+        $this->onQueue('lighthouse');
+    }
 
     /**
      * Execute the job.

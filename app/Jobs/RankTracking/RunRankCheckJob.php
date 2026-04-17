@@ -23,11 +23,12 @@ class RunRankCheckJob implements ShouldQueue
     public $timeout = 600; // 10 minutes for large batches
     public $tries = 3;
     public $backoff = [30, 60, 120];
-    public $queue = 'rank-tracking';
 
     public function __construct(
         public int $checkId
-    ) {}
+    ) {
+        $this->onQueue('rank-tracking');
+    }
 
     public function handle(): void
     {

@@ -85,50 +85,46 @@ export default function DomainsEdit({ domain, platforms }) {
                         ))}
                     </Select>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select
-                            name="status"
-                            value={data.status}
-                            onChange={(e) => setData('status', e.target.value)}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
+                    <Select
+                        label="Status"
+                        name="status"
+                        value={data.status}
+                        onChange={(e) => setData('status', e.target.value)}
+                        error={errors.status}
+                    >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </Select>
 
                     {/* Default Settings Section */}
                     <div className="border-t pt-6 mt-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Default Settings</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Crawl Limit</label>
-                                <select
-                                    value={data.default_settings?.crawl_limit || 100}
-                                    onChange={(e) => updateDefaultSetting('crawl_limit', parseInt(e.target.value))}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                >
-                                    <option value={20}>20 pages</option>
-                                    <option value={100}>100 pages</option>
-                                    <option value={500}>500 pages</option>
-                                </select>
-                            </div>
+                        <div>
+                            <Select
+                                label="Crawl Limit"
+                                name="default_crawl_limit"
+                                value={String(data.default_settings?.crawl_limit ?? 100)}
+                                onChange={(e) => updateDefaultSetting('crawl_limit', parseInt(e.target.value, 10))}
+                                error={errors['default_settings.crawl_limit']}
+                            >
+                                <option value={20}>20 pages</option>
+                                <option value={100}>100 pages</option>
+                                <option value={500}>500 pages</option>
+                            </Select>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Max Depth</label>
-                                <select
-                                    value={data.default_settings?.max_depth || 3}
-                                    onChange={(e) => updateDefaultSetting('max_depth', parseInt(e.target.value))}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                >
-                                    <option value={1}>1 level</option>
-                                    <option value={2}>2 levels</option>
-                                    <option value={3}>3 levels</option>
-                                    <option value={4}>4 levels</option>
-                                    <option value={5}>5 levels</option>
-                                </select>
-                            </div>
+                            <Select
+                                label="Max Depth"
+                                name="default_max_depth"
+                                value={String(data.default_settings?.max_depth ?? 3)}
+                                onChange={(e) => updateDefaultSetting('max_depth', parseInt(e.target.value, 10))}
+                                error={errors['default_settings.max_depth']}
+                            >
+                                <option value={1}>1 level</option>
+                                <option value={2}>2 levels</option>
+                                <option value={3}>3 levels</option>
+                                <option value={4}>4 levels</option>
+                                <option value={5}>5 levels</option>
+                            </Select>
 
                             <div className="flex items-center">
                                 <input

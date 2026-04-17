@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Seeders\PlanSeeder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,6 +44,21 @@ class Plan extends Model
         'is_highlighted' => 'boolean',
         'sort_order' => 'integer',
     ];
+
+    /**
+     * Resolve the Starter plan, seeding plans if the database was never seeded (e.g. production deploy).
+     */
+    public static function starter(): self
+    {
+        $plan = static::query()->where('code', 'starter')->first();
+        if ($plan !== null) {
+            return $plan;
+        }
+
+        app(PlanSeeder::class)->run();
+
+        return static::query()->where('code', 'starter')->firstOrFail();
+    }
 
     /**
      * Get all subscriptions for this plan

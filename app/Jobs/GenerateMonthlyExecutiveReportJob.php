@@ -20,12 +20,12 @@ class GenerateMonthlyExecutiveReportJob implements ShouldQueue
 
     public $timeout = 600;
     public $tries = 2;
-    public $queue = 'reports';
 
     public function __construct(
         public int $organizationId,
         public ?string $month = null
     ) {
+        $this->onQueue('reports');
         $this->month = $month ?? Carbon::now()->subMonth()->format('Y-m');
     }
 

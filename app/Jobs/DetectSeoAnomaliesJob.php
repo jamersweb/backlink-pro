@@ -19,12 +19,12 @@ class DetectSeoAnomaliesJob implements ShouldQueue
 
     public $timeout = 300;
     public $tries = 2;
-    public $queue = 'alerts';
 
     public function __construct(
         public int $organizationId,
         public ?string $date = null
     ) {
+        $this->onQueue('alerts');
         $this->date = $date ?? Carbon::yesterday()->toDateString();
     }
 

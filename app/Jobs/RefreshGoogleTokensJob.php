@@ -17,7 +17,11 @@ class RefreshGoogleTokensJob implements ShouldQueue
 
     public $timeout = 60;
     public $tries = 2;
-    public $queue = 'integrations';
+
+    public function __construct()
+    {
+        $this->onQueue('integrations');
+    }
 
     public function handle(): void
     {

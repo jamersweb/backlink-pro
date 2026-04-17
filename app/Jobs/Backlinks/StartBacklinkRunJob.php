@@ -27,14 +27,15 @@ class StartBacklinkRunJob implements ShouldQueue
 
     public $timeout = 600; // 10 minutes
     public $tries = 2;
-    public $queue = 'backlinks';
 
     /**
      * Create a new job instance.
      */
     public function __construct(
         public int $runId
-    ) {}
+    ) {
+        $this->onQueue('backlinks');
+    }
 
     /**
      * Execute the job.

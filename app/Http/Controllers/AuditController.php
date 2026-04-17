@@ -15,6 +15,7 @@ use App\Models\Organization;
 use App\Models\Lead;
 use App\Jobs\RunSeoAuditJob;
 use App\Jobs\RunCruxJob;
+use App\Jobs\RunPageSpeedJob;
 use App\Services\Billing\PlanLimiter;
 use App\Services\AI\AiFixPlanPresenter;
 use App\Services\SeoAudit\CrawlModuleConfig;
@@ -277,13 +278,8 @@ class AuditController extends Controller
             );
         }
 
-        // Dispatch job
-        if ($audit->pages_limit === 1 && $audit->crawl_depth === 0) {
-            // Run quick single-page audit inline for faster response
-            RunSeoAuditJob::dispatchSync($audit->id);
-        } else {
-            RunSeoAuditJob::dispatch($audit->id);
-        }
+        // Always queue — the report page (`Audit/Show.vue`) polls `/audit/{id}/status` while queued/running.
+        RunSeoAuditJob::dispatch($audit->id);
 
         return redirect()->route('audit.show', ['audit' => $audit, 'token' => $audit->share_token]);
     }
@@ -636,17 +632,12 @@ class AuditController extends Controller
             ], 400);
         }
 
-        $shouldRunSync = app()->environment('local') || config('queue.default') === 'sync';
-        if ($shouldRunSync) {
-            \App\Jobs\RunPageSpeedJob::dispatchSync($audit->id, $audit->normalized_url);
-        } else {
-            \App\Jobs\RunPageSpeedJob::dispatch($audit->id, $audit->normalized_url)
-                ->onQueue('integrations');
-        }
+        RunPageSpeedJob::dispatch($audit->id, $audit->normalized_url);
 
-        $google = data_get($audit->fresh()->audit_kpis, 'google.pagespeed');
+        $google = data_get($audit->audit_kpis, 'google.pagespeed');
 
         return response()->json([
+            'queued' => true,
             'pagespeed' => $google,
         ]);
     }
@@ -706,17 +697,12 @@ class AuditController extends Controller
             ], 400);
         }
 
-        $shouldRunSync = app()->environment('local') || config('queue.default') === 'sync';
-        if ($shouldRunSync) {
-            RunCruxJob::dispatchSync($audit->id, $audit->normalized_url);
-        } else {
-            RunCruxJob::dispatch($audit->id, $audit->normalized_url)
-                ->onQueue('integrations');
-        }
+        RunCruxJob::dispatch($audit->id, $audit->normalized_url);
 
-        $google = data_get($audit->fresh()->audit_kpis, 'google.crux');
+        $google = data_get($audit->audit_kpis, 'google.crux');
 
         return response()->json([
+            'queued' => true,
             'crux' => $google,
         ]);
     }

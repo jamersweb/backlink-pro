@@ -20,7 +20,6 @@ class SyncGa4DomainJob implements ShouldQueue
 
     public $timeout = 600; // 10 minutes
     public $tries = 2;
-    public $queue = 'integrations';
 
     /**
      * Create a new job instance.
@@ -28,7 +27,9 @@ class SyncGa4DomainJob implements ShouldQueue
     public function __construct(
         public int $domainId,
         public int $days = 90
-    ) {}
+    ) {
+        $this->onQueue('integrations');
+    }
 
     /**
      * Execute the job.

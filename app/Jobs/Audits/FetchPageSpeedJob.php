@@ -31,18 +31,15 @@ class FetchPageSpeedJob implements ShouldQueue
     public array $backoff = [30, 60, 120];
 
     /**
-     * The queue this job should run on.
-     */
-    public string $queue = 'audits';
-
-    /**
      * Create a new job instance.
      */
     public function __construct(
         public int $auditId,
         public string $url,
         public string $strategy = 'mobile'
-    ) {}
+    ) {
+        $this->onQueue('audits');
+    }
 
     /**
      * Execute the job.

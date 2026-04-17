@@ -819,14 +819,8 @@ export default function AuditReportView({ audit }) {
     const [ga4Loading, setGa4Loading] = useState(false);
     const [ga4PropertiesLoading, setGa4PropertiesLoading] = useState(false);
     const [ga4Error, setGa4Error] = useState(null);
+    const [statusPoll, setStatusPoll] = useState(null);
 
-    if (audit?.branding?.enabled) {
-        return <BrandedAuditReportView report={audit?.white_label_report} audit={audit} exportingPdf={exportingPdf} onExportPdf={exportPdf} />;
-    }
-
-    const overallScore = audit?.overall_score ?? 0;
-    const overallGrade = audit?.overall_grade || 'N/A';
-    const scoreTone = getScoreTone(overallScore);
     const issues = audit?.issues || [];
     const criticalIssues = issues.filter((issue) => issue.severity === 'critical');
     const warningIssues = issues.filter((issue) => issue.severity === 'warning');
@@ -945,6 +939,7 @@ export default function AuditReportView({ audit }) {
         if (!audit?.id) return;
         setCruxLoading(true);
         setCruxError(null);
+        let queued = false;
         try {
             const res = await fetch(`/audit/${audit.id}/crux/run`, {
                 method: 'POST',
@@ -958,11 +953,47 @@ export default function AuditReportView({ audit }) {
             if (!res.ok) {
                 throw new Error(payload?.error || `Core Web Vitals run failed (${res.status})`);
             }
+            queued = Boolean(payload?.queued);
             setCruxData(payload?.crux || null);
+            if (queued) {
+                const started = Date.now();
+                const iv = setInterval(async () => {
+                    if (Date.now() - started > 120000) {
+                        clearInterval(iv);
+                        setCruxLoading(false);
+                        return;
+                    }
+                    try {
+                        const r = await fetch(`/audit/${audit.id}/crux`, {
+                            method: 'GET',
+                            credentials: 'same-origin',
+                            headers: {
+                                Accept: 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+                        const p = await r.json();
+                        if (r.ok && p?.crux) {
+                            setCruxData(p.crux);
+                            const mobile = p.crux?.mobile;
+                            const desktop = p.crux?.desktop;
+                            const hasData = (mobile && Object.keys(mobile).length) || (desktop && Object.keys(desktop).length);
+                            if (hasData) {
+                                clearInterval(iv);
+                                setCruxLoading(false);
+                            }
+                        }
+                    } catch {
+                        /* keep polling */
+                    }
+                }, 2500);
+            }
         } catch (error) {
             setCruxError(error instanceof Error ? error.message : 'Unable to run Core Web Vitals report.');
         } finally {
-            setCruxLoading(false);
+            if (!queued) {
+                setCruxLoading(false);
+            }
         }
     };
 
@@ -1163,16 +1194,153 @@ export default function AuditReportView({ audit }) {
         }
     }, [activeTab]);
 
+    useEffect(() => {
+        if (!audit?.id) return;
+        const gscSync = audit?.gsc?.sync_status;
+        const gaSync = audit?.ga4?.sync_status;
+        if (gscSync !== 'queued' && gscSync !== 'running' && gaSync !== 'queued' && gaSync !== 'running') {
+            return;
+        }
+        const id = setInterval(() => {
+            router.reload({ preserveScroll: true });
+        }, 3000);
+        return () => clearInterval(id);
+    }, [audit?.id, audit?.gsc?.sync_status, audit?.ga4?.sync_status]);
+
+    useEffect(() => {
+        if (!audit?.id) return;
+        if (audit.status === 'completed' || audit.status === 'failed') return;
+
+        let intervalId;
+        let cancelled = false;
+
+        const poll = async () => {
+            try {
+                const res = await fetch(`/audit-report/${audit.id}/status`, {
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                if (!res.ok || cancelled) return;
+                const data = await res.json();
+                if (cancelled) return;
+                setStatusPoll({
+                    status: data.status,
+                    progress_percent: data.progress_percent ?? 0,
+                    progress_stage: data.progress_stage,
+                    error: data.error ?? null,
+                });
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(intervalId);
+                    router.reload({ preserveScroll: true });
+                }
+            } catch {
+                /* transient network errors while polling */
+            }
+        };
+
+        poll();
+        intervalId = setInterval(poll, 2500);
+        return () => {
+            cancelled = true;
+            clearInterval(intervalId);
+        };
+    }, [audit?.id, audit?.status]);
+
+    const effectiveStatus = statusPoll?.status ?? audit?.status ?? '';
+    const reportReady = effectiveStatus === 'completed';
+    const isFailed = effectiveStatus === 'failed';
+    const isPending = effectiveStatus === 'queued' || effectiveStatus === 'running';
+    const progressPercent = Math.min(100, Math.max(0, Number(statusPoll?.progress_percent ?? audit?.progress_percent ?? 0)));
+    const progressStage = statusPoll?.progress_stage ?? audit?.progress_stage;
+    const displayError = isFailed ? (statusPoll?.error ?? audit?.error) : null;
+
+    const stageLabel = (() => {
+        const s = progressStage;
+        if (!s) return null;
+        const map = {
+            queued: 'Queued',
+            starting: 'Starting…',
+            onpage: 'On-page SEO',
+            psi: 'PageSpeed Insights',
+            ga4: 'Google Analytics',
+            gsc: 'Search Console',
+            compiling: 'Compiling report',
+            completed: 'Completed',
+            failed: 'Failed',
+        };
+        return map[s] || s;
+    })();
+
+    const rawOverallScore = audit?.overall_score;
+    const rawOverallGrade = audit?.overall_grade;
+    const scoreTone = reportReady && rawOverallScore != null
+        ? getScoreTone(rawOverallScore)
+        : { bg: 'bg-[var(--admin-surface-2)]', border: 'border-[var(--admin-border)]', text: 'text-[var(--admin-text-dim)]' };
+    const scoreDisplay = reportReady && rawOverallScore != null ? rawOverallScore : '—';
+    const gradeDisplay = reportReady && rawOverallGrade ? rawOverallGrade : '—';
+
+    if (audit?.branding?.enabled && reportReady) {
+        return (
+            <BrandedAuditReportView
+                report={audit?.white_label_report}
+                audit={audit}
+                exportingPdf={exportingPdf}
+                onExportPdf={exportPdf}
+            />
+        );
+    }
+
     return (
         <AppLayout header="Audit Report">
             <div className="mx-auto max-w-7xl space-y-6">
-                {audit.status === 'failed' && audit.error ? (
-                    <div className="flex items-start gap-3 rounded-2xl border border-[#F04438]/30 bg-[#F04438]/10 p-4">
-                        <i className="bi bi-x-circle-fill text-xl text-[#F04438]"></i>
-                        <div>
-                            <p className="font-medium text-[#F04438]">Audit failed</p>
-                            <p className="mt-1 text-sm text-[var(--admin-text-muted)]">{audit.error}</p>
+                {isFailed ? (
+                    <div className="rounded-2xl border border-[#F04438]/30 bg-[#F04438]/10 p-5">
+                        <div className="flex items-start gap-3">
+                            <i className="bi bi-x-circle-fill text-xl text-[#F04438]"></i>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-medium text-[#F04438]">Audit failed</p>
+                                <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
+                                    {displayError || 'The audit could not be completed. You can try again from the audit form.'}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => router.visit('/audit-report')}
+                                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--admin-surface)] px-4 py-2 text-sm font-medium text-[var(--admin-text)] ring-1 ring-[var(--admin-border)] hover:bg-[var(--admin-surface-2)]"
+                                >
+                                    <i className="bi bi-arrow-left"></i>
+                                    Back to audit form
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                ) : null}
+
+                {isPending ? (
+                    <div className="rounded-2xl border border-[#F79009]/35 bg-[#F79009]/08 p-6">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide border border-[#F79009]/35 bg-[#F79009]/15 text-[#F79009]`}>
+                                {effectiveStatus}
+                            </span>
+                            {stageLabel ? (
+                                <span className="text-sm font-medium text-[var(--admin-text)]">{stageLabel}</span>
+                            ) : null}
+                            <span className="text-sm text-[var(--admin-text-muted)]">{progressPercent}%</span>
+                        </div>
+                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[var(--admin-surface-2)]">
+                            <div
+                                className="h-full rounded-full bg-gradient-to-r from-[#F79009] to-[#F79009]/80 transition-[width] duration-300"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+                        <p className="mt-4 text-sm text-[var(--admin-text)]">
+                            Your audit is running in the background.
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
+                            This page will update automatically when the report is ready.
+                        </p>
                     </div>
                 ) : null}
 
@@ -1194,16 +1362,20 @@ export default function AuditReportView({ audit }) {
                                             <i className="bi bi-clock"></i>
                                             {audit.finished_at && audit.started_at
                                                 ? `Completed in ${Math.max(0, Math.round((new Date(audit.finished_at) - new Date(audit.started_at)) / 1000))}s`
-                                                : 'Processing'}
+                                                : isPending
+                                                    ? 'In progress'
+                                                    : isFailed
+                                                        ? 'Stopped'
+                                                        : 'Processing'}
                                         </span>
                                         <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                            audit.status === 'completed'
+                                            effectiveStatus === 'completed'
                                                 ? 'border border-[#12B76A]/30 bg-[#12B76A]/10 text-[#12B76A]'
-                                                : audit.status === 'failed'
+                                                : effectiveStatus === 'failed'
                                                     ? 'border border-[#F04438]/30 bg-[#F04438]/10 text-[#F04438]'
                                                     : 'border border-[#F79009]/30 bg-[#F79009]/10 text-[#F79009]'
                                         }`}>
-                                            {audit.status}
+                                            {effectiveStatus}
                                         </span>
                                     </div>
                                 </div>
@@ -1212,21 +1384,34 @@ export default function AuditReportView({ audit }) {
 
                         <div className="flex justify-center lg:justify-end">
                             <div className={`flex h-40 w-40 flex-col items-center justify-center rounded-full border-4 ${scoreTone.bg} ${scoreTone.border}`}>
-                                <div className={`text-4xl font-bold ${scoreTone.text}`}>{overallScore}</div>
+                                <div className={`text-4xl font-bold ${scoreTone.text}`}>{scoreDisplay}</div>
                                 <div className="mt-1 text-xs text-[var(--admin-text-dim)]">Overall Score</div>
-                                <div className={`mt-1 text-2xl font-bold ${scoreTone.text}`}>{overallGrade}</div>
+                                <div className={`mt-1 text-2xl font-bold ${scoreTone.text}`}>{gradeDisplay}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {reportReady ? (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <MetricCard label="SEO Health" value={`${formatNumber(categoryScores.onpage ?? 0)}/100`} hint="Rules engine" />
                     <MetricCard label="Performance" value={`${formatNumber(categoryScores.performance ?? 0)}/100`} hint="Lab plus asset signals" />
                     <MetricCard label="Technical" value={`${formatNumber(categoryScores.technical ?? 0)}/100`} hint="Crawlability" />
                     <MetricCard label="Issues Found" value={formatNumber(issues.length)} hint={`${criticalIssues.length} critical`} />
                 </div>
+                ) : !isFailed ? (
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        {[1, 2, 3, 4].map((k) => (
+                            <div key={k} className="animate-pulse rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-2)] p-4">
+                                <div className="h-3 w-24 rounded bg-[var(--admin-border)]" />
+                                <div className="mt-4 h-8 w-16 rounded bg-[var(--admin-border)]" />
+                                <div className="mt-2 h-3 w-32 rounded bg-[var(--admin-border)]" />
+                            </div>
+                        ))}
+                    </div>
+                ) : null}
 
+                {reportReady ? (
                 <Card variant="elevated">
                     <div className="border-b border-[var(--admin-border)] px-6 pt-6">
                         <div className="flex gap-2 overflow-x-auto pb-4">
@@ -1799,9 +1984,15 @@ export default function AuditReportView({ audit }) {
 
                     </div>
                 </Card>
+                ) : !isFailed ? (
+                    <SectionMessage>
+                        Report sections will load here automatically when the audit completes.
+                    </SectionMessage>
+                ) : null}
 
                 <div className="flex gap-3">
                     <button
+                        type="button"
                         onClick={() => router.visit('/audit-report')}
                         className="flex items-center gap-2 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-6 py-2.5 font-medium text-[var(--admin-text)] transition-colors hover:bg-[var(--admin-surface-2)]"
                     >
@@ -1809,9 +2000,11 @@ export default function AuditReportView({ audit }) {
                         Back to Audits
                     </button>
                     <button
+                        type="button"
                         onClick={() => exportPdf()}
-                        disabled={exportingPdf}
-                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] px-6 py-2.5 font-medium text-white shadow-lg shadow-[#2F6BFF]/20 transition-all disabled:opacity-70"
+                        disabled={exportingPdf || !reportReady}
+                        title={!reportReady ? 'Available when the audit is completed' : undefined}
+                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#2F6BFF] to-[#2457D6] px-6 py-2.5 font-medium text-white shadow-lg shadow-[#2F6BFF]/20 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {exportingPdf ? <i className="bi bi-arrow-repeat animate-spin"></i> : <i className="bi bi-download"></i>}
                         {exportingPdf ? 'Generating PDF...' : 'Export PDF'}

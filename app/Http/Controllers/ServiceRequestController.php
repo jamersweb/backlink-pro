@@ -16,7 +16,10 @@ class ServiceRequestController extends Controller
 {
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $secret = config('services.stripe.secret');
+        if (is_string($secret) && $secret !== '') {
+            Stripe::setApiKey($secret);
+        }
     }
 
     /**
@@ -223,6 +226,14 @@ class ServiceRequestController extends Controller
 
         if (!$serviceRequest->total_price_cents || $serviceRequest->total_price_cents <= 0) {
             return back()->withErrors(['request' => 'Invalid pricing.']);
+        }
+
+        if (!config('services.stripe.enabled', true)) {
+            return back()->withErrors(['request' => 'Online payments are temporarily unavailable.']);
+        }
+
+        if (!config('services.stripe.secret')) {
+            return back()->withErrors(['request' => 'Payment processing is not configured.']);
         }
 
         // Get or create Stripe customer

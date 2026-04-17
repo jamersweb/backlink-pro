@@ -15,7 +15,10 @@ class BillingController extends Controller
 {
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $secret = config('services.stripe.secret');
+        if (is_string($secret) && $secret !== '') {
+            Stripe::setApiKey($secret);
+        }
     }
 
     /**
@@ -102,6 +105,14 @@ class BillingController extends Controller
     {
         $this->authorize('manage', $organization);
 
+        if (!config('services.stripe.enabled', true)) {
+            return back()->withErrors(['plan' => 'Online payments are temporarily unavailable.']);
+        }
+
+        if (!config('services.stripe.secret')) {
+            return back()->withErrors(['plan' => 'Payment processing is not configured.']);
+        }
+
         $validated = $request->validate([
             'plan_key' => ['required', 'string', 'in:pro,agency'],
             'interval' => ['required', 'string', 'in:monthly,yearly'],
@@ -160,6 +171,10 @@ class BillingController extends Controller
     public function portal(Organization $organization)
     {
         $this->authorize('manage', $organization);
+
+        if (!config('services.stripe.enabled', true) || !config('services.stripe.secret')) {
+            return back()->withErrors(['billing' => 'Billing portal is not available.']);
+        }
 
         if (!$organization->stripe_customer_id) {
             return back()->withErrors(['billing' => 'No active subscription found']);

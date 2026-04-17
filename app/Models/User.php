@@ -144,7 +144,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return $subscription->plan;
         }
         // Fallback to starter plan
-        return \App\Models\Plan::where('code', 'starter')->first();
+        return Plan::starter();
     }
     public function hasActiveFreeTrial(): bool
     {

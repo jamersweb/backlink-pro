@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Billing / quota plans (required for subscriptions and domain limits)
+        $this->call(PlanSeeder::class);
+
         // Seed roles first (required for user registration)
         $this->call(RoleSeeder::class);
         

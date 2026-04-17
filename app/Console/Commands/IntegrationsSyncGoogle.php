@@ -42,12 +42,12 @@ class IntegrationsSyncGoogle extends Command
                 }
 
                 if ($integration->gsc_property) {
-                    SyncGscDomainJob::dispatch($integration->domain_id);
+                    SyncGscDomainJob::dispatch($integration->domain_id)->onQueue('integrations');
                     $this->info("Dispatched GSC sync for domain {$integration->domain_id}");
                 }
 
                 if ($integration->ga4_property_id) {
-                    SyncGa4DomainJob::dispatch($integration->domain_id);
+                    SyncGa4DomainJob::dispatch($integration->domain_id)->onQueue('integrations');
                     $this->info("Dispatched GA4 sync for domain {$integration->domain_id}");
                 }
             }
